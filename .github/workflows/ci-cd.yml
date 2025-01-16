@@ -58,6 +58,13 @@ jobs:
             echo "Docker is already installed."
           fi
 
+          # Add user to Docker group to avoid using sudo for Docker commands
+          echo "Adding $USER to the Docker group..."
+          sudo usermod -aG docker $USER
+          
+          # Refresh group membership for the user
+          newgrp docker
+
           echo "Pulling the Docker image on EC2..."
           docker pull nutzkiller/gym:latest
           
@@ -68,5 +75,9 @@ jobs:
           echo "Running the new Docker container..."
           docker run -d --rm --name gym_app -p 80:80 nutzkiller/gym:latest
           
-          # Optional: If additional configurations are required, you can add them here
-          # Example: Restart a service or set up environment variables
+          # Optional: Restart a service after container deployment
+          echo "Restarting related service..."
+          sudo systemctl restart apache2 || sudo systemctl restart nginx || true
+          
+          # Optionally add other steps such as notifications or further setup
+          echo "Deployment complete!"
