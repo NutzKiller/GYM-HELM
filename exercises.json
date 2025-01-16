@@ -27,7 +27,7 @@
     {"id": 26, "name": "Sitting long Curl", "category": "B", "topic": "biceps"},
     {"id": 27, "name": "Bulgarian Split Squat", "category": "C", "topic": "legs"},
     {"id": 28, "name": "Smith Machine Squat", "category": "C", "topic": "legs"},
-    {"id": 29, "name": "Deadlift", "category": "C", "topic": "legs"},
+    {"id": 29, "name": "Standing Leg Curl", "category": "C", "topic": "legs"},
     {"id": 30, "name": "Leg Press", "category": "C", "topic": "legs"},
     {"id": 31, "name": "Leg Curl", "category": "C", "topic": "legs"},
     {"id": 32, "name": "RDL", "category": "C", "topic": "legs"},
