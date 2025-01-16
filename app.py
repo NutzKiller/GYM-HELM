@@ -79,4 +79,5 @@ def index():
     return render_template('index.html', weekly_plan=weekly_plan)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Set host to '0.0.0.0' to allow external access, and port to 5000
+    app.run(debug=True, host='0.0.0.0', port=5000)
