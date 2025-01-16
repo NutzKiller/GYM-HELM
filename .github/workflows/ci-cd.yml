@@ -25,13 +25,13 @@ jobs:
     
     - name: Build Docker image
       run: |
-        VERSION=$(date +%Y%m%d%H%M%S)-${GITHUB_RUN_NUMBER}
+        VERSION=v1.0.${{ github.run_number }}
         docker build -t nutzkiller/gym:$VERSION .
         docker tag nutzkiller/gym:$VERSION nutzkiller/gym:latest
     
     - name: Push Docker image to Docker Hub
       run: |
-        VERSION=$(date +%Y%m%d%H%M%S)-${GITHUB_RUN_NUMBER}
+        VERSION=v1.0.${{ github.run_number }}
         docker push nutzkiller/gym:$VERSION
         docker push nutzkiller/gym:latest
     
