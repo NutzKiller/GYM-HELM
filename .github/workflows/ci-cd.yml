@@ -73,7 +73,7 @@ jobs:
           docker rm gym_app || true
           
           echo "Running the new Docker container..."
-          docker run -d --rm --name gym_app -p 80:80 nutzkiller/gym:latest
+          docker run -d --rm --name gym_app -p 5000:5000 nutzkiller/gym:latest
           
           # Optional: Restart a service after container deployment
           echo "Restarting related service..."
