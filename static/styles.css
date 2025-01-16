@@ -1,0 +1,110 @@
+/* Reset some default styles */
+body, ul {
+    margin: 0;
+    padding: 0;
+    list-style-type: none;
+}
+
+/* Overall body styling */
+body {
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(135deg, #1e3c72, #2a5298); /* Cool gradient background */
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+/* Main title styling */
+h1 {
+    font-size: 2.5em;
+    text-align: center;
+    margin-bottom: 30px;
+    color: #f0f0f0;
+    text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.7);
+    padding: 10px 20px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Main container for the workout plan */
+.container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 3 boxes per row */
+    gap: 20px; /* Space between boxes */
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.5);
+}
+
+/* Box styling */
+.day-box {
+    background: rgba(255, 255, 255, 0.15);
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+/* Hover effect for the boxes */
+.day-box:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: scale(1.05);
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.5);
+    cursor: pointer;
+}
+
+/* Title styling for each day */
+.day-box strong {
+    display: block;
+    font-size: 1.5em;
+    margin-bottom: 15px;
+    padding: 10px 15px;
+    border-radius: 8px;
+    color: #fff;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* Day header colors */
+.day-box:nth-child(1) strong { background: #ff6f61; } /* Monday - Coral */
+.day-box:nth-child(2) strong { background: #ff6f61; } /* Tuesday - Light Blue */
+.day-box:nth-child(3) strong { background: #ff6f61; } /* Wednesday - Sand Orange */
+.day-box:nth-child(4) strong { background: #ff6f61; } /* Thursday - Teal */
+.day-box:nth-child(5) strong { background: #ff6f61; } /* Friday - Red Clay */
+.day-box:nth-child(6) strong { background: #ff6f61; } /* Saturday - Soft Blue */
+
+/* List of exercises */
+ul {
+    padding: 0;
+    text-align: left;
+}
+
+li {
+    background: rgba(255, 255, 255, 0.15);
+    padding: 8px 12px;
+    margin: 6px 0;
+    border-radius: 8px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+/* Hover effect for exercises */
+li:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.03);
+    box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.4);
+    cursor: pointer;
+}
+
+/* Footer style */
+footer {
+    margin-top: 20px;
+    text-align: center;
+    font-size: 0.9em;
+    color: rgba(255, 255, 255, 0.7);
+    grid-column: span 3; /* Make footer span the full width */
+}

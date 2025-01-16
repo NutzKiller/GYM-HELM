@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/styles.css">
+    <title>Weekly Workout Plan</title>
+</head>
+<body>
+    <h1>Your Skinny Bitch Workout Plan</h1>
+    <div class="container">
+        {% for day, exercises in weekly_plan.items() %}
+        <div class="day-box">
+            <strong>{{ day }}</strong>
+            <ul>
+                {% for exercise in exercises %}
+                <li>{{ exercise }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endfor %}
+    </div>
+    <footer>
+        <p>Stay Strong 💪 - Your Weekly Plan</p>
+    </footer>
+</body>
+</html>
