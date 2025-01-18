@@ -3,8 +3,8 @@ name: CI/CD Workflow
 on:
   push:
     branches:
-      - main  # Trigger on pushes to main
-  workflow_dispatch:  # Allow manual runs if needed
+      - main
+  workflow_dispatch:
 
 jobs:
   build_and_deploy:
@@ -16,25 +16,25 @@ jobs:
         
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
-      
+
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-      
+
       - name: Build Docker image
         run: |
           VERSION=v1.0.${{ github.run_number }}
           docker build -t nutzkiller/gym:$VERSION .
           docker tag nutzkiller/gym:$VERSION nutzkiller/gym:latest
-      
+
       - name: Push Docker image to Docker Hub
         run: |
           VERSION=v1.0.${{ github.run_number }}
           docker push nutzkiller/gym:$VERSION
           docker push nutzkiller/gym:latest
-      
+
       - name: Log in to EC2 and deploy
         uses: appleboy/ssh-action@v0.1.5
         with:
@@ -42,30 +42,24 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
           script: |
-            echo "=== Checking if Docker is installed on EC2 ==="
-            if ! command -v docker &> /dev/null; then
-              echo "Docker not found, installing..."
-              sudo yum update -y
-              sudo yum install -y docker
-              sudo service docker start
-              sudo systemctl enable docker
-            else
-              echo "Docker already installed."
-            fi
+            echo "=== Ensuring Docker is installed on EC2 ==="
+            sudo yum update -y
+            sudo yum install -y docker python3 python3-pip python3-libs
+            sudo service docker start
+            sudo systemctl enable docker
 
-            echo "=== Checking if docker-compose is installed on EC2 via pip ==="
+            echo "=== Checking if docker-compose is installed via pip ==="
             if ! command -v docker-compose &> /dev/null; then
-              echo "Installing python3-pip and docker-compose..."
-              sudo yum install -y python3-pip
+              echo "Installing docker-compose via pip..."
+              # Sometimes you need extra libs for crypt() with python3.7
+              # if missing, also do: sudo yum install -y libcrypt
               sudo pip3 install --force-reinstall --upgrade docker-compose
-              echo "docker-compose installed via pip!"
             else
-              echo "docker-compose already installed."
+              echo "docker-compose is already installed."
             fi
 
-            echo "=== Adding $USER to Docker group (optional) ==="
-            sudo usermod -aG docker $USER || true
-            # We won't do 'newgrp' here because it's a non-interactive shell.
+            echo "=== Adding ec2-user to Docker group (optional) ==="
+            sudo usermod -aG docker ec2-user || true
 
             echo "=== Logging in to Docker Hub on EC2 ==="
             docker login -u "${{ secrets.DOCKER_USERNAME }}" -p "${{ secrets.DOCKER_PASSWORD }}"
@@ -77,11 +71,17 @@ jobs:
             docker stop gym_app || true
             docker rm gym_app || true
 
+            # CREATE the directory if it doesn't exist
+            echo "=== Ensuring /home/ec2-user/gym directory exists ==="
+            sudo mkdir -p /home/ec2-user/gym
+            # Make ec2-user own it, so we can cd into it
+            sudo chown ec2-user:ec2-user /home/ec2-user/gym
+
             echo "=== Running docker-compose ==="
-            # IMPORTANT: Adjust this path to wherever docker-compose.yml actually lives on your EC2
             cd /home/ec2-user/gym
 
-            # Pull updated images and start containers in the background
+            # You should have a docker-compose.yml in /home/ec2-user/gym
+            # If you haven't copied it up, do so. Then:
             docker-compose pull
             docker-compose up -d
 
