@@ -1,46 +1,45 @@
 {% extends 'base.html' %}
 {% block content %}
-<h1 class="section-title">My Workout Plan</h1>
-<p class="plan-type-info">Current Plan: <strong>{{ plan_type.upper() }}</strong></p>
 
-<div class="change-plan-btn-wrap">
-  <a href="{{ url_for('choose_plan') }}" class="change-plan-btn">Change Plan</a>
+<h1 class="section-title">My Workout</h1>
+<p class="plan-type-info">Current Plan: {{ plan_type|upper }}</p>
+
+<div style="display:flex; justify-content:flex-end; gap:1rem; margin-bottom:1rem;">
+  <a class="reroll-button" href="{{ url_for('reroll') }}">Re-roll My Plan</a>
+  <a class="choose-plan-btn" href="{{ url_for('choose_plan') }}">Change Plan</a>
 </div>
 
-{% if not plan %}
-  <p>You have no plan selected. <a href="{{ url_for('choose_plan') }}">Choose one</a>.</p>
-{% else %}
-  <div class="reroll-btn-wrap">
-    <a class="reroll-button" href="{{ url_for('reroll') }}">Re-roll My Plan</a>
-  </div>
-
-  {# Decide which grid class to use #}
+{% if plan %}
   {% if plan_type == 'full_body' %}
     <div class="plan-wrapper grid-fullbody">
   {% elif plan_type == 'ab' %}
     <div class="plan-wrapper grid-ab">
-  {% elif plan_type == 'abc' %}
+  {% elif plan_type == 'ppl' or plan_type == 'abc' %}
     <div class="plan-wrapper grid-abc">
   {% else %}
     <div class="plan-wrapper">
   {% endif %}
   
     {% for day, exercises in plan.items() %}
-      <div class="day-box">
-        <h2>{{ day }}</h2>
-        <ul>
-          {% for ex in exercises %}
-            {% set parts = ex.split(" - ") %}
-            {% set ex_name = parts[0] %}
-            {% set ex_sets = parts[1] if parts|length > 1 else "" %}
-            <li>
-              <a href="{{ url_for('exercise_detail', exercise_name=ex_name) }}">{{ ex_name }}</a>
-              - {{ ex_sets }}
-            </li>
-          {% endfor %}
-        </ul>
-      </div>
+    <div class="day-box">
+      <h2>{{ day }}</h2>
+      <ul>
+        {% for ex in exercises %}
+        {% set parts = ex.split(" - ") %}
+        {% set ex_name = parts[0] %}
+        {% set ex_sets = parts[1] if parts|length > 1 else "" %}
+        <li>
+          <a href="{{ url_for('exercise_detail', exercise_name=ex_name) }}">{{ ex_name }}</a> - {{ ex_sets }}
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
     {% endfor %}
   </div>
+{% else %}
+  <p>You have no plan selected. <a href="{{ url_for('choose_plan') }}">Choose one now</a>.</p>
 {% endif %}
+{% endblock %}
+{% block bottom %}
+{{ super() }}
 {% endblock %}

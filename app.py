@@ -4,7 +4,7 @@ import random
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 
 app = Flask(__name__)
-app.secret_key = "CHANGE_ME_TO_SOMETHING_SECRET"
+app.secret_key = "CHANGE_ME_TO_SOMETHING_SECURE"
 
 DATA_EXERCISES_FILE = 'exercises.json'
 DATA_PRODUCTS_FILE = 'products.json'
@@ -97,7 +97,7 @@ def update_user_profile(username, public_name, phone, email, birthday, profile_p
     save_users(users)
 
 # -------------------------------------------------
-#         WORKOUT PLAN GENERATION LOGIC
+#       HELPER FUNCTIONS FOR WORKOUT LOGIC
 # -------------------------------------------------
 def get_exercise_by_name(exercises, name):
     for ex in exercises:
@@ -109,36 +109,47 @@ def pick_one_from_pair(exercises, name1, name2):
     chosen_name = random.choice([name1, name2])
     return get_exercise_by_name(exercises, chosen_name)
 
+# -------------------------------------------------
+# FULL BODY PLAN
+# -------------------------------------------------
 def generate_full_body_plan(ex):
     def single():
         w = []
-        c_main = get_exercise_by_name(ex, "Smith Machine Incline Bench Press")
-        if c_main: w.append(c_main)
-        chest_pool = [i for i in ex if i['topic']=='chest' and c_main and i['name']!=c_main['name']]
+        # chest => smith machine incline + 1 random
+        chest_main = get_exercise_by_name(ex, "Smith Machine Incline Bench Press")
+        if chest_main: w.append(chest_main)
+        chest_pool = [c for c in ex if c['topic']=='chest' and c['name'] != chest_main['name']]
         if chest_pool:
             w.append(random.choice(chest_pool))
-        # back
+
+        # back => 1 of (pull ups,pully), 1 of (smith machine rows,t-bar row)
         b1 = pick_one_from_pair(ex, "Pull Ups","Pully")
         b2 = pick_one_from_pair(ex, "Smith machine Rows","T-Bar row")
         if b1: w.append(b1)
         if b2: w.append(b2)
-        # legs
+
+        # legs => 1 of (calf raises,sitting calf raises), plus smith machine squat
         l1 = pick_one_from_pair(ex, "Calf Raises","Sitting Calf Raises")
         if l1: w.append(l1)
         sq = get_exercise_by_name(ex, "Smith Machine Squat")
         if sq: w.append(sq)
-        # shoulders
+
+        # shoulders => 1 of (sitting lateral,cable lateral), plus shoulder press
         s1 = pick_one_from_pair(ex, "Sitting Lateral raise","Cable Lateral raise")
         sp = get_exercise_by_name(ex, "Shoulder Press")
         if s1: w.append(s1)
         if sp: w.append(sp)
-        # biceps
+
+        # bicep => cable curl
         bc = get_exercise_by_name(ex, "Cable Curl")
         if bc: w.append(bc)
-        # triceps
-        tr = get_exercise_by_name(ex, "Cable tricep pushdown")
-        if tr: w.append(tr)
-        return [f"{i['name']} - 3 sets" for i in w if i]
+
+        # tricep => cable tricep pushdown
+        tri = get_exercise_by_name(ex, "Cable tricep pushdown")
+        if tri: w.append(tri)
+
+        final = [f"{x['name']} - 3 sets" for x in w if x]
+        return final
 
     return {
         "Monday": single(),
@@ -146,174 +157,186 @@ def generate_full_body_plan(ex):
         "Friday": single()
     }
 
+# -------------------------------------------------
+# A/B PLAN
+# -------------------------------------------------
 def generate_ab_plan(ex):
-    def genA():
-        w=[]
+    def workout_A():
+        w = []
+        # chest(3)
         cm = get_exercise_by_name(ex, "Smith Machine Incline Bench Press")
         if cm: w.append(cm)
-        c_pair = pick_one_from_pair(ex, "Cable Crossover", "Flys")
-        if c_pair: w.append(c_pair)
-        chest_pool = [i for i in ex if i['topic']=='chest' 
-                      and cm and i['name']!=cm['name']
-                      and c_pair and i['name']!=c_pair['name']]
+        chest_pair = pick_one_from_pair(ex, "Cable Crossover","Flys")
+        if chest_pair: w.append(chest_pair)
+        chest_pool = [c for c in ex if c['topic']=='chest' and c['name'] not in [cm['name'], chest_pair['name']]]
         if chest_pool:
             w.append(random.choice(chest_pool))
 
-        # shoulders
-        sp = get_exercise_by_name(ex, "Shoulder Press")
-        if sp: w.append(sp)
-        s_pair = pick_one_from_pair(ex, "Sitting Lateral raise", "Cable Lateral raise")
-        if s_pair: w.append(s_pair)
-
-        # triceps
-        tr_main = get_exercise_by_name(ex, "Cable tricep pushdown")
-        if tr_main: w.append(tr_main)
-        tri_pool = [i for i in ex if i['topic']=='triceps' and tr_main and i['name']!=tr_main['name']]
-        if tri_pool:
-            w.append(random.choice(tri_pool))
-        return [f"{i['name']} - 3 sets" for i in w if i]
-
-    def genB():
-        w=[]
-        b1 = pick_one_from_pair(ex, "Pull Ups","Pully")
-        if b1: w.append(b1)
-        b2 = pick_one_from_pair(ex, "Smith machine Rows","T-Bar row")
-        if b2: w.append(b2)
-        back_pool = [i for i in ex if i['topic']=='back' 
-                     and b1 and i['name']!=b1['name']
-                     and b2 and i['name']!=b2['name']]
-        if back_pool:
-            w.append(random.choice(back_pool))
-        # legs
-        sq = get_exercise_by_name(ex, "Smith Machine Squat")
-        if sq: w.append(sq)
-        calf = pick_one_from_pair(ex, "Calf Raises","Sitting Calf Raises")
-        if calf: w.append(calf)
-        legs_pool = [i for i in ex if i['topic']=='legs'
-                     and sq and i['name']!=sq['name']
-                     and calf and i['name']!=calf['name']]
-        if legs_pool:
-            w.append(random.choice(legs_pool))
-        # biceps
-        bc_main = get_exercise_by_name(ex, "Cable Curl")
-        if bc_main: w.append(bc_main)
-        bicep_pool = [i for i in ex if i['topic']=='biceps' and bc_main and i['name']!=bc_main['name']]
-        if bicep_pool:
-            w.append(random.choice(bicep_pool))
-
-        final=[]
-        used_4=False
-        for i in w:
-            if i and i['topic']=='legs' and not used_4:
-                final.append(f"{i['name']} - 4 sets")
-                used_4=True
-            else:
-                final.append(f"{i['name']} - 3 sets")
-        return final
-
-    return {
-        "Sunday": genA(),
-        "Monday": genB(),
-        "Wednesday": genA(),
-        "Thursday": genB()
-    }
-
-def generate_abc_plan(ex):
-    def genA():
-        w=[]
-        c_main = get_exercise_by_name(ex, "Smith Machine Incline Bench Press")
-        c_pair = pick_one_from_pair(ex, "Cable Crossover","Flys")
-        if c_main: w.append(c_main)
-        if c_pair: w.append(c_pair)
-        c_pool = [i for i in ex if i['topic']=='chest'
-                  and c_main and i['name']!=c_main['name']
-                  and c_pair and i['name']!=c_pair['name']]
-        if c_pool:
-            w.append(random.choice(c_pool))
-
+        # shoulders(2)
         sp = get_exercise_by_name(ex, "Shoulder Press")
         if sp: w.append(sp)
         s_pair = pick_one_from_pair(ex, "Sitting Lateral raise","Cable Lateral raise")
         if s_pair: w.append(s_pair)
 
-        t_main = get_exercise_by_name(ex, "Cable tricep pushdown")
-        tri_pool = [i for i in ex if i['topic']=='triceps'
-                    and t_main and i['name']!=t_main['name']]
-        if t_main: w.append(t_main)
+        # tricep(2)
+        tri_main = get_exercise_by_name(ex, "Cable tricep pushdown")
+        if tri_main: w.append(tri_main)
+        tri_pool = [t for t in ex if t['topic']=='triceps' and t['name'] != tri_main['name']]
         if tri_pool:
             w.append(random.choice(tri_pool))
 
-        chest_list = w[:3]
-        shoulder_list = w[3:5]
-        tri_list = w[5:]
+        final = [f"{x['name']} - 3 sets" for x in w if x]
+        return final
+
+    def workout_B():
+        w = []
+        # back(3)
+        b1 = pick_one_from_pair(ex, "Pull Ups","Pully")
+        b2 = pick_one_from_pair(ex, "Smith machine Rows","T-Bar row")
+        if b1: w.append(b1)
+        if b2: w.append(b2)
+        back_pool = [bk for bk in ex if bk['topic']=='back' and bk['name'] not in [b1['name'], b2['name']]]
+        if back_pool:
+            w.append(random.choice(back_pool))
+
+        # legs(3 => 1 w/4 sets, 2 w/3 sets)
+        sq = get_exercise_by_name(ex, "Smith Machine Squat")
+        if sq: w.append(sq)
+        calf = pick_one_from_pair(ex, "Calf Raises","Sitting Calf Raises")
+        if calf: w.append(calf)
+        legs_pool = [lg for lg in ex if lg['topic']=='legs' and lg['name'] not in [sq['name'], calf['name']]]
+        if legs_pool:
+            w.append(random.choice(legs_pool))
+
+        # bicep(2 => must contain cable curl)
+        bc_main = get_exercise_by_name(ex, "Cable Curl")
+        if bc_main: w.append(bc_main)
+        bicep_pool = [b for b in ex if b['topic']=='biceps' and b['name'] != bc_main['name']]
+        if bicep_pool:
+            w.append(random.choice(bicep_pool))
 
         final=[]
+        used_4=False
+        for item in w:
+            if item and item['topic']=='legs' and not used_4:
+                final.append(f"{item['name']} - 4 sets")
+                used_4=True
+            else:
+                final.append(f"{item['name']} - 3 sets")
+        return final
+
+    return {
+        "Sunday": workout_A(),
+        "Monday": workout_B(),
+        "Wednesday": workout_A(),
+        "Thursday": workout_B()
+    }
+
+# -------------------------------------------------
+# PPL => old "a/b/c"
+# -------------------------------------------------
+def generate_ppl_plan(ex):
+    """
+    6 workouts => 2 of each (A,B,C).
+    A => chest(3 ex => 1x4 sets + 2x3 sets), shoulders(2 => 1x4 +1x3), tricep(2 =>4 sets each)
+    B => back(4 =>3 sets), bicep(3 =>3 sets)
+    C => legs(5/6 =>3-4 sets, total <=17)
+    with the fixed constraints
+    """
+    def genA():
+        w=[]
         # chest
-        if len(chest_list)==3:
-            c_4 = random.choice(chest_list)
-            for c in chest_list:
-                if c == c_4: final.append(f"{c['name']} - 4 sets")
-                else: final.append(f"{c['name']} - 3 sets")
-        else:
-            for c in chest_list:
-                final.append(f"{c['name']} - 3 sets")
+        c_main = get_exercise_by_name(ex, "Smith Machine Incline Bench Press")
+        c_pair = pick_one_from_pair(ex, "Cable Crossover","Flys")
+        if c_main: w.append(c_main)
+        if c_pair: w.append(c_pair)
+        c_pool = [ch for ch in ex if ch['topic']=='chest' and ch['name'] not in [c_main['name'], c_pair['name']]]
+        if c_pool:
+            w.append(random.choice(c_pool))
 
         # shoulders
+        sp = get_exercise_by_name(ex, "Shoulder Press")
+        s_pair = pick_one_from_pair(ex, "Sitting Lateral raise","Cable Lateral raise")
+        if sp: w.append(sp)
+        if s_pair: w.append(s_pair)
+
+        # triceps => 2 => 4 sets each
+        t_main = get_exercise_by_name(ex, "Cable tricep pushdown")
+        tri_pool = [t for t in ex if t['topic']=='triceps' and t['name']!= t_main['name']]
+        tri_list = []
+        if t_main: tri_list.append(t_main)
+        if tri_pool:
+            tri_list.append(random.choice(tri_pool))
+
+        chest_list = w[:3]
+        shoulder_list = w[3:5]
+        final=[]
+        # chest => 1 is 4 sets, 2 are 3 sets
+        if len(chest_list)==3:
+            c_4 = random.choice(chest_list)
+            for c_ in chest_list:
+                if c_==c_4:
+                    final.append(f"{c_['name']} - 4 sets")
+                else:
+                    final.append(f"{c_['name']} - 3 sets")
+        else:
+            for c_ in chest_list:
+                final.append(f"{c_['name']} - 3 sets")
+
+        # shoulders => 2 => 1 is 4 sets, 1 is 3 sets
         if len(shoulder_list)==2:
             s_4 = random.choice(shoulder_list)
-            for s in shoulder_list:
-                if s==s_4: final.append(f"{s['name']} - 4 sets")
-                else: final.append(f"{s['name']} - 3 sets")
+            for s_ in shoulder_list:
+                if s_==s_4:
+                    final.append(f"{s_['name']} - 4 sets")
+                else:
+                    final.append(f"{s_['name']} - 3 sets")
         else:
-            for s in shoulder_list:
-                final.append(f"{s['name']} - 3 sets")
+            for s_ in shoulder_list:
+                final.append(f"{s_['name']} - 3 sets")
 
-        # triceps
-        for t in tri_list:
-            final.append(f"{t['name']} - 4 sets")
+        # triceps => 2 => 4 sets each
+        for tri_ in tri_list:
+            final.append(f"{tri_['name']} - 4 sets")
 
         return final
 
     def genB():
         w=[]
+        # back => 4 => 3 sets
         b1 = pick_one_from_pair(ex, "Pull Ups","Pully")
-        b2 = get_exercise_by_name(ex, "Smith machine Rows")
+        sm_r = get_exercise_by_name(ex, "Smith machine Rows")
         if b1: w.append(b1)
-        if b2: w.append(b2)
-        back_pool = [i for i in ex if i['topic']=='back'
-                     and b1 and i['name']!=b1['name']
-                     and b2 and i['name']!=b2['name']]
+        if sm_r: w.append(sm_r)
+        back_pool = [bk for bk in ex if bk['topic']=='back' and bk['name'] not in [b1['name'] if b1 else None, sm_r['name'] if sm_r else None]]
         w.extend(random.sample(back_pool, min(2,len(back_pool))))
 
+        # bicep => 3 => 3 sets => must contain cable curl
         bc_main = get_exercise_by_name(ex, "Cable Curl")
-        if bc_main:
-            w.append(bc_main)
-        bicep_pool = [i for i in ex if i['topic']=='biceps'
-                      and bc_main and i['name']!=bc_main['name']]
+        if bc_main: w.append(bc_main)
+        bicep_pool = [b for b in ex if b['topic']=='biceps' and b['name']!= bc_main['name']]
         w.extend(random.sample(bicep_pool, min(2,len(bicep_pool))))
 
-        return [f"{i['name']} - 3 sets" for i in w if i]
+        final = [f"{x['name']} - 3 sets" for x in w if x]
+        return final
 
     def genC():
+        # legs => 5 or 6 => 3-4 sets, total <=17
         w=[]
         sq = get_exercise_by_name(ex, "Smith Machine Squat")
-        calf = pick_one_from_pair(ex, "Calf Raises","Sitting Calf Raises")
-        lc = pick_one_from_pair(ex, "Standing Leg Curl","Leg Curl")
         if sq: w.append(sq)
+        calf = pick_one_from_pair(ex, "Calf Raises","Sitting Calf Raises")
         if calf: w.append(calf)
+        lc = pick_one_from_pair(ex, "Standing Leg Curl","Leg Curl")
         if lc: w.append(lc)
 
-        legs_pool = [i for i in ex if i['topic']=='legs'
-                     and sq and i['name']!=sq['name']
-                     and calf and i['name']!=calf['name']
-                     and lc and i['name']!=lc['name']]
-
+        legs_pool = [lg for lg in ex if lg['topic']=='legs' and lg['name'] not in [sq['name'] if sq else None, calf['name'] if calf else None, lc['name'] if lc else None]]
         how_many = random.choice([2,3])
         extra = random.sample(legs_pool, min(how_many,len(legs_pool)))
         w.extend(extra)
 
         sets_arr=[3]*len(w)
-        total = 3*len(w)
+        total=3*len(w)
         if total>17:
             idx = random.randint(0,len(w)-1)
             sets_arr[idx]=2
@@ -324,11 +347,101 @@ def generate_abc_plan(ex):
                 if sets_arr[idx]<4:
                     sets_arr[idx]+=1
                     total+=1
-                if total==17: break
+                if total==17:
+                    break
 
         final=[]
-        for exi, st in zip(w, sets_arr):
-            final.append(f"{exi['name']} - {st} sets")
+        for e_, st in zip(w, sets_arr):
+            final.append(f"{e_['name']} - {st} sets")
+        return final
+
+    return {
+        "Monday": genA(),
+        "Tuesday": genB(),
+        "Wednesday": genC(),
+        "Friday": genA(),
+        "Saturday": genB(),
+        "Sunday": genC()
+    }
+
+# -------------------------------------------------
+# NEW A/B/C => now with the correct logic: 
+# a => chest(4 ex => 3 sets each), back(4 ex =>3 sets each)
+# b => shoulders(3 =>3 sets), bicep(3 =>3 sets), tricep(3 =>3 sets)
+# c => legs(5 or 6 =>3 sets each)
+# fixed ex for each muscle group
+def generate_new_abc_plan(ex):
+    def genA():
+        w=[]
+        # chest(4)
+        # always Smith Machine Incline, + exactly 1 of (Flys, Cable Crossover)
+        chest_main = get_exercise_by_name(ex, "Smith Machine Incline Bench Press")
+        if chest_main: w.append(chest_main)
+        chest_pair = pick_one_from_pair(ex, "Flys","Cable Crossover")
+        if chest_pair: w.append(chest_pair)
+        # we have 2, pick 2 more from chest pool
+        chest_pool = [c for c in ex if c['topic']=='chest' and c['name'] not in [chest_main['name'], chest_pair['name']]]
+        additional_chest = random.sample(chest_pool, min(2, len(chest_pool)))
+        w.extend(additional_chest)
+
+        # back(4)
+        # 1 of (pull ups,pully) + 1 of (smith machine rows,t-bar row) => 2
+        b1 = pick_one_from_pair(ex, "Pull Ups","Pully")
+        b2 = pick_one_from_pair(ex, "Smith machine Rows","T-Bar row")
+        if b1: w.append(b1)
+        if b2: w.append(b2)
+        # pick 2 more from back pool
+        back_pool = [bk for bk in ex if bk['topic']=='back' and bk['name'] not in [b1['name'] if b1 else None, b2['name'] if b2 else None]]
+        add_back = random.sample(back_pool, min(2, len(back_pool)))
+        w.extend(add_back)
+
+        # all 3 sets each
+        return [f"{xx['name']} - 3 sets" for xx in w if xx]
+
+    def genB():
+        w=[]
+        # shoulders(3) => always shoulder press + 1 of (Sitting Lateral or Cable Lateral)
+        sp = get_exercise_by_name(ex, "Shoulder Press")
+        if sp: w.append(sp)
+        s_pair = pick_one_from_pair(ex, "Sitting Lateral raise","Cable Lateral raise")
+        if s_pair: w.append(s_pair)
+        # we have 2 => pick 1 more from shoulders
+        s_pool = [s for s in ex if s['topic']=='shoulder' and s['name'] not in [sp['name'] if sp else None, s_pair['name'] if s_pair else None]]
+        if s_pool:
+            w.append(random.choice(s_pool))
+
+        # bicep(3) => always Cable Curl => 1 => pick 2 more
+        bc_main = get_exercise_by_name(ex, "Cable Curl")
+        if bc_main: w.append(bc_main)
+        bicep_pool = [b for b in ex if b['topic']=='biceps' and b['name']!= bc_main['name']]
+        w.extend(random.sample(bicep_pool, min(2,len(bicep_pool))))
+
+        # tricep(3) => always cable tricep pushdown => 1 => pick 2 more
+        tri_main = get_exercise_by_name(ex, "Cable tricep pushdown")
+        if tri_main: w.append(tri_main)
+        tri_pool = [t for t in ex if t['topic']=='triceps' and t['name']!=tri_main['name']]
+        w.extend(random.sample(tri_pool, min(2,len(tri_pool))))
+
+        return [f"{xx['name']} - 3 sets" for xx in w if xx]
+
+    def genC():
+        w=[]
+        # legs(5 or 6 => 3 sets each)
+        # always smith machine squat, leg extention, plus 1 of (standing leg curl or leg curl)
+        sq = get_exercise_by_name(ex, "Smith Machine Squat")
+        le = get_exercise_by_name(ex, "Leg extention")
+        pair_leg = pick_one_from_pair(ex, "Standing Leg Curl","Leg Curl")
+        if sq: w.append(sq)
+        if le: w.append(le)
+        if pair_leg: w.append(pair_leg)
+
+        # we have 3 so far => pick 2 or 3 more => total 5 or 6
+        legs_pool = [lg for lg in ex if lg['topic']=='legs' and lg['name'] not in [sq['name'] if sq else None, le['name'] if le else None, pair_leg['name'] if pair_leg else None]]
+        how_many_more = random.choice([2,3])
+        extra = random.sample(legs_pool, min(how_many_more,len(legs_pool)))
+        w.extend(extra)
+
+        final = [f"{xx['name']} - 3 sets" for xx in w if xx]
         return final
 
     return {
@@ -342,16 +455,19 @@ def generate_abc_plan(ex):
 
 def generate_workout_plan(plan_type):
     ex = load_exercises()
-    if plan_type=='full_body':
+    if plan_type == 'full_body':
         return generate_full_body_plan(ex)
-    elif plan_type=='ab':
+    elif plan_type == 'ab':
         return generate_ab_plan(ex)
-    elif plan_type=='abc':
-        return generate_abc_plan(ex)
-    return {}
+    elif plan_type == 'ppl':
+        return generate_ppl_plan(ex)
+    elif plan_type == 'abc':
+        return generate_new_abc_plan(ex)
+    else:
+        return {}
 
 # -------------------------------------------------
-#                  CART LOGIC
+# CART / SHOP
 # -------------------------------------------------
 def init_cart():
     if 'cart' not in session:
@@ -365,7 +481,7 @@ def clear_cart():
     session['cart'] = []
 
 # -------------------------------------------------
-#                 FLASK ROUTES
+# FLASK ROUTES
 # -------------------------------------------------
 @app.route('/')
 def home():
@@ -384,11 +500,11 @@ def my_workout():
 
     plan_type = user.get('selected_plan')
     if not plan_type:
-        flash("No workout plan selected. Please choose one.")
+        flash("No workout plan selected yet.")
         return redirect(url_for('choose_plan'))
 
-    plan = user.get('workout_data', {})
-    return render_template('my_workout.html', plan_type=plan_type, plan=plan)
+    plan_data = user.get('workout_data', {})
+    return render_template('my_workout.html', plan_type=plan_type, plan=plan_data)
 
 @app.route('/signup', methods=['GET','POST'])
 def signup():
@@ -411,10 +527,10 @@ def signup():
 
         ok = register_user(username, password, public_name, birthday, phone, email, profile_photo, location, bio, weight, height)
         if ok:
-            flash("Account created successfully! Please log in.")
+            flash("Signup successful! You can now login.")
             return redirect(url_for('login'))
         else:
-            flash("That username is already taken.")
+            flash("Username already exists. Choose a different one.")
             return redirect(url_for('signup'))
     return render_template('signup.html')
 
@@ -442,16 +558,24 @@ def logout():
 @app.route('/choose_plan', methods=['GET','POST'])
 def choose_plan():
     if 'username' not in session:
-        flash("Log in first.")
+        flash("Please log in first.")
         return redirect(url_for('login'))
-    if request.method=='POST':
+
+    if request.method == 'POST':
         plan_type = request.form.get('plan_type')
         if plan_type:
-            plan_data = generate_workout_plan(plan_type)
-            update_user_workout(session['username'], plan_type, plan_data)
-            flash(f"{plan_type.upper()} plan selected!")
+            new_plan = generate_workout_plan(plan_type)
+            update_user_workout(session['username'], plan_type, new_plan)
+            flash(f"You selected the {plan_type.upper()} plan!")
             return redirect(url_for('my_workout'))
-    return render_template('choose_plan.html')
+
+    plan_options = [
+        {"id": "full_body", "label": "Full Body"},
+        {"id": "ab",        "label": "A/B"},
+        {"id": "ppl",       "label": "Push, Pull, Legs"},
+        {"id": "abc",       "label": "A/B/C (New)"}
+    ]
+    return render_template('choose_plan.html', plan_options=plan_options)
 
 @app.route('/reroll')
 def reroll():
@@ -460,18 +584,19 @@ def reroll():
         return redirect(url_for('login'))
     user = find_user(session['username'])
     if not user or not user.get('selected_plan'):
-        flash("No plan to re-roll. Choose one first.")
+        flash("No plan to re-roll.")
         return redirect(url_for('choose_plan'))
 
-    new_plan = generate_workout_plan(user['selected_plan'])
-    update_user_workout(user['username'], user['selected_plan'], new_plan)
-    flash("Workout re-rolled!")
+    plan_type = user['selected_plan']
+    new_plan = generate_workout_plan(plan_type)
+    update_user_workout(user['username'], plan_type, new_plan)
+    flash("Your plan has been re-generated!")
     return redirect(url_for('my_workout'))
 
 @app.route('/profile', methods=['GET','POST'])
 def profile():
     if 'username' not in session:
-        flash("Log in to view profile.")
+        flash("Please log in to view your profile.")
         return redirect(url_for('login'))
 
     user = find_user(session['username'])
@@ -480,7 +605,7 @@ def profile():
         return redirect(url_for('home'))
 
     is_edit_mode = request.args.get('edit','0') == '1'
-    if request.method=='POST':
+    if request.method == 'POST':
         public_name = request.form.get('public_name')
         phone = request.form.get('phone')
         email = request.form.get('email')
@@ -492,21 +617,15 @@ def profile():
         height = request.form.get('height') or ""
 
         update_user_profile(user['username'], public_name, phone, email, birthday, profile_photo, location, bio, weight, height)
-        flash("Profile updated.")
+        flash("Profile updated!")
         return redirect(url_for('profile'))
 
     return render_template('profile.html', user=user, is_edit_mode=is_edit_mode)
 
-# ------------------------------
-#  EXERCISE LIBRARY with Subnav
-# ------------------------------
 @app.route('/exercise_library')
 def exercise_library_all():
-    """
-    'All' exercises in one page, subnav for each muscle group
-    """
     ex = load_exercises()
-    muscle_groups = ['chest','shoulder','triceps','back','biceps','legs']
+    muscle_groups = ['Chest','Shoulder','Triceps','Back','Biceps','Legs']
     return render_template('exercise_library_index.html',
                            exercises=ex,
                            muscle_groups=muscle_groups,
@@ -514,11 +633,8 @@ def exercise_library_all():
 
 @app.route('/exercise_library/<muscle>')
 def exercise_library_muscle(muscle):
-    """
-    Filter exercises by muscle group, or show all if muscle='all'
-    """
     ex = load_exercises()
-    muscle_groups = ['chest','shoulder','triceps','back','biceps','legs']
+    muscle_groups = ['Chest','Shoulder','Triceps','Back','Biceps','Legs']
     if muscle.lower() == 'all':
         filtered = ex
     else:
@@ -526,30 +642,23 @@ def exercise_library_muscle(muscle):
     return render_template('exercise_library_index.html',
                            exercises=filtered,
                            muscle_groups=muscle_groups,
-                           current_muscle=muscle)
+                           current_muscle=muscle.capitalize())
 
 @app.route('/exercise/<exercise_name>')
 def exercise_detail(exercise_name):
     ex = load_exercises()
     match = None
-    for e in ex:
-        if e['name'].lower() == exercise_name.lower():
-            match = e
+    for item in ex:
+        if item['name'].lower() == exercise_name.lower():
+            match = item
             break
     if not match:
         flash("Exercise not found.")
         return redirect(url_for('exercise_library_all'))
     return render_template('exercise_detail.html', exercise=match)
 
-# -----------
-#  SHOP SUBNAV
-# -----------
 @app.route('/shop')
 def shop_index():
-    """
-    /shop => show all products
-    Also has subnav with categories
-    """
     init_cart()
     all_products = load_products()
     categories = sorted({p['category'] for p in all_products})
@@ -560,9 +669,6 @@ def shop_index():
 
 @app.route('/shop/<cat>')
 def shop_category(cat):
-    """
-    /shop/<cat> => show only products in that category or all if cat='all'
-    """
     init_cart()
     all_products = load_products()
     categories = sorted({p['category'] for p in all_products})
@@ -579,7 +685,8 @@ def shop_category(cat):
 def add_item_to_cart(product_id):
     add_to_cart(product_id)
     flash("Product added to cart.")
-    return redirect(url_for('shop_index'))
+    ref = request.referrer or url_for('shop_index')
+    return redirect(ref + "#stay")
 
 @app.route('/cart')
 def cart():
@@ -613,13 +720,11 @@ def checkout():
             total += prod['price']
 
     if request.method == 'POST':
-        # user "submits" the order
         flash("Thank you! Your fake purchase has been processed.")
-        return redirect(url_for('cart')) 
+        return redirect(url_for('cart'))
 
     return render_template('checkout.html', items=items, total=round(total, 2))
 
-# Optional progress route
 @app.route('/progress')
 def progress():
     if 'username' not in session:

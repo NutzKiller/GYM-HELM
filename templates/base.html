@@ -2,10 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Your Skinny Bitch Program</title>
+  <title>Your skinny bitch workout program</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
+
+  <!-- CENTERED NAV -->
   <nav class="main-nav">
     <ul>
       <li><a href="{{ url_for('home') }}">Home</a></li>
@@ -31,9 +33,9 @@
     {% with messages = get_flashed_messages() %}
       {% if messages %}
         <ul>
-          {% for msg in messages %}
-            <li>{{ msg }}</li>
-          {% endfor %}
+        {% for msg in messages %}
+          <li>{{ msg }}</li>
+        {% endfor %}
         </ul>
       {% endif %}
     {% endwith %}
@@ -43,8 +45,13 @@
     {% block content %}{% endblock %}
   </div>
 
-  <footer class="main-footer">
-    <p>&copy; 2025 Your Skinny Bitch Program - All rights reserved.</p>
-  </footer>
+  <div class="bottom-extra">
+    {% block bottom %}
+    <hr>
+    <p>© 2025 Your skinny bitch workout program - All rights reserved.</p>
+    <p>For inquiries: info@skinnybitch.com</p>
+    {% endblock %}
+  </div>
+
 </body>
 </html>

@@ -2,7 +2,6 @@
 {% block content %}
 <h2>Exercise Library</h2>
 
-<!-- Library Subnav -->
 <div class="library-subnav">
   <a href="{{ url_for('exercise_library_muscle', muscle='all') }}"
      {% if current_muscle|lower == 'all' %}style="background:#1c2a48; color:#fff"{% endif %}>
@@ -28,4 +27,7 @@
     </div>
   {% endfor %}
 </div>
+{% endblock %}
+{% block bottom %}
+{{ super() }}
 {% endblock %}

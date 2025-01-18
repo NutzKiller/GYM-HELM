@@ -1,24 +1,22 @@
 {% extends 'base.html' %}
 {% block content %}
 <h2>Choose Your Workout Plan</h2>
-<div class="choose-plan-container">
-  <form method="POST" class="choose-plan-form">
-    <div class="radio-group">
-      <label>
-        <input type="radio" name="plan_type" value="full_body" required> Full Body
-      </label>
-    </div>
-    <div class="radio-group">
-      <label>
-        <input type="radio" name="plan_type" value="ab"> A / B
-      </label>
-    </div>
-    <div class="radio-group">
-      <label>
-        <input type="radio" name="plan_type" value="abc"> A / B / C
-      </label>
-    </div>
-    <button type="submit">Generate Plan</button>
-  </form>
+
+<div class="plan-choice-grid" style="margin-top:2rem;">
+  {% for option in plan_options %}
+  <div class="plan-choice-card">
+    <h3>{{ option.label }}</h3>
+    <p style="font-size:0.9rem;">
+      Some quick info about {{ option.label }} plan.
+    </p>
+    <form method="POST">
+      <input type="hidden" name="plan_type" value="{{ option.id }}">
+      <button class="choose-plan-btn" type="submit">Select This Plan</button>
+    </form>
+  </div>
+  {% endfor %}
 </div>
+{% endblock %}
+{% block bottom %}
+{{ super() }}
 {% endblock %}

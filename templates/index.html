@@ -1,22 +1,39 @@
 {% extends 'base.html' %}
 {% block content %}
+
 <div class="hero-section">
   <div class="hero-content">
-    <h1>Transform Your Body with Science</h1>
-    <p>Welcome to <strong>Your Skinny Bitch Program</strong>, the ultimate solution for those who demand results!</p>
-    <p>Our workouts are backed by research and proven methods, helping you get stronger, leaner, and more confident.</p>
-    <a href="{{ url_for('choose_plan') }}" class="hero-btn">Get Started</a>
+    <h1>Your Skinny Bitch Workout Program</h1>
+    <p style="font-size:1.2rem;">
+      Transform your body with our science-based methods — flexible workout splits, 
+      comprehensive exercise library, and a fun re-roll feature to keep it fresh!
+    </p>
+    <a class="hero-btn" href="{{ url_for('choose_plan') }}">Get Started</a>
   </div>
 </div>
 
 <div class="home-info">
-  <h2>What's Inside?</h2>
+  <h2>Welcome to Your Next Chapter</h2>
+  <p>
+    Explore Full Body, A/B, Push/Pull/Legs, or the brand-new A/B/C plan. 
+    Collect the best equipment in our Shop, manage your profile with weight and height, 
+    and never stop progressing. 
+  </p>
+
+  <img src="https://via.placeholder.com/600x300?text=Placeholder+Image" 
+       alt="Placeholder" style="max-width:100%; margin-top:1rem; border:2px solid #333;">
+  
+  <h3 style="color:#1c2a48; margin-top:1.5rem;">Why Choose Us?</h3>
   <ul class="benefits-list">
-    <li>A selection of proven splits: Full Body, A/B, or A/B/C</li>
-    <li>Re-roll feature to keep your workouts exciting</li>
-    <li>Detailed exercise library to master proper form</li>
-    <li>Built-in shop for top-quality fitness gear</li>
+    <li>Multi-Plan flexibility: Full Body, A/B, PPL, A/B/C</li>
+    <li>Seamless re-roll option for variety</li>
+    <li>Shop for essential gear with a single click</li>
+    <li>Exercise library with video placeholders (coming soon!)</li>
   </ul>
-  <p>Join us, and discover the difference that science-based training can make. It's time to level up!</p>
 </div>
+
+{% endblock %}
+{% block bottom %}
+{{ super() }}
+<p style="margin-top:1rem;">Join the revolution and get your best shape ever!</p>
 {% endblock %}

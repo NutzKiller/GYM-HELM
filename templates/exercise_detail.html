@@ -1,22 +1,25 @@
 {% extends 'base.html' %}
 {% block content %}
 <h2>{{ exercise.name }}</h2>
-<div class="exercise-video">
+<div class="exercise-video" style="margin:1rem 0;">
   <iframe width="560" height="315"
-    src="https://www.youtube.com/embed/VIDEO_ID?autoplay=0&mute=1"
-    title="{{ exercise.name }} video"
-    frameborder="0"
-    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-    allowfullscreen>
+          src="https://www.youtube.com/embed/VIDEO_ID?autoplay=0&mute=1"
+          title="{{ exercise.name }} video"
+          frameborder="0"
+          allowfullscreen>
   </iframe>
 </div>
-
 <p><strong>Muscle Group:</strong> {{ exercise.topic }}</p>
 <p><strong>Category:</strong> {{ exercise.category }}</p>
-
-<p>This is a placeholder for a demonstration video or instructions on how to perform {{ exercise.name }} safely.</p>
-
 <p>
-  <a class="return-button" href="{{ url_for('exercise_library') }}">&larr; Return to Library</a>
+  A placeholder describing how to do {{ exercise.name }} with correct form, tips, etc.
 </p>
+<p>
+  <a class="return-button" href="{{ url_for('exercise_library_all') }}#stay">
+    &larr; Return to Library
+  </a>
+</p>
+{% endblock %}
+{% block bottom %}
+{{ super() }}
 {% endblock %}
