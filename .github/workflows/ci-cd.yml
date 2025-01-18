@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main  # Trigger on pushes to main
-  workflow_dispatch:  # Also allow manual runs
+  workflow_dispatch:  # Allow manual runs if needed
 
 jobs:
   build_and_deploy:
@@ -57,14 +57,14 @@ jobs:
             if ! command -v docker-compose &> /dev/null; then
               echo "Installing python3-pip and docker-compose..."
               sudo yum install -y python3-pip
-              sudo pip3 install docker-compose
+              sudo pip3 install --force-reinstall --upgrade docker-compose
               echo "docker-compose installed via pip!"
             else
               echo "docker-compose already installed."
             fi
 
-            echo "=== Adding ec2-user to Docker group (optional) ==="
-            sudo usermod -aG docker ec2-user || true
+            echo "=== Adding $USER to Docker group (optional) ==="
+            sudo usermod -aG docker $USER || true
             # We won't do 'newgrp' here because it's a non-interactive shell.
 
             echo "=== Logging in to Docker Hub on EC2 ==="
@@ -78,7 +78,7 @@ jobs:
             docker rm gym_app || true
 
             echo "=== Running docker-compose ==="
-            # Replace this path with wherever your docker-compose.yml is actually located on EC2
+            # IMPORTANT: Adjust this path to wherever docker-compose.yml actually lives on your EC2
             cd /home/ec2-user/gym
 
             # Pull updated images and start containers in the background
