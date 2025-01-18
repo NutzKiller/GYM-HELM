@@ -39,12 +39,12 @@ jobs:
         uses: appleboy/ssh-action@v0.1.5
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
+          username: ${{ secrets.EC2_USER }}  # e.g. ec2-user
           key: ${{ secrets.EC2_KEY }}
           script: |
             echo "=== Updating and installing dependencies ==="
             sudo yum update -y
-            # Install docker, python/pip, git, plus any needed libs
+            # Install docker, python/pip, git, plus needed libs
             sudo yum install -y docker python3 python3-pip python3-libs git
 
             echo "=== Starting & enabling Docker ==="
@@ -63,7 +63,7 @@ jobs:
             sudo usermod -aG docker ec2-user || true
 
             echo "=== Logging in to Docker Hub on EC2 ==="
-            docker login -u "${{ secrets.DOCKER_USERNAME }}" -p "${{ secrets.DOCKER_PASSWORD }}"
+            docker login -u \"${{ secrets.DOCKER_USERNAME }}\" -p \"${{ secrets.DOCKER_PASSWORD }}\"
 
             echo "=== Pulling latest Docker image ==="
             docker pull nutzkiller/gym:latest
@@ -72,18 +72,30 @@ jobs:
             docker stop gym_app || true
             docker rm gym_app || true
 
-            echo "=== Cloning or updating repo in /home/ec2-user/gym ==="
+            echo "=== Handling /home/ec2-user/gym ==="
             if [ ! -d /home/ec2-user/gym ]; then
-              # Clone if folder doesn't exist
+              # No folder at all => clone from scratch
+              echo "No /home/ec2-user/gym folder => cloning fresh"
               sudo mkdir -p /home/ec2-user
               cd /home/ec2-user
               sudo git clone https://github.com/NutzKiller/gym.git
               sudo chown -R ec2-user:ec2-user gym
             else
-              # Pull latest changes if folder already exists
-              cd /home/ec2-user/gym
-              sudo git pull
-              cd ..
+              # There is a /home/ec2-user/gym => check if it's a proper git repo
+              if [ ! -d /home/ec2-user/gym/.git ]; then
+                # Not a valid git repo => remove it and clone fresh
+                echo "/home/ec2-user/gym exists but no .git => removing & cloning"
+                sudo rm -rf /home/ec2-user/gym
+                cd /home/ec2-user
+                sudo git clone https://github.com/NutzKiller/gym.git
+                sudo chown -R ec2-user:ec2-user gym
+              else
+                # It's a valid git repo => just pull latest changes
+                echo "/home/ec2-user/gym is a valid git repo => pulling updates"
+                cd /home/ec2-user/gym
+                sudo git pull
+                cd ..
+              fi
             fi
 
             # Make sure ec2-user owns the gym folder
@@ -92,8 +104,13 @@ jobs:
             echo "=== Running docker-compose from the cloned repo ==="
             cd /home/ec2-user/gym
 
-            # If your docker-compose.yml is in a subfolder, e.g. /home/ec2-user/gym/docker-compose.yml
-            # then we are in the correct dir now. If it's deeper, cd there or adapt these commands.
+            # If docker-compose.yml is in the root of the repo, this is correct
+            # If it's in a subfolder, e.g. /home/ec2-user/gym/deploy/docker-compose.yml, cd there or adapt
+            if [ ! -f docker-compose.yml ]; then
+              echo "ERROR: No docker-compose.yml found in /home/ec2-user/gym. Aborting."
+              exit 1
+            fi
+
             docker-compose pull
             docker-compose up -d
 
