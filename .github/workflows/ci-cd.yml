@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout code
+      - name: Check out code
         uses: actions/checkout@v2
         
       - name: Set up Docker Buildx
@@ -42,17 +42,15 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
           script: |
-            echo "=== Ensuring Docker is installed on EC2 ==="
+            echo "=== Ensuring Docker & Python are installed on EC2 ==="
             sudo yum update -y
             sudo yum install -y docker python3 python3-pip python3-libs
             sudo service docker start
             sudo systemctl enable docker
 
-            echo "=== Checking if docker-compose is installed via pip ==="
+            echo "=== Checking if docker-compose is installed (via pip) ==="
             if ! command -v docker-compose &> /dev/null; then
               echo "Installing docker-compose via pip..."
-              # Sometimes you need extra libs for crypt() with python3.7
-              # if missing, also do: sudo yum install -y libcrypt
               sudo pip3 install --force-reinstall --upgrade docker-compose
             else
               echo "docker-compose is already installed."
@@ -64,29 +62,39 @@ jobs:
             echo "=== Logging in to Docker Hub on EC2 ==="
             docker login -u "${{ secrets.DOCKER_USERNAME }}" -p "${{ secrets.DOCKER_PASSWORD }}"
 
-            echo "=== Pulling latest image ==="
+            echo "=== Pulling latest Docker image ==="
             docker pull nutzkiller/gym:latest
 
             echo "=== Stopping old container if exists ==="
             docker stop gym_app || true
             docker rm gym_app || true
 
-            # CREATE the directory if it doesn't exist
-            echo "=== Ensuring /home/ec2-user/gym directory exists ==="
-            sudo mkdir -p /home/ec2-user/gym
-            # Make ec2-user own it, so we can cd into it
-            sudo chown ec2-user:ec2-user /home/ec2-user/gym
+            echo "=== Cloning or updating repo in /home/ec2-user/gym ==="
+            if [ ! -d /home/ec2-user/gym ]; then
+              # Clone if folder doesn't exist
+              sudo mkdir -p /home/ec2-user
+              cd /home/ec2-user
+              sudo git clone https://github.com/NutzKiller/gym.git
+              sudo chown -R ec2-user:ec2-user gym
+            else
+              # Pull latest changes if folder already exists
+              cd /home/ec2-user/gym
+              sudo git pull
+              cd ..
+            fi
 
-            echo "=== Running docker-compose ==="
+            # Make sure ec2-user owns the gym folder
+            sudo chown -R ec2-user:ec2-user /home/ec2-user/gym
+
+            echo "=== Running docker-compose from the cloned repo ==="
             cd /home/ec2-user/gym
-
-            # You should have a docker-compose.yml in /home/ec2-user/gym
-            # If you haven't copied it up, do so. Then:
+            # If your docker-compose.yml is in a subfolder, cd there or adjust
             docker-compose pull
             docker-compose up -d
 
-            echo "=== Verifying the app is responding on port 5000 ==="
-            sleep 5
+            echo "=== Waiting 10s for the container to start ==="
+            sleep 10
+            echo "=== Checking if app responds on port 5000 ==="
             if curl -f http://localhost:5000; then
               echo "App is up and responding!"
             else
