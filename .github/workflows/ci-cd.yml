@@ -53,13 +53,12 @@ jobs:
               echo "Docker already installed."
             fi
 
-            echo "=== Checking if docker-compose is installed on EC2 ==="
+            echo "=== Checking if docker-compose is installed on EC2 via pip ==="
             if ! command -v docker-compose &> /dev/null; then
-              echo "Installing docker-compose..."
-              sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" \
-                -o /usr/local/bin/docker-compose
-              sudo chmod +x /usr/local/bin/docker-compose
-              echo "docker-compose installed!"
+              echo "Installing python3-pip and docker-compose..."
+              sudo yum install -y python3-pip
+              sudo pip3 install docker-compose
+              echo "docker-compose installed via pip!"
             else
               echo "docker-compose already installed."
             fi
@@ -79,7 +78,7 @@ jobs:
             docker rm gym_app || true
 
             echo "=== Running docker-compose ==="
-            # Adjust this path to wherever your docker-compose.yml actually is:
+            # Replace this path with wherever your docker-compose.yml is actually located on EC2
             cd /home/ec2-user/gym
 
             # Pull updated images and start containers in the background
