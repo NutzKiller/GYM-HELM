@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Choose Your Workout Plan</h2>
+<div class="choose-plan-container">
+  <form method="POST" class="choose-plan-form">
+    <div class="radio-group">
+      <label>
+        <input type="radio" name="plan_type" value="full_body" required> Full Body
+      </label>
+    </div>
+    <div class="radio-group">
+      <label>
+        <input type="radio" name="plan_type" value="ab"> A / B
+      </label>
+    </div>
+    <div class="radio-group">
+      <label>
+        <input type="radio" name="plan_type" value="abc"> A / B / C
+      </label>
+    </div>
+    <button type="submit">Generate Plan</button>
+  </form>
+</div>
+{% endblock %}

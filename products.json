@@ -1,0 +1,227 @@
+[
+    {
+      "id": 1,
+      "name": "Adjustable Dumbbells (Pair)",
+      "price": 129.99,
+      "desc": "Save space with adjustable weight dumbbells.",
+      "category": "Equipment"
+    },
+    {
+      "id": 2,
+      "name": "Kettlebell (20 lbs)",
+      "price": 34.99,
+      "desc": "Great for functional and dynamic movements.",
+      "category": "Equipment"
+    },
+    {
+      "id": 3,
+      "name": "Pull-Up Bar",
+      "price": 29.99,
+      "desc": "Portable bar that fits most door frames.",
+      "category": "Equipment"
+    },
+    {
+      "id": 4,
+      "name": "Foam Roller",
+      "price": 24.99,
+      "desc": "Ideal for muscle recovery and massage.",
+      "category": "Accessories"
+    },
+    {
+      "id": 5,
+      "name": "Fitness Resistance Band",
+      "price": 15.99,
+      "desc": "High-quality band for strength training.",
+      "category": "Accessories"
+    },
+    {
+      "id": 6,
+      "name": "Weighted Jump Rope",
+      "price": 14.99,
+      "desc": "Add extra intensity to your cardio routine.",
+      "category": "Accessories"
+    },
+    {
+      "id": 7,
+      "name": "Gym Gloves",
+      "price": 12.99,
+      "desc": "Protect your hands and improve grip.",
+      "category": "Accessories"
+    },
+    {
+      "id": 8,
+      "name": "Protein Shaker Bottle",
+      "price": 9.99,
+      "desc": "Convenient shaker for protein or BCAA mix.",
+      "category": "Supplements"
+    },
+    {
+      "id": 9,
+      "name": "Pre-Workout Powder",
+      "price": 39.99,
+      "desc": "Boost energy and focus for intense workouts.",
+      "category": "Supplements"
+    },
+    {
+      "id": 10,
+      "name": "Whey Protein",
+      "price": 49.99,
+      "desc": "High-quality protein for muscle building.",
+      "category": "Supplements"
+    },
+    {
+      "id": 11,
+      "name": "Squat Plug",
+      "price": 69.69,
+      "desc": "An unforgettable lower-body workout accessory.",
+      "category": "Equipment"
+    },
+    {
+      "id": 12,
+      "name": "Ab Wheel Roller",
+      "price": 17.99,
+      "desc": "Strengthen your abs and core effectively.",
+      "category": "Accessories"
+    },
+    {
+      "id": 13,
+      "name": "Treadmill Lubricant",
+      "price": 8.99,
+      "desc": "Keeps your treadmill running smoothly.",
+      "category": "Accessories"
+    },
+    {
+      "id": 14,
+      "name": "Workout Tank Top (Men)",
+      "price": 19.99,
+      "desc": "Moisture-wicking fabric, perfect for the gym.",
+      "category": "Clothing"
+    },
+    {
+      "id": 15,
+      "name": "Workout Leggings (Women)",
+      "price": 29.99,
+      "desc": "High waist, squat-proof, comfy stretch.",
+      "category": "Clothing"
+    },
+    {
+      "id": 16,
+      "name": "Running Shorts (Unisex)",
+      "price": 14.99,
+      "desc": "Lightweight, breathable material for cardio.",
+      "category": "Clothing"
+    },
+    {
+      "id": 17,
+      "name": "Fitness Hoodie",
+      "price": 34.99,
+      "desc": "Stylish hoodie for indoor/outdoor workouts.",
+      "category": "Clothing"
+    },
+    {
+      "id": 18,
+      "name": "Weightlifting Belt",
+      "price": 24.99,
+      "desc": "Offers lower back support during heavy lifts.",
+      "category": "Accessories"
+    },
+    {
+      "id": 19,
+      "name": "Dip Belt",
+      "price": 29.99,
+      "desc": "Add extra weight for dips and pull-ups.",
+      "category": "Accessories"
+    },
+    {
+      "id": 20,
+      "name": "BCAA Powder",
+      "price": 19.99,
+      "desc": "Essential amino acids for muscle recovery.",
+      "category": "Supplements"
+    },
+    {
+      "id": 21,
+      "name": "Resistance Band Set (5-pack)",
+      "price": 22.99,
+      "desc": "Different levels of tension for progressive training.",
+      "category": "Accessories"
+    },
+    {
+      "id": 22,
+      "name": "Ankle Weights",
+      "price": 15.99,
+      "desc": "Add resistance to lower-body exercises.",
+      "category": "Accessories"
+    },
+    {
+      "id": 23,
+      "name": "Gym Towel (Quick Dry)",
+      "price": 9.99,
+      "desc": "Super-absorbent microfiber towel.",
+      "category": "Accessories"
+    },
+    {
+      "id": 24,
+      "name": "Massage Gun",
+      "price": 89.99,
+      "desc": "Deep tissue percussion for muscle relief.",
+      "category": "Equipment"
+    },
+    {
+      "id": 25,
+      "name": "Speed Ladder",
+      "price": 16.99,
+      "desc": "Improve footwork and agility.",
+      "category": "Accessories"
+    },
+    {
+      "id": 26,
+      "name": "Hydration Backpack",
+      "price": 29.99,
+      "desc": "Stay hydrated during long runs or hikes.",
+      "category": "Accessories"
+    },
+    {
+      "id": 27,
+      "name": "Post-Workout Carb Powder",
+      "price": 25.99,
+      "desc": "Replenish glycogen for faster recovery.",
+      "category": "Supplements"
+    },
+    {
+      "id": 28,
+      "name": "Yoga Blocks (Set of 2)",
+      "price": 14.99,
+      "desc": "Enhance stability and flexibility in poses.",
+      "category": "Accessories"
+    },
+    {
+      "id": 29,
+      "name": "Rowing Machine",
+      "price": 299.99,
+      "desc": "Full-body cardio and strength workout.",
+      "category": "Equipment"
+    },
+    {
+      "id": 30,
+      "name": "Exercise Bike",
+      "price": 249.99,
+      "desc": "Low-impact indoor cycling for cardio.",
+      "category": "Equipment"
+    },
+    {
+      "id": 31,
+      "name": "Compression Socks",
+      "price": 12.99,
+      "desc": "Improve circulation and reduce fatigue.",
+      "category": "Clothing"
+    },
+    {
+      "id": 32,
+      "name": "Workout T-Shirt (Unisex)",
+      "price": 18.99,
+      "desc": "Breathable, lightweight fabric for any exercise.",
+      "category": "Clothing"
+    }
+  ]
+  

@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Shopping Cart</h2>
+
+{% if items %}
+  <ul class="cart-list">
+    {% for item in items %}
+    <li>
+      <strong>{{ item.name }}</strong> - ${{ item.price }}
+    </li>
+    {% endfor %}
+  </ul>
+  <p><strong>Total:</strong> ${{ total }}</p>
+
+  <div class="cart-actions">
+    <a href="{{ url_for('clear_cart_route') }}" class="cart-clear-btn">Clear Cart</a>
+    <a href="{{ url_for('checkout') }}" class="checkout-btn">Checkout</a>
+  </div>
+{% else %}
+  <p>Your cart is currently empty.</p>
+{% endif %}
+{% endblock %}

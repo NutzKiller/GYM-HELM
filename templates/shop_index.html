@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Shop</h2>
+
+<!-- Shop Subnav -->
+<div class="shop-subnav">
+  <a href="{{ url_for('shop_category', cat='all') }}"
+     {% if current_cat|lower == 'all' %}style="background:#1c2a48; color:#fff"{% endif %}>
+    All
+  </a>
+  {% for cat in categories %}
+    <a href="{{ url_for('shop_category', cat=cat) }}"
+       {% if current_cat|lower == cat|lower %}style="background:#1c2a48; color:#fff"{% endif %}>
+      {{ cat }}
+    </a>
+  {% endfor %}
+</div>
+
+<div class="shop-grid">
+  {% for product in products %}
+    <div class="product-card">
+      <h3>{{ product.name }}</h3>
+      <p>$ {{ product.price }}</p>
+      <p>{{ product.desc }}</p>
+      <a class="shop-btn" href="{{ url_for('add_item_to_cart', product_id=product.id) }}">Add to Cart</a>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

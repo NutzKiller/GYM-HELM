@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>{{ user.public_name or user.username }}'s Profile</h2>
+
+{% if not is_edit_mode %}
+  <!-- READ-ONLY VIEW -->
+  <div class="profile-container">
+    {% if user.profile_photo %}
+      <img class="profile-photo" src="{{ user.profile_photo }}" alt="Profile Photo">
+    {% else %}
+      <img class="profile-photo" src="https://via.placeholder.com/150/cccccc/000000?text=No+Photo" alt="Profile Photo">
+    {% endif %}
+    <div class="profile-details">
+      <p><strong>Username:</strong> {{ user.username }}</p>
+      <p><strong>Display Name:</strong> {{ user.public_name }}</p>
+      <p><strong>Birthday:</strong> {{ user.birthday }}</p>
+      <p><strong>Phone:</strong> {{ user.phone }}</p>
+      <p><strong>Email:</strong> {{ user.email }}</p>
+      <p><strong>Location:</strong> {{ user.location }}</p>
+      <p><strong>Bio:</strong> {{ user.bio }}</p>
+      <p><strong>Weight:</strong> {{ user.weight }} kg</p>
+      <p><strong>Height:</strong> {{ user.height }} cm</p>
+    </div>
+  </div>
+  <a class="edit-profile-btn" href="{{ url_for('profile', edit=1) }}">Edit Profile</a>
+
+{% else %}
+  <!-- EDIT MODE -->
+  <form method="POST" class="profile-form">
+    <label>Display Name</label>
+    <input type="text" name="public_name" value="{{ user.public_name }}">
+
+    <label>Birthday</label>
+    <input type="date" name="birthday" value="{{ user.birthday }}">
+
+    <label>Phone</label>
+    <input type="text" name="phone" value="{{ user.phone }}">
+
+    <label>Email</label>
+    <input type="email" name="email" value="{{ user.email }}">
+
+    <label>Profile Photo (URL)</label>
+    <input type="text" name="profile_photo" value="{{ user.profile_photo }}">
+
+    <label>Location</label>
+    <input type="text" name="location" value="{{ user.location }}">
+
+    <label>Bio</label>
+    <textarea name="bio" rows="2">{{ user.bio }}</textarea>
+
+    <label>Weight (kg)</label>
+    <input type="number" step="0.1" name="weight" value="{{ user.weight }}">
+
+    <label>Height (cm)</label>
+    <input type="number" step="0.1" name="height" value="{{ user.height }}">
+
+    <button type="submit">Save Changes</button>
+  </form>
+{% endif %}
+
+{% endblock %}

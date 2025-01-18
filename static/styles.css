@@ -1,110 +1,471 @@
-/* Reset some default styles */
-body, ul {
+/* RESET / BASIC */
+* {
     margin: 0;
     padding: 0;
-    list-style-type: none;
-}
-
-/* Overall body styling */
-body {
-    font-family: 'Arial', sans-serif;
-    background: linear-gradient(135deg, #1e3c72, #2a5298); /* Cool gradient background */
-    color: #fff;
+    box-sizing: border-box;
+  }
+  
+  body {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    background: #fff;
+    color: #333;
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    min-height: 100vh;
-    padding: 20px;
-}
-
-/* Main title styling */
-h1 {
-    font-size: 2.5em;
-    text-align: center;
-    margin-bottom: 30px;
-    color: #f0f0f0;
-    text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.7);
-    padding: 10px 20px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.2);
-}
-
-/* Main container for the workout plan */
-.container {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr); /* 3 boxes per row */
-    gap: 20px; /* Space between boxes */
-    padding: 20px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.5);
-}
-
-/* Box styling */
-.day-box {
-    background: rgba(255, 255, 255, 0.15);
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.3);
-    transition: all 0.3s ease;
-    text-align: center;
-}
-
-/* Hover effect for the boxes */
-.day-box:hover {
-    background: rgba(255, 255, 255, 0.25);
-    transform: scale(1.05);
-    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.5);
-    cursor: pointer;
-}
-
-/* Title styling for each day */
-.day-box strong {
-    display: block;
-    font-size: 1.5em;
-    margin-bottom: 15px;
-    padding: 10px 15px;
-    border-radius: 8px;
+  }
+  
+  /* LINKS */
+  a {
+    text-decoration: none;
+    color: #1c2a48; /* dark navy for main link color */
+  }
+  a:hover {
+    color: #314366;
+  }
+  a:visited {
+    color: #1c2a48;
+  }
+  
+  /* NAVBAR */
+  .main-nav {
+    background: #f7f7f7;
+    border-bottom: 2px solid #1c2a48;
+  }
+  .main-nav ul {
+    list-style: none;
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    padding: 1rem;
+  }
+  .main-nav ul li a {
+    font-weight: 500;
+    padding: 0.3rem 0.6rem;
+    color: #333;
+    transition: background 0.3s, color 0.3s;
+  }
+  .main-nav ul li a:hover {
+    background: #1c2a48;
     color: #fff;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
-}
-
-/* Day header colors */
-.day-box:nth-child(1) strong { background: #ff6f61; } /* Monday - Coral */
-.day-box:nth-child(2) strong { background: #ff6f61; } /* Tuesday - Light Blue */
-.day-box:nth-child(3) strong { background: #ff6f61; } /* Wednesday - Sand Orange */
-.day-box:nth-child(4) strong { background: #ff6f61; } /* Thursday - Teal */
-.day-box:nth-child(5) strong { background: #ff6f61; } /* Friday - Red Clay */
-.day-box:nth-child(6) strong { background: #ff6f61; } /* Saturday - Soft Blue */
-
-/* List of exercises */
-ul {
-    padding: 0;
-    text-align: left;
-}
-
-li {
-    background: rgba(255, 255, 255, 0.15);
-    padding: 8px 12px;
-    margin: 6px 0;
-    border-radius: 8px;
-    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
-    transition: all 0.3s ease;
-}
-
-/* Hover effect for exercises */
-li:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: scale(1.03);
-    box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.4);
-    cursor: pointer;
-}
-
-/* Footer style */
-footer {
-    margin-top: 20px;
+    border-radius: 4px;
+  }
+  
+  /* FLASH MESSAGES */
+  .flash-messages {
     text-align: center;
-    font-size: 0.9em;
-    color: rgba(255, 255, 255, 0.7);
-    grid-column: span 3; /* Make footer span the full width */
-}
+    margin: 0.5rem 0;
+  }
+  .flash-messages ul {
+    display: inline-block;
+    list-style: none;
+    background: #fff6c2;
+    padding: 0.5rem 1rem;
+    border: 1px solid #ffd700;
+    border-radius: 5px;
+  }
+  
+  /* CONTENT WRAPPER */
+  .content {
+    flex: 1;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+  }
+  
+  /* FOOTER */
+  .main-footer {
+    background: #f7f7f7;
+    border-top: 2px solid #1c2a48;
+    color: #333;
+    text-align: center;
+    padding: 1rem;
+  }
+  
+  /* HERO SECTION (Dark BG) */
+  .hero-section {
+    background: #1c2a48; /* dark navy */
+    color: #fff;
+    padding: 3rem 1rem;
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  .hero-content h1 {
+    font-size: 2.2rem;
+    margin-bottom: 1.2rem;
+  }
+  .hero-content p {
+    margin: 0.8rem 0;
+    line-height: 1.5;
+  }
+  /* The main hero button = white background, dark text. */
+  .hero-btn {
+    background: #fff;
+    color: #1c2a48;
+    padding: 0.6rem 1.2rem;
+    border: 2px solid #1c2a48;
+    border-radius: 4px;
+    font-weight: 600;
+    margin-top: 1rem;
+    transition: background 0.3s, color 0.3s;
+  }
+  .hero-btn:hover {
+    background: #1c2a48;
+    color: #fff;
+  }
+  
+  /* HOME INFO */
+  .home-info {
+    margin: 2rem 0;
+  }
+  .benefits-list {
+    margin: 1rem 0;
+    padding-left: 1.5rem;
+    list-style: disc;
+  }
+  .benefits-list li {
+    margin-bottom: 0.5rem;
+  }
+  
+  /* SECTION TITLES */
+  .section-title {
+    text-align: center;
+    font-size: 1.8rem;
+    color: #1c2a48;
+    margin-bottom: 1rem;
+  }
+  .plan-type-info {
+    text-align: center;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    color: #555;
+  }
+  
+  /* BUTTON STYLES (WHITE BASE, DARK TEXT) */
+  .reroll-button,
+  .change-plan-btn,
+  .edit-profile-btn,
+  .cart-clear-btn,
+  .checkout-btn,
+  .return-button,
+  .shop-btn {
+    background: #fff;
+    color: #1c2a48;
+    border: 2px solid #1c2a48;
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    font-weight: 500;
+    transition: background 0.3s, color 0.3s;
+    display: inline-block;
+    text-align: center;
+  }
+  .reroll-button:hover,
+  .change-plan-btn:hover,
+  .edit-profile-btn:hover,
+  .cart-clear-btn:hover,
+  .checkout-btn:hover,
+  .return-button:hover,
+  .shop-btn:hover {
+    background: #1c2a48;
+    color: #fff;
+  }
+  
+  .change-plan-btn-wrap {
+    text-align: right;
+    margin-bottom: 1rem;
+  }
+  
+  /* FORMS */
+  .auth-form,
+  .choose-plan-form,
+  .profile-form,
+  .checkout-form {
+    display: flex;
+    flex-direction: column;
+    max-width: 500px;
+    margin: 1.5rem auto;
+  }
+  .radio-group {
+    margin-bottom: 0.8rem;
+  }
+  .choose-plan-form label {
+    font-weight: 500;
+    color: #1c2a48;
+  }
+  .choose-plan-form button {
+    margin-top: 1rem;
+    background: #fff;
+    color: #1c2a48;
+    border: 2px solid #1c2a48;
+    border-radius: 4px;
+    padding: 0.4rem 0.8rem;
+    font-weight: 500;
+    transition: background 0.3s, color 0.3s;
+  }
+  .choose-plan-form button:hover {
+    background: #1c2a48;
+    color: #fff;
+  }
+  .auth-form label,
+  .profile-form label,
+  .checkout-form label {
+    margin-top: 0.8rem;
+    font-weight: bold;
+    color: #1c2a48;
+  }
+  .auth-form input,
+  .choose-plan-form input,
+  .profile-form input,
+  .profile-form textarea,
+  .checkout-form input {
+    padding: 0.4rem;
+    margin-top: 0.2rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  
+  /* PLAN WRAPPER LAYOUTS */
+  .plan-wrapper {
+    display: grid;
+    gap: 1rem;
+  }
+  /* Full Body: 3 columns in 1 row => 3 workouts total */
+  .grid-fullbody {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  /* AB: 2 columns x 2 rows => 4 workouts total */
+  .grid-ab {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  /* ABC: 3 columns x 2 rows => 6 workouts total */
+  .grid-abc {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .day-box {
+    background: #f9f9f9;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 1rem;
+    transition: transform 0.3s;
+  }
+  .day-box:hover {
+    transform: scale(1.02);
+  }
+  .day-box h2 {
+    font-size: 1.1rem;
+    color: #1c2a48;
+    margin-bottom: 0.5rem;
+  }
+  .day-box li {
+    margin: 0.3rem 0;
+  }
+  .day-box li:hover {
+    background: #dce4f2;
+    border-radius: 4px;
+    padding-left: 0.4rem;
+  }
+  
+  /* PROFILE */
+  .profile-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    background: #f9f9f9;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+  .profile-photo {
+    width: 150px;
+    height: 150px;
+    object-fit: cover;
+    border: 2px solid #1c2a48;
+    border-radius: 50%;
+  }
+  .profile-details p {
+    margin: 0.4rem 0;
+  }
+  
+  /* EXERCISE LIBRARY SUBNAV */
+  .library-subnav {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  .library-subnav a {
+    background: #fff;
+    color: #1c2a48;
+    border: 2px solid #1c2a48;
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+  .library-subnav a:hover {
+    background: #1c2a48;
+    color: #fff;
+  }
+  
+  /* EXERCISE LIBRARY */
+  .group-title {
+    margin-top: 2rem;
+    font-size: 1.3rem;
+    color: #1c2a48;
+  }
+  .exercise-library-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .exercise-card {
+    background: #f9f9f9;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    width: 220px; /* fixed width for uniform size */
+    min-height: 120px; /* consistent min-height */
+    padding: 1rem;
+    transition: transform 0.3s;
+  }
+  .exercise-card:hover {
+    transform: scale(1.02);
+  }
+  .exercise-card h4 {
+    margin-bottom: 0.5rem;
+    color: #1c2a48;
+  }
+  .view-video-link {
+    color: #1c2a48;
+    font-weight: 500;
+  }
+  .view-video-link:hover {
+    text-decoration: underline;
+  }
+  
+  /* EXERCISE DETAIL */
+  .exercise-video {
+    margin: 1rem 0;
+    text-align: center;
+  }
+  
+  /* SHOP SUBNAV */
+  .shop-subnav {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  .shop-subnav a {
+    background: #fff;
+    color: #1c2a48;
+    border: 2px solid #1c2a48;
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+  .shop-subnav a:hover {
+    background: #1c2a48;
+    color: #fff;
+  }
+  
+  .category-title {
+    margin-top: 2rem;
+    font-size: 1.4rem;
+    color: #1c2a48;
+    text-decoration: underline;
+  }
+  .shop-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+  }
+  .product-card {
+    background: #f9f9f9;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 1rem;
+  }
+  .product-card h3 {
+    font-size: 1rem;
+    margin-bottom: 0.3rem;
+    color: #1c2a48;
+  }
+  
+  /* CART */
+  .cart-list {
+    list-style: none;
+    margin-bottom: 1rem;
+  }
+  .cart-list li {
+    background: #f9f9f9;
+    border: 1px solid #ccc;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    border-radius: 4px;
+  }
+  .cart-actions {
+    margin-top: 1rem;
+    display: flex;
+    gap: 1rem;
+  }
+  .cart-clear-btn {
+    background: #fff;
+    color: #1c2a48;
+    border: 2px solid #1c2a48;
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+  }
+  .cart-clear-btn:hover {
+    background: #1c2a48;
+    color: #fff;
+  }
+  
+  /* CHECKOUT */
+  .checkout-form {
+    max-width: 500px;
+    margin-top: 1rem;
+  }
+  .checkout-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  .checkout-submit {
+    background: #fff;
+    color: #1c2a48;
+    border: 2px solid #1c2a48;
+    padding: 0.4rem 1rem;
+    border-radius: 4px;
+    font-weight: 500;
+    transition: background 0.3s, color 0.3s;
+  }
+  .checkout-submit:hover {
+    background: #1c2a48;
+    color: #fff;
+  }
+  .return-to-cart {
+    background: #aaa;
+    color: #fff;
+    padding: 0.4rem 1rem;
+    border-radius: 4px;
+    text-align: center;
+  }
+  .return-to-cart:hover {
+    background: #888;
+  }
+  
+  /* RESPONSIVE LAYOUT */
+  @media (max-width: 768px) {
+    .shop-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .grid-fullbody, .grid-ab, .grid-abc {
+      grid-template-columns: 1fr; /* stack on smaller screens */
+    }
+  }
+  @media (max-width: 480px) {
+    .shop-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  

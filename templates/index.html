@@ -1,27 +1,22 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="/static/styles.css">
-    <title>Weekly Workout Plan</title>
-</head>
-<body>
-    <h1>Your Skinny Bitch Workout Plan</h1>
-    <div class="container">
-        {% for day, exercises in weekly_plan.items() %}
-        <div class="day-box">
-            <strong>{{ day }}</strong>
-            <ul>
-                {% for exercise in exercises %}
-                <li>{{ exercise }}</li>
-                {% endfor %}
-            </ul>
-        </div>
-        {% endfor %}
-    </div>
-    <footer>
-        <p>Stay Strong 💪 - Your Weekly Plan</p>
-    </footer>
-</body>
-</html>
+{% extends 'base.html' %}
+{% block content %}
+<div class="hero-section">
+  <div class="hero-content">
+    <h1>Transform Your Body with Science</h1>
+    <p>Welcome to <strong>Your Skinny Bitch Program</strong>, the ultimate solution for those who demand results!</p>
+    <p>Our workouts are backed by research and proven methods, helping you get stronger, leaner, and more confident.</p>
+    <a href="{{ url_for('choose_plan') }}" class="hero-btn">Get Started</a>
+  </div>
+</div>
+
+<div class="home-info">
+  <h2>What's Inside?</h2>
+  <ul class="benefits-list">
+    <li>A selection of proven splits: Full Body, A/B, or A/B/C</li>
+    <li>Re-roll feature to keep your workouts exciting</li>
+    <li>Detailed exercise library to master proper form</li>
+    <li>Built-in shop for top-quality fitness gear</li>
+  </ul>
+  <p>Join us, and discover the difference that science-based training can make. It's time to level up!</p>
+</div>
+{% endblock %}

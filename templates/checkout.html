@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Fake Checkout</h2>
+{% if items %}
+  <ul class="cart-list">
+    {% for item in items %}
+    <li>
+      <strong>{{ item.name }}</strong> - ${{ item.price }}
+    </li>
+    {% endfor %}
+  </ul>
+  <p><strong>Total:</strong> ${{ total }}</p>
+
+  <hr>
+  <h3>Enter Your Details</h3>
+  <form method="POST" class="checkout-form">
+    <label>Full Name</label>
+    <input type="text" name="full_name" required>
+
+    <label>Address</label>
+    <input type="text" name="address" required>
+
+    <label>City</label>
+    <input type="text" name="city" required>
+
+    <label>Postal Code</label>
+    <input type="text" name="postal_code" required>
+
+    <label>Phone</label>
+    <input type="text" name="phone" required>
+
+    <label>Credit Card</label>
+    <input type="text" name="credit_card" placeholder="**** **** **** 1234" required>
+
+    <div class="checkout-actions">
+      <button type="submit" class="checkout-submit">Submit Order</button>
+      <a href="{{ url_for('cart') }}" class="return-to-cart">Return to Cart</a>
+    </div>
+  </form>
+{% else %}
+  <p>Your cart is empty. <a href="{{ url_for('shop') }}">Go Shop</a></p>
+{% endif %}
+{% endblock %}

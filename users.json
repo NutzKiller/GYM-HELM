@@ -1,0 +1,68 @@
+[
+    {
+        "username": "noam",
+        "password": "1234",
+        "public_name": "GayLord",
+        "birthday": "2000-01-01",
+        "phone": "0500000000",
+        "email": "gabi@gabi.gabi",
+        "profile_photo": "",
+        "selected_plan": "abc",
+        "workout_data": {
+            "Monday": [
+                "Smith Machine Incline Bench Press - 4 sets",
+                "Flys - 3 sets",
+                "Bench Press - 3 sets",
+                "Shoulder Press - 3 sets",
+                "Sitting Lateral raise - 4 sets",
+                "Cable tricep pushdown - 4 sets",
+                "Skull Crushers - 4 sets"
+            ],
+            "Tuesday": [
+                "Pully - 3 sets",
+                "Smith machine Rows - 3 sets",
+                "T-Bar row - 3 sets",
+                "Machine row - 3 sets",
+                "Cable Curl - 3 sets",
+                "Preacher Curl - 3 sets",
+                "Sitting long Curl - 3 sets"
+            ],
+            "Wednesday": [
+                "Smith Machine Squat - 3 sets",
+                "Calf Raises - 3 sets",
+                "Leg Curl - 3 sets",
+                "Leg extention - 2 sets",
+                "Sitting Calf Raises - 3 sets",
+                "Bulgarian Split Squat - 3 sets"
+            ],
+            "Friday": [
+                "Smith Machine Incline Bench Press - 4 sets",
+                "Flys - 3 sets",
+                "Bench Press - 3 sets",
+                "Shoulder Press - 4 sets",
+                "Sitting Lateral raise - 3 sets",
+                "Cable tricep pushdown - 4 sets",
+                "Rope Cable pulldown - 4 sets"
+            ],
+            "Saturday": [
+                "Pully - 3 sets",
+                "Smith machine Rows - 3 sets",
+                "1 Hand pull down - 3 sets",
+                "Machine row - 3 sets",
+                "Cable Curl - 3 sets",
+                "Hammer Curls - 3 sets",
+                "Concentration Curl - 3 sets"
+            ],
+            "Sunday": [
+                "Smith Machine Squat - 3 sets",
+                "Sitting Calf Raises - 4 sets",
+                "Leg Curl - 4 sets",
+                "Leg extention - 3 sets",
+                "Calf Raises - 3 sets"
+            ]
+        },
+        "fitness_goals": "",
+        "location": "eilat",
+        "bio": "i love eilat"
+    }
+]

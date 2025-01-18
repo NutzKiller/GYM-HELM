@@ -6,7 +6,7 @@
     {"id": 5, "name": "Dips", "category": "A", "topic": "chest"},
     {"id": 6, "name": "Dumbbell Lateral raise", "category": "A", "topic": "shoulder"},
     {"id": 7, "name": "Shoulder Press", "category": "A", "topic": "shoulder"},
-    {"id": 8, "name": "Military Press", "category": "A", "topic": "shoulder"},
+    {"id": 8, "name": "Sitting Lateral raise", "category": "A", "topic": "shoulder"},
     {"id": 9, "name": "Face pull", "category": "A", "topic": "shoulder"},
     {"id": 10, "name": "Cable Lateral raise", "category": "A", "topic": "shoulder"},
     {"id": 11, "name": "Cable tricep pushdown", "category": "A", "topic": "triceps"},

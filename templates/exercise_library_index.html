@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Exercise Library</h2>
+
+<!-- Library Subnav -->
+<div class="library-subnav">
+  <a href="{{ url_for('exercise_library_muscle', muscle='all') }}"
+     {% if current_muscle|lower == 'all' %}style="background:#1c2a48; color:#fff"{% endif %}>
+    All
+  </a>
+  {% for mg in muscle_groups %}
+    <a href="{{ url_for('exercise_library_muscle', muscle=mg) }}"
+       {% if current_muscle|lower == mg|lower %}style="background:#1c2a48; color:#fff"{% endif %}>
+      {{ mg }}
+    </a>
+  {% endfor %}
+</div>
+
+<div class="exercise-library-row">
+  {% for ex in exercises %}
+    <div class="exercise-card">
+      <h4>{{ ex.name }}</h4>
+      <p>
+        <a class="view-video-link" href="{{ url_for('exercise_detail', exercise_name=ex.name) }}">
+          View Video
+        </a>
+      </p>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}
