@@ -53,9 +53,20 @@ jobs:
               echo "Docker already installed."
             fi
 
-            echo "=== Adding $USER to Docker group ==="
-            sudo usermod -aG docker $USER
-            newgrp docker || true
+            echo "=== Checking if docker-compose is installed on EC2 ==="
+            if ! command -v docker-compose &> /dev/null; then
+              echo "Installing docker-compose..."
+              sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" \
+                -o /usr/local/bin/docker-compose
+              sudo chmod +x /usr/local/bin/docker-compose
+              echo "docker-compose installed!"
+            else
+              echo "docker-compose already installed."
+            fi
+
+            echo "=== Adding ec2-user to Docker group (optional) ==="
+            sudo usermod -aG docker ec2-user || true
+            # We won't do 'newgrp' here because it's a non-interactive shell.
 
             echo "=== Logging in to Docker Hub on EC2 ==="
             docker login -u "${{ secrets.DOCKER_USERNAME }}" -p "${{ secrets.DOCKER_PASSWORD }}"
@@ -68,8 +79,10 @@ jobs:
             docker rm gym_app || true
 
             echo "=== Running docker-compose ==="
-            # Make sure your docker-compose.yml is already on the EC2 machine
-            cd /path/to/your/app  # Adjust to wherever your docker-compose.yml is
+            # Adjust this path to wherever your docker-compose.yml actually is:
+            cd /home/ec2-user/gym
+
+            # Pull updated images and start containers in the background
             docker-compose pull
             docker-compose up -d
 
