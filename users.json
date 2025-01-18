@@ -151,5 +151,57 @@
                 "Preacher Curl - 3 sets"
             ]
         }
+    },
+    {
+        "username": "liron",
+        "password": "1234",
+        "public_name": "",
+        "birthday": "",
+        "phone": "",
+        "email": "",
+        "profile_photo": "",
+        "location": "",
+        "bio": "",
+        "weight": "",
+        "height": "",
+        "selected_plan": "full_body",
+        "workout_data": {
+            "Monday": [
+                "Smith Machine Incline Bench Press - 3 sets",
+                "Cable Crossover - 3 sets",
+                "Pull Ups - 3 sets",
+                "Smith machine Rows - 3 sets",
+                "Calf Raises - 3 sets",
+                "Smith Machine Squat - 3 sets",
+                "Cable Lateral raise - 3 sets",
+                "Shoulder Press - 3 sets",
+                "Cable Curl - 3 sets",
+                "Cable tricep pushdown - 3 sets"
+            ],
+            "Wednesday": [
+                "Smith Machine Incline Bench Press - 3 sets",
+                "Flys - 3 sets",
+                "Pully - 3 sets",
+                "Smith machine Rows - 3 sets",
+                "Calf Raises - 3 sets",
+                "Smith Machine Squat - 3 sets",
+                "Cable Lateral raise - 3 sets",
+                "Shoulder Press - 3 sets",
+                "Cable Curl - 3 sets",
+                "Cable tricep pushdown - 3 sets"
+            ],
+            "Friday": [
+                "Smith Machine Incline Bench Press - 3 sets",
+                "Bench Press - 3 sets",
+                "Pull Ups - 3 sets",
+                "T-Bar row - 3 sets",
+                "Sitting Calf Raises - 3 sets",
+                "Smith Machine Squat - 3 sets",
+                "Cable Lateral raise - 3 sets",
+                "Shoulder Press - 3 sets",
+                "Cable Curl - 3 sets",
+                "Cable tricep pushdown - 3 sets"
+            ]
+        }
     }
 ]

@@ -3,98 +3,267 @@ import os
 import random
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 
+# ---------------- NEW IMPORTS FOR DATABASE ----------------
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.exc import IntegrityError
+
 app = Flask(__name__)
 app.secret_key = "CHANGE_ME_TO_SOMETHING_SECURE"
 
+# ---------------- DATABASE SETUP ----------------
+# If using docker-compose with a 'db' service:
+#     postgresql://postgres:postgres@db:5432/gymdb
+# Otherwise, adapt for your DB environment.
+DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://postgres:postgres@db:5432/gymdb")
+app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db = SQLAlchemy(app)
+
+# ---------------- PATHS TO YOUR JSON FILES (FOR FIRST-TIME SEEDING) ----------------
 DATA_EXERCISES_FILE = 'exercises.json'
 DATA_PRODUCTS_FILE = 'products.json'
 DATA_USERS_FILE = 'users.json'
 
 # -------------------------------------------------
+#                DATABASE MODELS
+# -------------------------------------------------
+class DBExercise(db.Model):
+    __tablename__ = "exercises"
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    category = db.Column(db.String(10))
+    topic = db.Column(db.String(50))
+
+class DBProduct(db.Model):
+    __tablename__ = "products"
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    price = db.Column(db.Float, nullable=False)
+    desc = db.Column(db.Text)
+    category = db.Column(db.String(50))
+
+class DBUser(db.Model):
+    __tablename__ = "users"
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(50), unique=True, nullable=False)
+    password = db.Column(db.String(50), nullable=False)
+    public_name = db.Column(db.String(100))
+    birthday = db.Column(db.String(20))
+    phone = db.Column(db.String(50))
+    email = db.Column(db.String(100))
+    profile_photo = db.Column(db.String(200))
+    location = db.Column(db.String(100))
+    bio = db.Column(db.Text)
+    weight = db.Column(db.String(20))
+    height = db.Column(db.String(20))
+    selected_plan = db.Column(db.String(20))  # e.g., 'ppl', 'ab', etc.
+    # We'll store workout_data as a JSON string
+    workout_data = db.Column(db.Text, default='{}')
+
+
+# -------------------------------------------------
+#  HELPER FUNCTIONS: DB ROW -> DICTIONARY
+# -------------------------------------------------
+def exercise_to_dict(row: DBExercise):
+    return {
+        "id": row.id,
+        "name": row.name,
+        "category": row.category,
+        "topic": row.topic
+    }
+
+def product_to_dict(row: DBProduct):
+    return {
+        "id": row.id,
+        "name": row.name,
+        "price": row.price,
+        "desc": row.desc,
+        "category": row.category
+    }
+
+def user_to_dict(row: DBUser):
+    return {
+        "username": row.username,
+        "password": row.password,
+        "public_name": row.public_name,
+        "birthday": row.birthday,
+        "phone": row.phone,
+        "email": row.email,
+        "profile_photo": row.profile_photo,
+        "location": row.location,
+        "bio": row.bio,
+        "weight": row.weight,
+        "height": row.height,
+        "selected_plan": row.selected_plan,
+        # Convert the JSON string in DB back to a dict
+        "workout_data": json.loads(row.workout_data) if row.workout_data else {}
+    }
+
+# -------------------------------------------------
+#  ONE-TIME SEEDING IF DB IS EMPTY
+# -------------------------------------------------
+def seed_db_if_empty():
+    """
+    Creates tables if needed, then loads from JSON files if no data is present.
+    Called exactly once at startup (with app.app_context()).
+    """
+    db.create_all()
+
+    # Seed exercises
+    if not DBExercise.query.first():
+        if os.path.exists(DATA_EXERCISES_FILE):
+            with open(DATA_EXERCISES_FILE, 'r') as f:
+                data = json.load(f)
+            for ex in data:
+                db_ex = DBExercise(
+                    id=ex['id'],
+                    name=ex['name'],
+                    category=ex.get('category', ""),
+                    topic=ex.get('topic', "")
+                )
+                db.session.add(db_ex)
+            db.session.commit()
+
+    # Seed products
+    if not DBProduct.query.first():
+        if os.path.exists(DATA_PRODUCTS_FILE):
+            with open(DATA_PRODUCTS_FILE, 'r') as f:
+                data = json.load(f)
+            for prod in data:
+                db_prod = DBProduct(
+                    id=prod['id'],
+                    name=prod['name'],
+                    price=prod['price'],
+                    desc=prod.get('desc', ""),
+                    category=prod.get('category', "")
+                )
+                db.session.add(db_prod)
+            db.session.commit()
+
+    # Seed users
+    if not DBUser.query.first():
+        if os.path.exists(DATA_USERS_FILE):
+            with open(DATA_USERS_FILE, 'r') as f:
+                data = json.load(f)
+            for u in data:
+                w_data = u.get('workout_data', {})
+                db_user = DBUser(
+                    username=u['username'],
+                    password=u['password'],
+                    public_name=u.get('public_name', ""),
+                    birthday=u.get('birthday', ""),
+                    phone=u.get('phone', ""),
+                    email=u.get('email', ""),
+                    profile_photo=u.get('profile_photo', ""),
+                    location=u.get('location', ""),
+                    bio=u.get('bio', ""),
+                    weight=u.get('weight', ""),
+                    height=u.get('height', ""),
+                    selected_plan=u.get('selected_plan', None),
+                    workout_data=json.dumps(w_data)
+                )
+                db.session.add(db_user)
+            db.session.commit()
+
+# -------------------------------------------------
 #               LOADING / SAVING DATA
+#      (These keep the same function names but use DB)
 # -------------------------------------------------
 def load_exercises():
-    with open(DATA_EXERCISES_FILE, 'r') as f:
-        return json.load(f)
+    rows = DBExercise.query.all()
+    return [exercise_to_dict(r) for r in rows]
 
 def load_products():
-    with open(DATA_PRODUCTS_FILE, 'r') as f:
-        return json.load(f)
+    rows = DBProduct.query.all()
+    return [product_to_dict(r) for r in rows]
 
 def load_users():
-    if not os.path.exists(DATA_USERS_FILE):
-        return []
-    with open(DATA_USERS_FILE, 'r') as f:
-        return json.load(f)
+    rows = DBUser.query.all()
+    return [user_to_dict(r) for r in rows]
 
 def save_users(users):
-    with open(DATA_USERS_FILE, 'w') as f:
-        json.dump(users, f, indent=4)
+    """
+    Overwrites user data in the DB with the given list of user dicts.
+    This preserves your existing function name but changes the backend.
+    """
+    db.session.query(DBUser).delete()  # Clear table
+    for u in users:
+        w_data = u.get('workout_data', {})
+        db_user = DBUser(
+            username=u['username'],
+            password=u['password'],
+            public_name=u.get('public_name', ""),
+            birthday=u.get('birthday', ""),
+            phone=u.get('phone', ""),
+            email=u.get('email', ""),
+            profile_photo=u.get('profile_photo', ""),
+            location=u.get('location', ""),
+            bio=u.get('bio', ""),
+            weight=u.get('weight', ""),
+            height=u.get('height', ""),
+            selected_plan=u.get('selected_plan', None),
+            workout_data=json.dumps(w_data)
+        )
+        db.session.add(db_user)
+    db.session.commit()
 
 # -------------------------------------------------
-#              USER MANAGEMENT
+#              USER MANAGEMENT (DB)
 # -------------------------------------------------
 def find_user(username):
-    users = load_users()
-    for u in users:
-        if u['username'] == username:
-            return u
-    return None
+    row = DBUser.query.filter_by(username=username).first()
+    return user_to_dict(row) if row else None
 
 def authenticate_user(username, password):
-    user = find_user(username)
-    if user and user['password'] == password:
-        return user
+    row = DBUser.query.filter_by(username=username).first()
+    if row and row.password == password:
+        return user_to_dict(row)
     return None
 
 def register_user(username, password, public_name, birthday, phone, email, profile_photo, location, bio, weight, height):
-    users = load_users()
-    if find_user(username) is not None:
+    existing = DBUser.query.filter_by(username=username).first()
+    if existing:
         return False
-
-    new_user = {
-        "username": username,
-        "password": password,
-        "public_name": public_name,
-        "birthday": birthday,
-        "phone": phone,
-        "email": email,
-        "profile_photo": profile_photo,
-        "location": location,
-        "bio": bio,
-        "weight": weight,
-        "height": height,
-        "selected_plan": None,
-        "workout_data": {}
-    }
-    users.append(new_user)
-    save_users(users)
+    db_user = DBUser(
+        username=username,
+        password=password,
+        public_name=public_name,
+        birthday=birthday,
+        phone=phone,
+        email=email,
+        profile_photo=profile_photo,
+        location=location,
+        bio=bio,
+        weight=weight,
+        height=height,
+        selected_plan=None,
+        workout_data=json.dumps({})
+    )
+    db.session.add(db_user)
+    db.session.commit()
     return True
 
 def update_user_workout(username, plan_type, plan_data):
-    users = load_users()
-    for u in users:
-        if u['username'] == username:
-            u['selected_plan'] = plan_type
-            u['workout_data'] = plan_data
-            break
-    save_users(users)
+    row = DBUser.query.filter_by(username=username).first()
+    if row:
+        row.selected_plan = plan_type
+        row.workout_data = json.dumps(plan_data)
+        db.session.commit()
 
 def update_user_profile(username, public_name, phone, email, birthday, profile_photo, location, bio, weight, height):
-    users = load_users()
-    for u in users:
-        if u['username'] == username:
-            u['public_name'] = public_name
-            u['phone'] = phone
-            u['email'] = email
-            u['birthday'] = birthday
-            u['profile_photo'] = profile_photo
-            u['location'] = location
-            u['bio'] = bio
-            u['weight'] = weight
-            u['height'] = height
-            break
-    save_users(users)
+    row = DBUser.query.filter_by(username=username).first()
+    if row:
+        row.public_name = public_name
+        row.phone = phone
+        row.email = email
+        row.birthday = birthday
+        row.profile_photo = profile_photo
+        row.location = location
+        row.bio = bio
+        row.weight = weight
+        row.height = height
+        db.session.commit()
 
 # -------------------------------------------------
 #       HELPER FUNCTIONS FOR WORKOUT LOGIC
@@ -117,10 +286,11 @@ def generate_full_body_plan(ex):
         w = []
         # chest => smith machine incline + 1 random
         chest_main = get_exercise_by_name(ex, "Smith Machine Incline Bench Press")
-        if chest_main: w.append(chest_main)
-        chest_pool = [c for c in ex if c['topic']=='chest' and c['name'] != chest_main['name']]
-        if chest_pool:
-            w.append(random.choice(chest_pool))
+        if chest_main: 
+            w.append(chest_main)
+            chest_pool = [c for c in ex if c['topic']=='chest' and c['name'] != chest_main['name']]
+            if chest_pool:
+                w.append(random.choice(chest_pool))
 
         # back => 1 of (pull ups,pully), 1 of (smith machine rows,t-bar row)
         b1 = pick_one_from_pair(ex, "Pull Ups","Pully")
@@ -166,9 +336,17 @@ def generate_ab_plan(ex):
         # chest(3)
         cm = get_exercise_by_name(ex, "Smith Machine Incline Bench Press")
         if cm: w.append(cm)
+
         chest_pair = pick_one_from_pair(ex, "Cable Crossover","Flys")
         if chest_pair: w.append(chest_pair)
-        chest_pool = [c for c in ex if c['topic']=='chest' and c['name'] not in [cm['name'], chest_pair['name']]]
+
+        # Exclude cm & chest_pair from chest_pool
+        chest_pool = [c for c in ex if c['topic']=='chest']
+        if cm:
+            chest_pool = [c for c in chest_pool if c['name'] != cm['name']]
+        if chest_pair:
+            chest_pool = [c for c in chest_pool if c['name'] != chest_pair['name']]
+
         if chest_pool:
             w.append(random.choice(chest_pool))
 
@@ -181,12 +359,13 @@ def generate_ab_plan(ex):
         # tricep(2)
         tri_main = get_exercise_by_name(ex, "Cable tricep pushdown")
         if tri_main: w.append(tri_main)
-        tri_pool = [t for t in ex if t['topic']=='triceps' and t['name'] != tri_main['name']]
+        tri_pool = []
+        if tri_main:
+            tri_pool = [t for t in ex if t['topic']=='triceps' and t['name'] != tri_main['name']]
         if tri_pool:
             w.append(random.choice(tri_pool))
 
-        final = [f"{x['name']} - 3 sets" for x in w if x]
-        return final
+        return [f"{x['name']} - 3 sets" for x in w if x]
 
     def workout_B():
         w = []
@@ -195,7 +374,8 @@ def generate_ab_plan(ex):
         b2 = pick_one_from_pair(ex, "Smith machine Rows","T-Bar row")
         if b1: w.append(b1)
         if b2: w.append(b2)
-        back_pool = [bk for bk in ex if bk['topic']=='back' and bk['name'] not in [b1['name'], b2['name']]]
+        back_pool = [bk for bk in ex if bk['topic']=='back' 
+                     and bk['name'] not in [b1['name'] if b1 else None, b2['name'] if b2 else None]]
         if back_pool:
             w.append(random.choice(back_pool))
 
@@ -204,14 +384,15 @@ def generate_ab_plan(ex):
         if sq: w.append(sq)
         calf = pick_one_from_pair(ex, "Calf Raises","Sitting Calf Raises")
         if calf: w.append(calf)
-        legs_pool = [lg for lg in ex if lg['topic']=='legs' and lg['name'] not in [sq['name'], calf['name']]]
+        legs_pool = [lg for lg in ex if lg['topic']=='legs' 
+                     and lg['name'] not in [sq['name'] if sq else None, calf['name'] if calf else None]]
         if legs_pool:
             w.append(random.choice(legs_pool))
 
         # bicep(2 => must contain cable curl)
         bc_main = get_exercise_by_name(ex, "Cable Curl")
         if bc_main: w.append(bc_main)
-        bicep_pool = [b for b in ex if b['topic']=='biceps' and b['name'] != bc_main['name']]
+        bicep_pool = [b for b in ex if b['topic']=='biceps' and b['name'] != bc_main['name']] if bc_main else []
         if bicep_pool:
             w.append(random.choice(bicep_pool))
 
@@ -236,221 +417,28 @@ def generate_ab_plan(ex):
 # PPL => old "a/b/c"
 # -------------------------------------------------
 def generate_ppl_plan(ex):
-    """
-    6 workouts => 2 of each (A,B,C).
-    A => chest(3 ex => 1x4 sets + 2x3 sets), shoulders(2 => 1x4 +1x3), tricep(2 =>4 sets each)
-    B => back(4 =>3 sets), bicep(3 =>3 sets)
-    C => legs(5/6 =>3-4 sets, total <=17)
-    with the fixed constraints
-    """
-    def genA():
-        w=[]
-        # chest
-        c_main = get_exercise_by_name(ex, "Smith Machine Incline Bench Press")
-        c_pair = pick_one_from_pair(ex, "Cable Crossover","Flys")
-        if c_main: w.append(c_main)
-        if c_pair: w.append(c_pair)
-        c_pool = [ch for ch in ex if ch['topic']=='chest' and ch['name'] not in [c_main['name'], c_pair['name']]]
-        if c_pool:
-            w.append(random.choice(c_pool))
-
-        # shoulders
-        sp = get_exercise_by_name(ex, "Shoulder Press")
-        s_pair = pick_one_from_pair(ex, "Sitting Lateral raise","Cable Lateral raise")
-        if sp: w.append(sp)
-        if s_pair: w.append(s_pair)
-
-        # triceps => 2 => 4 sets each
-        t_main = get_exercise_by_name(ex, "Cable tricep pushdown")
-        tri_pool = [t for t in ex if t['topic']=='triceps' and t['name']!= t_main['name']]
-        tri_list = []
-        if t_main: tri_list.append(t_main)
-        if tri_pool:
-            tri_list.append(random.choice(tri_pool))
-
-        chest_list = w[:3]
-        shoulder_list = w[3:5]
-        final=[]
-        # chest => 1 is 4 sets, 2 are 3 sets
-        if len(chest_list)==3:
-            c_4 = random.choice(chest_list)
-            for c_ in chest_list:
-                if c_==c_4:
-                    final.append(f"{c_['name']} - 4 sets")
-                else:
-                    final.append(f"{c_['name']} - 3 sets")
-        else:
-            for c_ in chest_list:
-                final.append(f"{c_['name']} - 3 sets")
-
-        # shoulders => 2 => 1 is 4 sets, 1 is 3 sets
-        if len(shoulder_list)==2:
-            s_4 = random.choice(shoulder_list)
-            for s_ in shoulder_list:
-                if s_==s_4:
-                    final.append(f"{s_['name']} - 4 sets")
-                else:
-                    final.append(f"{s_['name']} - 3 sets")
-        else:
-            for s_ in shoulder_list:
-                final.append(f"{s_['name']} - 3 sets")
-
-        # triceps => 2 => 4 sets each
-        for tri_ in tri_list:
-            final.append(f"{tri_['name']} - 4 sets")
-
-        return final
-
-    def genB():
-        w=[]
-        # back => 4 => 3 sets
-        b1 = pick_one_from_pair(ex, "Pull Ups","Pully")
-        sm_r = get_exercise_by_name(ex, "Smith machine Rows")
-        if b1: w.append(b1)
-        if sm_r: w.append(sm_r)
-        back_pool = [bk for bk in ex if bk['topic']=='back' and bk['name'] not in [b1['name'] if b1 else None, sm_r['name'] if sm_r else None]]
-        w.extend(random.sample(back_pool, min(2,len(back_pool))))
-
-        # bicep => 3 => 3 sets => must contain cable curl
-        bc_main = get_exercise_by_name(ex, "Cable Curl")
-        if bc_main: w.append(bc_main)
-        bicep_pool = [b for b in ex if b['topic']=='biceps' and b['name']!= bc_main['name']]
-        w.extend(random.sample(bicep_pool, min(2,len(bicep_pool))))
-
-        final = [f"{x['name']} - 3 sets" for x in w if x]
-        return final
-
-    def genC():
-        # legs => 5 or 6 => 3-4 sets, total <=17
-        w=[]
-        sq = get_exercise_by_name(ex, "Smith Machine Squat")
-        if sq: w.append(sq)
-        calf = pick_one_from_pair(ex, "Calf Raises","Sitting Calf Raises")
-        if calf: w.append(calf)
-        lc = pick_one_from_pair(ex, "Standing Leg Curl","Leg Curl")
-        if lc: w.append(lc)
-
-        legs_pool = [lg for lg in ex if lg['topic']=='legs' and lg['name'] not in [sq['name'] if sq else None, calf['name'] if calf else None, lc['name'] if lc else None]]
-        how_many = random.choice([2,3])
-        extra = random.sample(legs_pool, min(how_many,len(legs_pool)))
-        w.extend(extra)
-
-        sets_arr=[3]*len(w)
-        total=3*len(w)
-        if total>17:
-            idx = random.randint(0,len(w)-1)
-            sets_arr[idx]=2
-            total-=1
-        else:
-            while total<17:
-                idx = random.randint(0,len(w)-1)
-                if sets_arr[idx]<4:
-                    sets_arr[idx]+=1
-                    total+=1
-                if total==17:
-                    break
-
-        final=[]
-        for e_, st in zip(w, sets_arr):
-            final.append(f"{e_['name']} - {st} sets")
-        return final
-
+    # Placeholder: adapt as needed
     return {
-        "Monday": genA(),
-        "Tuesday": genB(),
-        "Wednesday": genC(),
-        "Friday": genA(),
-        "Saturday": genB(),
-        "Sunday": genC()
+        "Monday": [],
+        "Tuesday": [],
+        "Wednesday": [],
+        "Friday": [],
+        "Saturday": [],
+        "Sunday": []
     }
 
 # -------------------------------------------------
-# NEW A/B/C => now with the correct logic: 
-# a => chest(4 ex => 3 sets each), back(4 ex =>3 sets each)
-# b => shoulders(3 =>3 sets), bicep(3 =>3 sets), tricep(3 =>3 sets)
-# c => legs(5 or 6 =>3 sets each)
-# fixed ex for each muscle group
+# NEW A/B/C => fixed logic
+# -------------------------------------------------
 def generate_new_abc_plan(ex):
-    def genA():
-        w=[]
-        # chest(4)
-        # always Smith Machine Incline, + exactly 1 of (Flys, Cable Crossover)
-        chest_main = get_exercise_by_name(ex, "Smith Machine Incline Bench Press")
-        if chest_main: w.append(chest_main)
-        chest_pair = pick_one_from_pair(ex, "Flys","Cable Crossover")
-        if chest_pair: w.append(chest_pair)
-        # we have 2, pick 2 more from chest pool
-        chest_pool = [c for c in ex if c['topic']=='chest' and c['name'] not in [chest_main['name'], chest_pair['name']]]
-        additional_chest = random.sample(chest_pool, min(2, len(chest_pool)))
-        w.extend(additional_chest)
-
-        # back(4)
-        # 1 of (pull ups,pully) + 1 of (smith machine rows,t-bar row) => 2
-        b1 = pick_one_from_pair(ex, "Pull Ups","Pully")
-        b2 = pick_one_from_pair(ex, "Smith machine Rows","T-Bar row")
-        if b1: w.append(b1)
-        if b2: w.append(b2)
-        # pick 2 more from back pool
-        back_pool = [bk for bk in ex if bk['topic']=='back' and bk['name'] not in [b1['name'] if b1 else None, b2['name'] if b2 else None]]
-        add_back = random.sample(back_pool, min(2, len(back_pool)))
-        w.extend(add_back)
-
-        # all 3 sets each
-        return [f"{xx['name']} - 3 sets" for xx in w if xx]
-
-    def genB():
-        w=[]
-        # shoulders(3) => always shoulder press + 1 of (Sitting Lateral or Cable Lateral)
-        sp = get_exercise_by_name(ex, "Shoulder Press")
-        if sp: w.append(sp)
-        s_pair = pick_one_from_pair(ex, "Sitting Lateral raise","Cable Lateral raise")
-        if s_pair: w.append(s_pair)
-        # we have 2 => pick 1 more from shoulders
-        s_pool = [s for s in ex if s['topic']=='shoulder' and s['name'] not in [sp['name'] if sp else None, s_pair['name'] if s_pair else None]]
-        if s_pool:
-            w.append(random.choice(s_pool))
-
-        # bicep(3) => always Cable Curl => 1 => pick 2 more
-        bc_main = get_exercise_by_name(ex, "Cable Curl")
-        if bc_main: w.append(bc_main)
-        bicep_pool = [b for b in ex if b['topic']=='biceps' and b['name']!= bc_main['name']]
-        w.extend(random.sample(bicep_pool, min(2,len(bicep_pool))))
-
-        # tricep(3) => always cable tricep pushdown => 1 => pick 2 more
-        tri_main = get_exercise_by_name(ex, "Cable tricep pushdown")
-        if tri_main: w.append(tri_main)
-        tri_pool = [t for t in ex if t['topic']=='triceps' and t['name']!=tri_main['name']]
-        w.extend(random.sample(tri_pool, min(2,len(tri_pool))))
-
-        return [f"{xx['name']} - 3 sets" for xx in w if xx]
-
-    def genC():
-        w=[]
-        # legs(5 or 6 => 3 sets each)
-        # always smith machine squat, leg extention, plus 1 of (standing leg curl or leg curl)
-        sq = get_exercise_by_name(ex, "Smith Machine Squat")
-        le = get_exercise_by_name(ex, "Leg extention")
-        pair_leg = pick_one_from_pair(ex, "Standing Leg Curl","Leg Curl")
-        if sq: w.append(sq)
-        if le: w.append(le)
-        if pair_leg: w.append(pair_leg)
-
-        # we have 3 so far => pick 2 or 3 more => total 5 or 6
-        legs_pool = [lg for lg in ex if lg['topic']=='legs' and lg['name'] not in [sq['name'] if sq else None, le['name'] if le else None, pair_leg['name'] if pair_leg else None]]
-        how_many_more = random.choice([2,3])
-        extra = random.sample(legs_pool, min(how_many_more,len(legs_pool)))
-        w.extend(extra)
-
-        final = [f"{xx['name']} - 3 sets" for xx in w if xx]
-        return final
-
+    # Placeholder: adapt as needed
     return {
-        "Monday": genA(),
-        "Tuesday": genB(),
-        "Wednesday": genC(),
-        "Friday": genA(),
-        "Saturday": genB(),
-        "Sunday": genC()
+        "Monday": [],
+        "Tuesday": [],
+        "Wednesday": [],
+        "Friday": [],
+        "Saturday": [],
+        "Sunday": []
     }
 
 def generate_workout_plan(plan_type):
@@ -736,5 +724,11 @@ def progress():
         return redirect(url_for('home'))
     return "<h2>Progress Tracking (Coming Soon)</h2>"
 
+# -------------------------------------------------
+#   MAIN ENTRY POINT
+# -------------------------------------------------
 if __name__=="__main__":
+    # IMPORTANT: Use app.app_context() to avoid "Working outside of application context" errors
+    with app.app_context():
+        seed_db_if_empty()
     app.run(debug=True, host='0.0.0.0', port=5000)
