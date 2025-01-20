@@ -31,7 +31,7 @@
     {"id": 30, "name": "Leg Press", "category": "C", "topic": "legs"},
     {"id": 31, "name": "Leg Curl", "category": "C", "topic": "legs"},
     {"id": 32, "name": "RDL", "category": "C", "topic": "legs"},
-    {"id": 33, "name": "Leg extention", "category": "C", "topic": "legs"},
+    {"id": 33, "name": "Leg Extension", "category": "C", "topic": "legs"},
     {"id": 34, "name": "Calf Raises", "category": "C", "topic": "legs"},
     {"id": 35, "name": "Sitting Calf Raises", "category": "C", "topic": "legs"}
 ]
