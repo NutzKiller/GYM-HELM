@@ -34,3 +34,8 @@ jobs:
           VERSION=v1.0.${{ github.run_number }}
           docker push nutzkiller/gym:$VERSION
           docker push nutzkiller/gym:latest
+
+      - name: Trigger CD Workflow
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          event-type: trigger-cd
