@@ -1,26 +1,25 @@
 name: CD Workflow
 
 on:
-  repository_dispatch:
+  workflow_run:
+    workflows:
+      - CI Workflow
     types:
-      - trigger-cd
+      - completed
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Check out the repository
       - name: Check out code
         uses: actions/checkout@v2
 
-      # Step 2: Set up Terraform
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: latest
 
-      # Step 3: Apply Terraform Configuration
       - name: Apply Terraform Configuration
         working-directory: terraform
         run: |
