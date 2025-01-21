@@ -21,6 +21,10 @@ jobs:
           terraform_version: latest
 
       - name: Apply Terraform Configuration
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: "us-east-1" # or replace with your default region
         working-directory: terraform
         run: |
           terraform init
