@@ -1,0 +1,26 @@
+name: CD Workflow
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Check out the repository
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      # Step 2: Set up Terraform
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: latest
+
+      # Step 3: Apply Terraform Configuration
+      - name: Apply Terraform Configuration
+        working-directory: terraform
+        run: |
+          terraform init
+          terraform apply -auto-approve deploy_project.tf
