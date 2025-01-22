@@ -30,10 +30,28 @@ jobs:
           terraform init
           terraform apply -auto-approve
 
+      - name: Get EC2 Public IP
+        id: get_ip
+        working-directory: terraform
+        run: |
+          echo "Fetching EC2 Public IP..."
+          EC2_IP=$(terraform output -raw ec2_public_ip)
+          echo "EC2_IP=$EC2_IP" >> $GITHUB_ENV
+
       - name: Wait for 240 seconds
         run: |
           echo "Waiting for 240 seconds..."
           sleep 240
+
+      - name: Check Service Status
+        run: |
+          echo "Checking if the service is running on port 5000..."
+          curl -v http://$EC2_IP:5000 || echo "Service is not accessible."
+
+      - name: Wait for 60 more seconds
+        run: |
+          echo "Waiting for an additional 60 seconds..."
+          sleep 60
 
       - name: Destroy Terraform Configuration
         env:
