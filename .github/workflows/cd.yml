@@ -24,7 +24,7 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: "us-east-1" # or replace with your default region
+          AWS_DEFAULT_REGION: "us-east-1"
         working-directory: terraform
         run: |
           terraform init
@@ -35,9 +35,6 @@ jobs:
     needs: deploy  # Ensures cleanup runs after deploy
 
     steps:
-      - name: Wait for 5 minutes
-        run: sleep 300  # Waits 5 minutes (300 seconds)
-
       - name: Check out code
         uses: actions/checkout@v2
 
@@ -46,12 +43,25 @@ jobs:
         with:
           terraform_version: latest
 
+      - name: Sleep for 5 minutes
+        run: sleep 300  # Waits 5 minutes (300 seconds)
+
+      - name: Reinitialize Terraform
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: "us-east-1"
+        working-directory: terraform
+        run: terraform init
+
       - name: Destroy Terraform Configuration
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: "us-east-1" # or replace with your default region
+          AWS_DEFAULT_REGION: "us-east-1"
         working-directory: terraform
         run: |
-          terraform init
           terraform destroy -auto-approve
+
+      - name: Confirm Cleanup
+        run: echo "Cleanup completed successfully."
