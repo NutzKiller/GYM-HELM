@@ -32,6 +32,7 @@ jobs:
 
       - name: Save Public IP
         run: |
+          mkdir -p terraform
           terraform output -raw public_ip > terraform/public_ip.txt
         working-directory: terraform
 
