@@ -11,7 +11,7 @@ resource "tls_private_key" "example" {
 
 # Upload the public key to AWS as a key pair
 resource "aws_key_pair" "generated_key" {
-  key_name   = "generated-key-from-terraform"
+  key_name   = "generated-key-from-terraform2"
   public_key = tls_private_key.example.public_key_openssh
 }
 
