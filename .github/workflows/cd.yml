@@ -32,7 +32,7 @@ jobs:
 
       - name: Save Public IP
         run: |
-          terraform output -raw public_ip > public_ip.txt
+          terraform output -raw public_ip > terraform/public_ip.txt
         working-directory: terraform
 
       - name: Upload Public IP
@@ -52,6 +52,11 @@ jobs:
           name: public-ip
           path: terraform/
 
+      - name: Debug Public IP
+        run: |
+          echo "Content of terraform/public_ip.txt:"
+          cat terraform/public_ip.txt
+
       - name: Wait for 5 minutes
         run: sleep 300
 
@@ -61,7 +66,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: "us-east-1"
         run: |
-          PUBLIC_IP=$(cat terraform/public_ip.txt | tr -d '\n' | awk '{print $1}')
+          PUBLIC_IP=$(cat terraform/public_ip.txt | tr -d '\n')
           echo "Public IP: $PUBLIC_IP"
           INSTANCE_ID=$(aws ec2 describe-instances \
             --filters "Name=ip-address,Values=$PUBLIC_IP" \
