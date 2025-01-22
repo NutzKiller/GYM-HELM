@@ -15,11 +15,36 @@ resource "aws_key_pair" "generated_key" {
   public_key = tls_private_key.example.public_key_openssh
 }
 
-# Use the pre-defined security group "project-security-group"
-data "aws_security_group" "project_sg" {
-  filter {
-    name   = "group-name"
-    values = ["project-security-group"]
+# Create a security group to allow HTTP and SSH traffic
+resource "aws_security_group" "project_sg_2" {
+  name        = "project-security-group"
+  description = "Allow HTTP and SSH traffic"
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
+    from_port   = 5000
+    to_port     = 5000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 }
 
@@ -29,7 +54,7 @@ resource "aws_instance" "project_instance" {
   instance_type = "t2.micro"
   key_name      = aws_key_pair.generated_key.key_name
 
-  security_groups = [data.aws_security_group.project_sg.name]
+  security_groups = [aws_security_group.project_sg.name]
 
   # User data script to set up Docker, clone the repository, and run docker-compose
   user_data = <<-EOF
