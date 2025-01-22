@@ -3,6 +3,11 @@ provider "aws" {
   region = "us-east-1"  # Adjust to your preferred region
 }
 
+# Generate a random ID to make key names unique
+resource "random_id" "key_id" {
+  byte_length = 4
+}
+
 # Generate a new private key
 resource "tls_private_key" "example" {
   algorithm = "RSA"
@@ -11,7 +16,7 @@ resource "tls_private_key" "example" {
 
 # Upload the public key to AWS as a key pair
 resource "aws_key_pair" "generated_key" {
-  key_name   = "generated-key-from-terraform2"
+  key_name   = "generated-key-${random_id.key_id.hex}"
   public_key = tls_private_key.example.public_key_openssh
 }
 
@@ -71,4 +76,3 @@ resource "local_file" "private_key" {
 output "public_ip" {
   value = aws_instance.project_instance.public_ip
 }
- 
