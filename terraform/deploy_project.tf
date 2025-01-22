@@ -1,3 +1,5 @@
+working deploy_project.tf
+
 # Define AWS provider
 provider "aws" {
   region = "us-east-1"  # Adjust to your preferred region
@@ -11,13 +13,8 @@ resource "tls_private_key" "example" {
 
 # Upload the public key to AWS as a key pair
 resource "aws_key_pair" "generated_key" {
-  key_name   = "generated-key-${random_id.key_id.hex}" # Unique key name with random ID
+  key_name   = "generated-key-from-terraform2"
   public_key = tls_private_key.example.public_key_openssh
-}
-
-# Generate a random ID for key uniqueness
-resource "random_id" "key_id" {
-  byte_length = 4
 }
 
 # Use the pre-defined security group "project-security-group"
@@ -72,7 +69,7 @@ resource "local_file" "private_key" {
   filename = "generated_key.pem"
 }
 
+# Output the public IP address
 output "public_ip" {
   value = aws_instance.project_instance.public_ip
 }
-
