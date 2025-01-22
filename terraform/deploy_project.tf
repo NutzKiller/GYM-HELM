@@ -73,3 +73,4 @@ resource "local_file" "private_key" {
 output "public_ip" {
   value = aws_instance.project_instance.public_ip
 }
+ 
