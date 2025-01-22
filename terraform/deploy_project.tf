@@ -16,7 +16,7 @@ resource "aws_key_pair" "generated_key" {
 }
 
 # Create a security group to allow HTTP and SSH traffic
-resource "aws_security_group" "project_sg" {
+resource "aws_security_group" "project_sg_2" {
   name        = "project-security-group"
   description = "Allow HTTP and SSH traffic"
 
