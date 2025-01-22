@@ -35,9 +35,14 @@ jobs:
         working-directory: terraform
         run: |
           echo "Fetching EC2 Public IP from Terraform output log..."
-          EC2_IP=$(terraform output -json | jq -r '.public_ip.value')
+          TERRAFORM_OUTPUT=$(terraform output -json)
+          if [ -z "$TERRAFORM_OUTPUT" ]; then
+            echo "Terraform output is empty. Exiting..." >&2
+            exit 1
+          fi
+          EC2_IP=$(echo "$TERRAFORM_OUTPUT" | jq -r '.public_ip.value' 2>/dev/null)
           if [ -z "$EC2_IP" ]; then
-            echo "Failed to fetch EC2 public IP from output." >&2
+            echo "Failed to extract EC2 public IP from Terraform output." >&2
             exit 1
           fi
           echo "EC2_IP=$EC2_IP" >> $GITHUB_ENV

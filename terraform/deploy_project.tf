@@ -65,6 +65,10 @@ resource "aws_instance" "project_instance" {
     Name = "GymProject"
   }
 }
+output "public_ip" {
+  value = aws_instance.project_instance.public_ip
+}
+
 
 # Save the private key to a file
 resource "local_file" "private_key" {
