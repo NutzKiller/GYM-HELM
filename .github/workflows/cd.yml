@@ -36,6 +36,12 @@ jobs:
           terraform output -raw public_ip > terraform/public_ip.txt
         working-directory: terraform
 
+      - name: Debug Public IP Save
+        run: |
+          echo "Public IP saved to terraform/public_ip.txt:"
+          cat terraform/public_ip.txt
+        working-directory: terraform
+
       - name: Upload Public IP
         uses: actions/upload-artifact@v3
         with:
