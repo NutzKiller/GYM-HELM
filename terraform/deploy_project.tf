@@ -76,7 +76,3 @@ output "public_ip" {
   value = aws_instance.project_instance.public_ip
 }
 
-output "secondary_public_ip" {
-  value = aws_instance.another_instance.public_ip
-}
-
