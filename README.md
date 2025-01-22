@@ -27,4 +27,4 @@ To run the application locally:
 1. **Clone the repository**:
 
    ```bash
-   git clone https://github.com/NutzKiller/dari_project.git
+   git clone https://github.com/NutzKiller/gym.git
