@@ -11,8 +11,13 @@ resource "tls_private_key" "example" {
 
 # Upload the public key to AWS as a key pair
 resource "aws_key_pair" "generated_key" {
-  key_name   = "generated-key-from-terraform2"
+  key_name   = "generated-key-${random_id.key_id.hex}" # Unique key name with random ID
   public_key = tls_private_key.example.public_key_openssh
+}
+
+# Generate a random ID for key uniqueness
+resource "random_id" "key_id" {
+  byte_length = 4
 }
 
 # Use the pre-defined security group "project-security-group"
