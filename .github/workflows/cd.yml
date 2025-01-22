@@ -61,7 +61,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: "us-east-1"
         run: |
-          PUBLIC_IP=$(cat terraform/public_ip.txt)
+          PUBLIC_IP=$(cat terraform/public_ip.txt | tr -d '\n')
           echo "Public IP: $PUBLIC_IP"
           INSTANCE_ID=$(aws ec2 describe-instances \
             --filters "Name=ip-address,Values=$PUBLIC_IP" \
