@@ -1,0 +1,43 @@
+name: CD GCP Workflow
+
+on:
+  workflow_run:
+    workflows:
+      - CI Workflow
+    types:
+      - completed
+
+jobs:
+  deploy_gcp:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: latest
+
+      - name: Decode JSON Key from Base64
+        shell: bash
+        run: |
+          # We'll create the file in the terraform_gcp folder
+          echo "${{ secrets.GCP_SERVICE_ACCOUNT_KEY_B64 }}" | base64 -d | tr -d '\r' > terraform_gcp/gcp-keyfile.json
+
+      - name: Terraform Init and Apply
+        working-directory: terraform_gcp
+        env:
+          TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
+          TF_VAR_region: ${{ secrets.GCP_REGION }}
+          TF_VAR_zone: ${{ secrets.GCP_ZONE }}
+        run: |
+          terraform init
+          terraform apply -auto-approve
+
+      - name: Output GCP IP
+        working-directory: terraform_gcp
+        run: |
+          echo "Public IP of the instance:"
+          terraform output instance_external_ip

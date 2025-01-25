@@ -48,3 +48,7 @@ Thumbs.db                   # Windows metadata files
 # Miscellaneous
 *.bak                       # Ignore backup files
 *.tmp                       # Ignore temporary files
+
+
+terraform/                  # Ignore Terraform directory
+terraform_gcp/gcp-keyfile.json
