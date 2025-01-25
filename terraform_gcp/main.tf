@@ -34,17 +34,23 @@ resource "google_project_service" "enable_sqladmin_052" {
 # 2) Use Existing VPC Network + Firewall
 ########################################
 
-# Reference existing VPC network
+
+# If network exists, use it. Otherwise, create a new one.
 data "google_compute_network" "existing_network" {
-  name    = "gym-network-053" # Changed network name
+  name    = "gym-network-052" # Change this if you verify a different network name
   project = var.project_id
 }
 
-# Create a new firewall rule for the existing network
+resource "google_compute_network" "new_network" {
+  count   = length([for net in [data.google_compute_network.existing_network.name] : net if net != null]) == 0 ? 1 : 0
+  name    = "gym-network-052"
+  project = var.project_id
+}
+
 resource "google_compute_firewall" "gym_firewall_052" {
   name    = "gym-firewall-052"
   project = var.project_id
-  network = data.google_compute_network.existing_network.name
+  network = coalesce(data.google_compute_network.existing_network.self_link, google_compute_network.new_network.self_link)
 
   allow {
     protocol = "tcp"
@@ -53,7 +59,6 @@ resource "google_compute_firewall" "gym_firewall_052" {
 
   source_ranges = ["0.0.0.0/0"]
 }
-
 ########################################
 # 3) Use Existing Storage Bucket
 ########################################
