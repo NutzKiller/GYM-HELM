@@ -31,9 +31,8 @@ resource "google_project_service" "enable_sqladmin_052" {
 }
 
 ########################################
-# 2) Use Existing VPC Network + Firewall
+# 2) VPC Network + Firewall
 ########################################
-
 
 # If network exists, use it. Otherwise, create a new one.
 data "google_compute_network" "existing_network" {
@@ -59,6 +58,7 @@ resource "google_compute_firewall" "gym_firewall_052" {
 
   source_ranges = ["0.0.0.0/0"]
 }
+
 ########################################
 # 3) Use Existing Storage Bucket
 ########################################
@@ -99,7 +99,7 @@ resource "google_compute_instance" "gym_instance_052" {
   }
 
   network_interface {
-    network       = data.google_compute_network.existing_network.self_link
+    network       = coalesce(data.google_compute_network.existing_network.self_link, google_compute_network.new_network.self_link)
     access_config {}
   }
 
@@ -108,7 +108,6 @@ resource "google_compute_instance" "gym_instance_052" {
     #!/bin/bash
     set -e
 
-    # Logging setup
     LOGFILE=/var/log/startup-script.log
     exec > >(tee -i $${LOGFILE})
     exec 2>&1
