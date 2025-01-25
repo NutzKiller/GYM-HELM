@@ -1,6 +1,6 @@
 # Define AWS provider
 provider "aws" {
-  region = "us-east-1"  # Adjust to your preferred region
+  region = "us-east-1"
 }
 
 # Generate a random ID to make key names unique
@@ -28,7 +28,7 @@ data "aws_security_group" "project_sg" {
   }
 }
 
-# Launch an EC2 instance
+# Launch an EC2 instance to run the web app
 resource "aws_instance" "project_instance" {
   ami           = "ami-0c02fb55956c7d316"  # Amazon Linux 2 AMI
   instance_type = "t2.micro"

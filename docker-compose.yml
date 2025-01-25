@@ -1,27 +1,20 @@
-version: '3.8'
+version: '3.8'  # Specify Docker Compose version
 
 services:
-  db:
-    image: postgres:15
-    container_name: gym_db
-    restart: always
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=gymdb
-    volumes:
-      - db_data:/var/lib/postgresql/data
-
   web:
-    image: nutzkiller/gym:latest
+    build: .
     container_name: gym_web
     restart: always
-    depends_on:
-      - db
     ports:
-      - "5000:5000"
+      - "5000:5000"                        # Exposes Flask app on host port 5000
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/gymdb
+      - DATABASE_URL=mysql+pymysql://postgres:password@34.122.238.144:3306/GYM
+      - SECRET_KEY=Kanao159632!!           # Replace with a strong, secure key
+    networks:
+      - gym_network
+    volumes:
+      - .:/app                             # Mounts project directory (optional for development)
 
-volumes:
-  db_data:
+networks:
+  gym_network:
+    driver: bridge                        # Uses Docker's default bridge driver
