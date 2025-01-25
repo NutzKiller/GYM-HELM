@@ -70,23 +70,24 @@ resource "google_storage_bucket" "exercise_videos_054" {
 # 4) Cloud SQL Instance (Use Existing)
 ########################################
 
-# Reuse the existing Cloud SQL instance
+# Use the existing Cloud SQL instance
 data "google_sql_database_instance" "existing_gym_sql_instance" {
   name    = "gym-db-instance-052"
   project = var.project_id
 }
 
-# Reuse the existing GYM database inside that instance
+# Use the existing "GYM" database inside that instance
 data "google_sql_database" "existing_gym_database" {
   name     = "GYM"
   instance = data.google_sql_database_instance.existing_gym_sql_instance.name
   project  = var.project_id
 }
 
-# Reuse the existing MySQL user named "postgres"
-data "google_sql_user" "existing_app_user" {
+# Reference the existing MySQL user 'postgres'
+data "google_sql_user" "existing_postgres_user" {
   name     = "postgres"
   instance = data.google_sql_database_instance.existing_gym_sql_instance.name
+  host     = "%"
   project  = var.project_id
 }
 
@@ -156,6 +157,6 @@ output "storage_bucket_name" {
 }
 
 output "cloudsql_public_ip" {
-  description = "Public IP of the Cloud SQL instance"
+  description = "Public IP of the existing Cloud SQL instance"
   value       = data.google_sql_database_instance.existing_gym_sql_instance.public_ip_address
 }
