@@ -1,0 +1,74 @@
+#####################
+# Python Specific
+#####################
+__pycache__/          # Ignore compiled Python files
+*.py[cod]             # Ignore Python cache files
+*.pyo                 # Ignore Python optimized files
+.Python               # Ignore virtual environments
+venv/                 # Ignore virtual env directory
+
+#####################
+# Environment Files
+#####################
+.env
+*.env
+
+#####################
+# Terraform
+#####################
+# Ignore Terraform state & backup
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# If you have a separate 'terraform/' folder with *only* local stuff, ignore it:
+# terraform/
+
+# But DO NOT ignore .tf files in general so they remain in version control:
+# (Removed the line that said `*.tf`)
+
+# Specifically ignore the JSON key we create at runtime in GitHub Actions:
+terraform_gcp/gcp-keyfile.json
+
+#####################
+# Docker
+#####################
+docker-compose.override.yml
+.dockerignore
+*.log
+*.bak
+
+#####################
+# Static / Templates
+#####################
+*.css.map
+static/*.tmp
+*.tmp
+
+#####################
+# Logs
+#####################
+*.log
+logs/
+
+#####################
+# JSON Files
+#####################
+exercises.json
+products.json
+users.json
+
+#####################
+# System / Editor Files
+#####################
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+#####################
+# Misc
+#####################
+*.bak
+*.tmp

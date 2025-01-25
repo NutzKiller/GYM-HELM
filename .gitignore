@@ -51,3 +51,4 @@ Thumbs.db                   # Windows metadata files
 
 
 terraform/                  # Ignore Terraform directory
+terraform_gcp/gcp-keyfile.json

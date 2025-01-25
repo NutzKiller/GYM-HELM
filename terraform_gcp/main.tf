@@ -21,9 +21,8 @@ provider "google" {
   region  = var.region
   zone    = var.zone
 
-  # If you store credentials in a JSON file or in GitHub secrets:
-  # credentials = file("./path/to/service_account_key.json")
-  # Alternatively, you can rely on GOOGLE_CLOUD_KEYFILE_JSON env variable
+  # This line tells Terraform: "Use the JSON file we provide for auth."
+  credentials = file("${path.module}/gcp-keyfile.json")
 }
 
 # ---------------------------------------------------------
@@ -39,7 +38,7 @@ resource "google_compute_firewall" "gym_firewall" {
 
   allow {
     protocol = "tcp"
-    ports    = ["22","80","5000"]
+    ports    = ["22", "80", "5000"]
   }
 
   # 0.0.0.0/0 is wide open, but you said security is not a concern for your project
@@ -48,7 +47,6 @@ resource "google_compute_firewall" "gym_firewall" {
 
 # ---------------------------------------------------------
 # (Optional) Create a Google Cloud Storage bucket for videos
-# For future usage, if you want to host static videos cheaply
 # ---------------------------------------------------------
 resource "google_storage_bucket" "exercise_videos" {
   name          = "${var.project_id}-exercise-videos"
@@ -70,8 +68,6 @@ resource "google_compute_instance" "gym_instance" {
   machine_type = "e2-micro"
   zone         = var.zone
 
-  # Ubuntu or Debian family - up to you
-  # Check https://cloud.google.com/compute/docs/images
   boot_disk {
     initialize_params {
       image = "debian-cloud/debian-11" # Debian 11
@@ -79,14 +75,9 @@ resource "google_compute_instance" "gym_instance" {
   }
 
   network_interface {
-    network = google_compute_network.gym_network.self_link
-    access_config {
-      # Ephemeral public IP
-    }
+    network       = google_compute_network.gym_network.self_link
+    access_config {}
   }
-
-  # If you want to use an SSH key, see google_compute_project_metadata. 
-  # For simplicity, we skip that.
 
   # Startup script: install Docker, git clone your repo, run docker-compose up
   metadata_startup_script = <<-EOT

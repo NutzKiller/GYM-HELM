@@ -15,27 +15,16 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v2
 
-      - name: Set up gcloud CLI
-        uses: google-github-actions/setup-gcloud@v1
-        with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-          export_default_credentials: false
-
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: latest
 
-      - name: Authenticate to GCP
+      - name: Decode JSON Key from Base64
         shell: bash
         run: |
-          # Decode the Base64 secret back into JSON:
-          echo "${{ secrets.GCP_SERVICE_ACCOUNT_KEY_B64 }}" | base64 -d | tr -d '\r' > gcp-keyfile.json
-
-          gcloud auth activate-service-account --key-file=gcp-keyfile.json
-          gcloud config set project ${{ secrets.GCP_PROJECT_ID }}
-          gcloud config set compute/region ${{ secrets.GCP_REGION }}
-          gcloud config set compute/zone ${{ secrets.GCP_ZONE }}
+          # We'll create the file in the terraform_gcp folder
+          echo "${{ secrets.GCP_SERVICE_ACCOUNT_KEY_B64 }}" | base64 -d | tr -d '\r' > terraform_gcp/gcp-keyfile.json
 
       - name: Terraform Init and Apply
         working-directory: terraform_gcp
