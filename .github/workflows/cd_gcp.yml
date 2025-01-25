@@ -37,9 +37,11 @@ jobs:
       # 3) Authenticate to GCP with your service account key
       # ---------------------------------------------------------
       - name: Authenticate to GCP
+        shell: bash
         run: |
-          # Write the raw JSON from your GitHub secret into a file:
-          echo "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}" > gcp-keyfile.json
+          # Write the raw JSON from your GitHub secret into a file
+          # while removing any Windows-style carriage returns:
+          echo "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}" | tr -d '\r' > gcp-keyfile.json
 
           # Actually authenticate with the service account:
           gcloud auth activate-service-account --key-file=gcp-keyfile.json
@@ -48,11 +50,12 @@ jobs:
           gcloud config set project ${{ secrets.GCP_PROJECT_ID }}
           gcloud config set compute/region ${{ secrets.GCP_REGION }}
           gcloud config set compute/zone ${{ secrets.GCP_ZONE }}
-        shell: bash
 
         # Make sure your secrets are set:
-        #   GCP_SERVICE_ACCOUNT_KEY (full JSON text)
-        #   GCP_PROJECT_ID, GCP_REGION, GCP_ZONE
+        #   GCP_SERVICE_ACCOUNT_KEY (the full JSON)
+        #   GCP_PROJECT_ID
+        #   GCP_REGION
+        #   GCP_ZONE
 
       # ---------------------------------------------------------
       # 4) Terraform Init and Apply
