@@ -98,33 +98,55 @@ resource "google_compute_instance" "gym_instance_052" {
     access_config {}
   }
 
-  # Startup script to install Docker, clone your repo, run docker-compose
+  # Improved startup script to handle errors and ensure execution
   metadata_startup_script = <<-EOT
     #!/bin/bash
+    set -e
+
+    # Logging setup
+    LOGFILE=/var/log/startup-script.log
+    exec > >(tee -i ${LOGFILE})
+    exec 2>&1
+
+    echo "Startup script started at $(date)"
+
+    # Update packages
     apt-get update -y
+
+    # Install required packages
     apt-get install -y gnupg apt-transport-https ca-certificates curl software-properties-common git
 
     # Install Docker
+    echo "Installing Docker..."
     curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add -
     add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs) stable"
     apt-get update -y
     apt-get install -y docker-ce docker-ce-cli containerd.io
 
+    # Enable and start Docker
     systemctl enable docker
     systemctl start docker
 
     # Install docker-compose
+    echo "Installing Docker-Compose..."
     curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" \
       -o /usr/local/bin/docker-compose
     chmod +x /usr/local/bin/docker-compose
 
-    # Clone your GitHub repo
-    cd /root
-    git clone https://github.com/NutzKiller/gym.git
-    cd gym
+    # Clone the GitHub repository
+    echo "Cloning the GitHub repository..."
+    if [ ! -d "/root/gym" ]; then
+      git clone https://github.com/NutzKiller/gym.git /root/gym
+    else
+      echo "Repository already cloned."
+    fi
 
-    # Up the containers
+    # Navigate to the repo and start containers
+    cd /root/gym
+    echo "Starting Docker containers..."
     docker-compose up -d
+
+    echo "Startup script completed at $(date)"
   EOT
 
   tags = ["gym-instance"]
