@@ -31,30 +31,43 @@ resource "google_project_service" "enable_sqladmin_052" {
 }
 
 ########################################
-# 2) Create or Reuse VPC Network + Firewall
+# 2) VPC Network + Firewall
 ########################################
 
-# Try to find the existing network
+# Try to fetch the existing network
 data "google_compute_network" "existing_network" {
   name    = "gym-network-053"
   project = var.project_id
   depends_on = [google_project_service.enable_sqladmin_052]
-  # Will fail gracefully if it doesn't exist, allowing the resource below to create it.
+  # If the network doesn't exist, this block will fail silently.
+  lifecycle {
+    ignore_errors = true
+  }
 }
 
-# Create the network if it doesn't exist
-resource "google_compute_network" "new_network" {
-  count = length(try(data.google_compute_network.existing_network.id, [])) == 0 ? 1 : 0
-  name  = "gym-network-053"
+# Create the network only if it doesn't exist
+resource "google_compute_network" "gym_network_053" {
+  name                    = "gym-network-053"
   auto_create_subnetworks = true
-  project = var.project_id
+  project                 = var.project_id
+
+  # Only create this if the data lookup for the network fails
+  count = data.google_compute_network.existing_network.id == null ? 1 : 0
 }
 
-# Create the firewall rule
+# Reference the correct network for downstream resources
+locals {
+  network_self_link = coalesce(
+    data.google_compute_network.existing_network.self_link,
+    google_compute_network.gym_network_053[0].self_link
+  )
+}
+
+# Create a new firewall rule for the network
 resource "google_compute_firewall" "gym_firewall_052" {
   name    = "gym-firewall-052"
   project = var.project_id
-  network = coalesce(data.google_compute_network.existing_network.self_link, google_compute_network.new_network[0].self_link)
+  network = local.network_self_link
 
   allow {
     protocol = "tcp"
@@ -65,16 +78,21 @@ resource "google_compute_firewall" "gym_firewall_052" {
 }
 
 ########################################
-# 3) Use Existing or Create Storage Bucket
+# 3) Storage Bucket
 ########################################
+
+# Try to fetch the existing bucket
 data "google_storage_bucket" "existing_exercise_videos" {
   name = "${var.project_id}-exercise-videos-052"
+  lifecycle {
+    ignore_errors = true
+  }
 }
 
+# Create a new bucket only if it doesn't exist
 resource "google_storage_bucket" "exercise_videos_052" {
-  count = length(try(data.google_storage_bucket.existing_exercise_videos.id, [])) == 0 ? 1 : 0
-  name  = "${var.project_id}-exercise-videos-052"
-  location = var.region
+  name          = "${var.project_id}-exercise-videos-052"
+  location      = var.region
   force_destroy = true
   uniform_bucket_level_access = false
 
@@ -82,10 +100,20 @@ resource "google_storage_bucket" "exercise_videos_052" {
     main_page_suffix = "index.html"
     not_found_page   = "404.html"
   }
+
+  count = data.google_storage_bucket.existing_exercise_videos.id == null ? 1 : 0
+}
+
+# Reference the correct bucket
+locals {
+  storage_bucket_name = coalesce(
+    data.google_storage_bucket.existing_exercise_videos.name,
+    google_storage_bucket.exercise_videos_052[0].name
+  )
 }
 
 ########################################
-# 4) Use Existing Cloud SQL Instance and Database
+# 4) Cloud SQL Instance and Database
 ########################################
 
 # Reference the existing SQL instance
@@ -117,7 +145,7 @@ resource "google_compute_instance" "gym_instance_052" {
   }
 
   network_interface {
-    network       = coalesce(data.google_compute_network.existing_network.self_link, google_compute_network.new_network[0].self_link)
+    network       = local.network_self_link
     access_config {}
   }
 
@@ -169,7 +197,7 @@ output "instance_external_ip" {
 
 output "storage_bucket_name" {
   description = "Name of the storage bucket"
-  value       = coalesce(data.google_storage_bucket.existing_exercise_videos.name, google_storage_bucket.exercise_videos_052[0].name)
+  value       = local.storage_bucket_name
 }
 
 output "cloudsql_public_ip" {
