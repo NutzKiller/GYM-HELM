@@ -34,12 +34,17 @@ resource "google_project_service" "enable_sqladmin_055" {
 # 2) Use Existing VPC Network & Firewall
 ########################################
 data "google_compute_network" "existing_network" {
-  name    = "gym-network-052"
+  name    = "gym-network-052" # Use the existing VPC name
+  project = var.project_id
+}
+
+data "google_compute_firewall" "existing_firewall" {
+  name    = "gym-firewall-052" # Use the existing firewall name
   project = var.project_id
 }
 
 resource "google_compute_firewall" "gym_firewall_055" {
-  name    = "gym-firewall-055"
+  name    = "gym-firewall-055" # Creating a new firewall if necessary
   project = var.project_id
   network = data.google_compute_network.existing_network.name
 
@@ -55,20 +60,20 @@ resource "google_compute_firewall" "gym_firewall_055" {
 # 3) Use Existing Storage Bucket
 ########################################
 data "google_storage_bucket" "existing_exercise_videos" {
-  name = "${var.project_id}-exercise-videos-052" # Change this to the actual existing bucket name
+  name = "${var.project_id}-exercise-videos-052" # Ensure to use the existing bucket name
 }
 
 ########################################
-# 4) Cloud SQL Instance (Use Existing)
+# 4) Use Existing Cloud SQL Instance
 ########################################
 
 data "google_sql_database_instance" "existing_gym_sql_instance" {
-  name    = "gym-db-instance-052"
+  name    = "gym-db-instance-052" # Use the existing SQL instance name
   project = var.project_id
 }
 
 data "google_sql_database" "existing_gym_database" {
-  name     = "GYM"
+  name     = "GYM" # Use the existing database name
   instance = data.google_sql_database_instance.existing_gym_sql_instance.name
   project  = var.project_id
 }
@@ -77,7 +82,7 @@ data "google_sql_database" "existing_gym_database" {
 # 5) GCE VM for Docker + Your App
 ########################################
 resource "google_compute_instance" "gym_instance_055" {
-  name         = "gym-instance-055"
+  name         = "gym-instance-055" # Creating a new VM with a unique name
   machine_type = "e2-micro"
   project      = var.project_id
   zone         = var.zone
