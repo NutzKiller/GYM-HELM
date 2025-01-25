@@ -38,10 +38,9 @@ resource "google_project_service" "enable_sqladmin_052" {
 data "google_compute_network" "existing_network" {
   name    = "gym-network-053"
   project = var.project_id
-  depends_on = [google_project_service.enable_sqladmin_052]
-  # If the network doesn't exist, this block will fail silently.
+
   lifecycle {
-    ignore_errors = true
+    create_before_destroy = true
   }
 }
 
@@ -51,8 +50,7 @@ resource "google_compute_network" "gym_network_053" {
   auto_create_subnetworks = true
   project                 = var.project_id
 
-  # Only create this if the data lookup for the network fails
-  count = data.google_compute_network.existing_network.id == null ? 1 : 0
+  count = length(data.google_compute_network.existing_network.self_link) == 0 ? 1 : 0
 }
 
 # Reference the correct network for downstream resources
@@ -84,8 +82,9 @@ resource "google_compute_firewall" "gym_firewall_052" {
 # Try to fetch the existing bucket
 data "google_storage_bucket" "existing_exercise_videos" {
   name = "${var.project_id}-exercise-videos-052"
+
   lifecycle {
-    ignore_errors = true
+    create_before_destroy = true
   }
 }
 
@@ -101,7 +100,7 @@ resource "google_storage_bucket" "exercise_videos_052" {
     not_found_page   = "404.html"
   }
 
-  count = data.google_storage_bucket.existing_exercise_videos.id == null ? 1 : 0
+  count = length(data.google_storage_bucket.existing_exercise_videos.name) == 0 ? 1 : 0
 }
 
 # Reference the correct bucket
