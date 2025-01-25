@@ -36,7 +36,7 @@ resource "google_project_service" "enable_sqladmin_052" {
 
 # Reference existing VPC network
 data "google_compute_network" "existing_network" {
-  name    = "gym-network-052"
+  name    = "gym-network-053" # Changed network name
   project = var.project_id
 }
 
@@ -147,4 +147,3 @@ output "cloudsql_public_ip" {
   description = "Public IP of the existing Cloud SQL instance"
   value       = data.google_sql_database_instance.existing_gym_sql_instance.public_ip_address
 }
-
