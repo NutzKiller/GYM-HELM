@@ -4,7 +4,7 @@ on:
   workflow_run:
     workflows:
       - CI Workflow
-    types: 
+    types:
       - completed
 
 jobs:
@@ -15,35 +15,48 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v2
 
-      # Set up Terraform
+      # ---------------------------------------------------------
+      # 1) Install Google Cloud SDK on this runner.
+      # ---------------------------------------------------------
+      - name: Set up gcloud CLI
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          # We'll still do manual "echo" below, so skip service_account_key here
+          export_default_credentials: false
+
+      # ---------------------------------------------------------
+      # 2) Set up Terraform
+      # ---------------------------------------------------------
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: latest
 
-      # Configure GCP credentials from GitHub secrets
+      # ---------------------------------------------------------
+      # 3) Authenticate to GCP with your service account key
+      # ---------------------------------------------------------
       - name: Authenticate to GCP
         run: |
+          # Write the raw JSON from your GitHub secret into a file:
           echo "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}" > gcp-keyfile.json
+
+          # Actually authenticate with the service account:
           gcloud auth activate-service-account --key-file=gcp-keyfile.json
+
+          # Set project, region, zone
           gcloud config set project ${{ secrets.GCP_PROJECT_ID }}
           gcloud config set compute/region ${{ secrets.GCP_REGION }}
           gcloud config set compute/zone ${{ secrets.GCP_ZONE }}
         shell: bash
 
-        # This requires that you've added the following secrets in your repository:
-        # GCP_SERVICE_ACCOUNT_KEY - the JSON content of your service account
-        # GCP_PROJECT_ID
-        # GCP_REGION (like 'us-central1')
-        # GCP_ZONE (like 'us-central1-a')
-        
-        # Also ensure that the service account has these roles:
-        #   - roles/compute.admin
-        #   - roles/storage.admin
-        #   - roles/iam.serviceAccountUser
-        # or equivalent for your project
+        # Make sure your secrets are set:
+        #   GCP_SERVICE_ACCOUNT_KEY (full JSON text)
+        #   GCP_PROJECT_ID, GCP_REGION, GCP_ZONE
 
-      # Terraform init/plan/apply using your "terraform_gcp" folder
+      # ---------------------------------------------------------
+      # 4) Terraform Init and Apply
+      # ---------------------------------------------------------
       - name: Terraform Init and Apply
         working-directory: terraform_gcp
         env:
@@ -54,6 +67,9 @@ jobs:
           terraform init
           terraform apply -auto-approve
 
+      # ---------------------------------------------------------
+      # 5) Output the instance's public IP
+      # ---------------------------------------------------------
       - name: Output GCP IP
         working-directory: terraform_gcp
         run: |
