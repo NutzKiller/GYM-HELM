@@ -34,7 +34,7 @@ resource "google_project_service" "enable_sqladmin_055" {
 # 2) Use Existing VPC Network & Firewall
 ########################################
 data "google_compute_network" "existing_network" {
-  name    = "gym-network-052" # Change this to the name of your existing network
+  name    = "gym-network-052"
   project = var.project_id
 }
 
@@ -52,31 +52,21 @@ resource "google_compute_firewall" "gym_firewall_055" {
 }
 
 ########################################
-# 3) Cloud Storage Bucket (New Name)
+# 3) Use Existing Storage Bucket
 ########################################
-resource "google_storage_bucket" "exercise_videos_055" {
-  name          = "${var.project_id}-exercise-videos-055"
-  location      = var.region
-  force_destroy = true
-  uniform_bucket_level_access = false
-
-  website {
-    main_page_suffix = "index.html"
-    not_found_page   = "404.html"
-  }
+data "google_storage_bucket" "existing_exercise_videos" {
+  name = "${var.project_id}-exercise-videos-052" # Change this to the actual existing bucket name
 }
 
 ########################################
 # 4) Cloud SQL Instance (Use Existing)
 ########################################
 
-# Use the existing Cloud SQL instance
 data "google_sql_database_instance" "existing_gym_sql_instance" {
   name    = "gym-db-instance-052"
   project = var.project_id
 }
 
-# Use the existing "GYM" database inside that instance
 data "google_sql_database" "existing_gym_database" {
   name     = "GYM"
   instance = data.google_sql_database_instance.existing_gym_sql_instance.name
@@ -84,7 +74,7 @@ data "google_sql_database" "existing_gym_database" {
 }
 
 ########################################
-# 5) GCE VM for Docker + Your App (New Name)
+# 5) GCE VM for Docker + Your App
 ########################################
 resource "google_compute_instance" "gym_instance_055" {
   name         = "gym-instance-055"
@@ -99,12 +89,10 @@ resource "google_compute_instance" "gym_instance_055" {
   }
 
   network_interface {
-    # Use the existing network
     network       = data.google_compute_network.existing_network.self_link
     access_config {}
   }
 
-  # Startup script to install Docker, clone your repo, run docker-compose
   metadata_startup_script = <<-EOT
     #!/bin/bash
     apt-get update -y
@@ -145,8 +133,8 @@ output "instance_external_ip" {
 }
 
 output "storage_bucket_name" {
-  description = "Name of the new bucket"
-  value       = google_storage_bucket.exercise_videos_055.name
+  description = "Name of the existing bucket"
+  value       = data.google_storage_bucket.existing_exercise_videos.name
 }
 
 output "cloudsql_public_ip" {
