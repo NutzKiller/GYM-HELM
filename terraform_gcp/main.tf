@@ -31,18 +31,20 @@ resource "google_project_service" "enable_sqladmin_052" {
 }
 
 ########################################
-# 2) New VPC Network + Firewall
+# 2) Use Existing VPC Network + Firewall
 ########################################
-# We'll suffix with -052 so we don't conflict with any older resources
-resource "google_compute_network" "gym_network_052" {
+
+# Reference existing VPC network
+data "google_compute_network" "existing_network" {
   name    = "gym-network-052"
   project = var.project_id
 }
 
+# Create a new firewall rule for the existing network
 resource "google_compute_firewall" "gym_firewall_052" {
   name    = "gym-firewall-052"
   project = var.project_id
-  network = google_compute_network.gym_network_052.name
+  network = data.google_compute_network.existing_network.name
 
   allow {
     protocol = "tcp"
@@ -53,19 +55,10 @@ resource "google_compute_firewall" "gym_firewall_052" {
 }
 
 ########################################
-# 3) New Bucket
+# 3) Use Existing Storage Bucket
 ########################################
-resource "google_storage_bucket" "exercise_videos_052" {
-  # Add '-052' so it's unique
-  name          = "${var.project_id}-exercise-videos-052"
-  location      = var.region
-  force_destroy = true
-  uniform_bucket_level_access = false
-
-  website {
-    main_page_suffix = "index.html"
-    not_found_page   = "404.html"
-  }
+data "google_storage_bucket" "existing_exercise_videos" {
+  name = "${var.project_id}-exercise-videos-052" # Reference existing bucket
 }
 
 ########################################
@@ -101,8 +94,7 @@ resource "google_compute_instance" "gym_instance_052" {
   }
 
   network_interface {
-    # Link to the new "gym-network-052"
-    network       = google_compute_network.gym_network_052.self_link
+    network       = data.google_compute_network.existing_network.self_link
     access_config {}
   }
 
@@ -142,13 +134,13 @@ resource "google_compute_instance" "gym_instance_052" {
 # 6) Outputs
 ########################################
 output "instance_external_ip" {
-  description = "Public IP of the new GCE instance"
+  description = "Public IP of the GCE instance"
   value       = google_compute_instance.gym_instance_052.network_interface[0].access_config[0].nat_ip
 }
 
 output "storage_bucket_name" {
-  description = "Name of the new bucket"
-  value       = google_storage_bucket.exercise_videos_052.name
+  description = "Name of the existing bucket"
+  value       = data.google_storage_bucket.existing_exercise_videos.name
 }
 
 output "cloudsql_public_ip" {
