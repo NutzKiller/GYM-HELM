@@ -1,42 +1,25 @@
 version: '3.8'  # Specify Docker Compose version
 
 services:
-  db:
-    image: mysql:8.0
-    container_name: mysql-container
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: password        # Root password
-      MYSQL_DATABASE: GYM                  # Creates the 'GYM' database
-      MYSQL_USER: postgres                 # Creates the 'postgres' user
-      MYSQL_PASSWORD: password             # Password for 'postgres' user
-    ports:
-      - "3306:3306"                        # Exposes MySQL on host port 3306
-    volumes:
-      - mysql_data:/var/lib/mysql          # Persists MySQL data
-    networks:
-      - gym_network
-
   web:
     build: .
     container_name: gym_web
     restart: always
     ports:
-      - "5000:5000"                        # Exposes Flask app on host port 5000
+      - "5000:5000"                # Expose Flask on host port 5000
     environment:
-      - DATABASE_URL=mysql+pymysql://postgres:password@db:3306/GYM
-      - SECRET_KEY=Kanao159632!!           # Replace with a strong, secure key
+      # Update this line to your actual Cloud SQL public IP
+      - DATABASE_URL=mysql+pymysql://postgres:password@CLOUD_SQL_IP:3306/GYM
+
+      - SECRET_KEY=Kanao159632!!   # Replace with a strong, secure key
     networks:
       - gym_network
-    depends_on:
-      - db
     volumes:
-      - .:/app                             # Mounts project directory (optional for development)
+      - .:/app                     # Mount project directory (optional for dev)
+
+# We no longer define the local MySQL container (db).
+# The Flask app points to Cloud SQL, so no local DB needed.
 
 networks:
   gym_network:
-    driver: bridge                        # Uses Docker's default bridge driver
-
-volumes:
-  mysql_data:
-    driver: local
+    driver: bridge
