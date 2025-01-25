@@ -31,25 +31,24 @@ resource "google_project_service" "enable_sqladmin_052" {
 }
 
 ########################################
-# 2) Existing or New VPC Network + Firewall
+# 2) Use Existing or Create New VPC Network + Firewall
 ########################################
 
-# Check for existing VPC network
+# Try to reference an existing network
 data "google_compute_network" "existing_network" {
   count   = 1
-  name    = "gym-network-053"
+  name    = "gym-network-053" # Existing network name
   project = var.project_id
 }
 
-# Create a new VPC network if none exists
+# Create a new VPC network if the existing one does not exist
 resource "google_compute_network" "new_network" {
-  count = length(data.google_compute_network.existing_network) == 0 ? 1 : 0
-
-  name    = "gym-network-053"
+  count   = length(data.google_compute_network.existing_network) == 0 ? 1 : 0
+  name    = "gym-network-052"
   project = var.project_id
 }
 
-# Use existing or new network for firewall
+# Create a new firewall rule for the existing or new network
 resource "google_compute_firewall" "gym_firewall_052" {
   name    = "gym-firewall-052"
   project = var.project_id
