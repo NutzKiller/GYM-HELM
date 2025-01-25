@@ -147,3 +147,4 @@ output "cloudsql_public_ip" {
   description = "Public IP of the existing Cloud SQL instance"
   value       = data.google_sql_database_instance.existing_gym_sql_instance.public_ip_address
 }
+
