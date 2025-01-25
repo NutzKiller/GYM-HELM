@@ -10,6 +10,9 @@ variable "zone" {
   default = "us-central1-a"
 }
 
+############################################
+# Provider
+############################################
 provider "google" {
   project     = var.project_id
   region      = var.region
@@ -20,7 +23,7 @@ provider "google" {
 ########################################
 # 1) Enable Cloud SQL Admin API
 ########################################
-resource "google_project_service" "enable_sqladmin" {
+resource "google_project_service" "enable_sqladmin_052" {
   project = var.project_id
   service = "sqladmin.googleapis.com"
 
@@ -30,16 +33,16 @@ resource "google_project_service" "enable_sqladmin" {
 ########################################
 # 2) New VPC Network + Firewall
 ########################################
-resource "google_compute_network" "gym_network_new" {
-  # A new name so we don't conflict with the old "gym-network"
-  name    = "gym-network-new"
+# We'll suffix with -052 so we don't conflict with any older resources
+resource "google_compute_network" "gym_network_052" {
+  name    = "gym-network-052"
   project = var.project_id
 }
 
-resource "google_compute_firewall" "gym_firewall_new" {
-  name    = "gym-firewall-new"
+resource "google_compute_firewall" "gym_firewall_052" {
+  name    = "gym-firewall-052"
   project = var.project_id
-  network = google_compute_network.gym_network_new.name
+  network = google_compute_network.gym_network_052.name
 
   allow {
     protocol = "tcp"
@@ -52,9 +55,9 @@ resource "google_compute_firewall" "gym_firewall_new" {
 ########################################
 # 3) New Bucket
 ########################################
-resource "google_storage_bucket" "exercise_videos_new" {
-  # Avoids conflict with existing <proj>-exercise-videos
-  name          = "${var.project_id}-exercise-videos-new"
+resource "google_storage_bucket" "exercise_videos_052" {
+  # Add '-052' so it's unique
+  name          = "${var.project_id}-exercise-videos-052"
   location      = var.region
   force_destroy = true
   uniform_bucket_level_access = false
@@ -68,10 +71,10 @@ resource "google_storage_bucket" "exercise_videos_new" {
 ########################################
 # 4) Cloud SQL MySQL instance
 ########################################
-resource "google_sql_database_instance" "gym_sql_new" {
-  depends_on = [google_project_service.enable_sqladmin]
+resource "google_sql_database_instance" "gym_sql_052" {
+  depends_on = [google_project_service.enable_sqladmin_052]
 
-  name             = "gym-db-instance-new"
+  name             = "gym-db-instance-052"
   project          = var.project_id
   region           = var.region
   database_version = "MYSQL_8_0"
@@ -88,19 +91,21 @@ resource "google_sql_database_instance" "gym_sql_new" {
   deletion_protection = true
 }
 
-resource "google_sql_database" "gym_db_new" {
-  depends_on = [google_sql_database_instance.gym_sql_new]
+# Create the "GYM" database inside that instance
+resource "google_sql_database" "gym_db_052" {
+  depends_on = [google_sql_database_instance.gym_sql_052]
 
   name     = "GYM"
-  instance = google_sql_database_instance.gym_sql_new.name
+  instance = google_sql_database_instance.gym_sql_052.name
   project  = var.project_id
 }
 
-resource "google_sql_user" "app_user_new" {
-  depends_on = [google_sql_database_instance.gym_sql_new]
+# Create a MySQL user named "postgres" with password "password"
+resource "google_sql_user" "app_user_052" {
+  depends_on = [google_sql_database_instance.gym_sql_052]
 
   name     = "postgres"
-  instance = google_sql_database_instance.gym_sql_new.name
+  instance = google_sql_database_instance.gym_sql_052.name
   host     = "%"
   password = "password"
   project  = var.project_id
@@ -109,8 +114,8 @@ resource "google_sql_user" "app_user_new" {
 ########################################
 # 5) GCE VM for Docker + Your App
 ########################################
-resource "google_compute_instance" "gym_instance_new" {
-  name         = "gym-instance-new"
+resource "google_compute_instance" "gym_instance_052" {
+  name         = "gym-instance-052"
   machine_type = "e2-micro"
   project      = var.project_id
   zone         = var.zone
@@ -122,10 +127,12 @@ resource "google_compute_instance" "gym_instance_new" {
   }
 
   network_interface {
-    network       = google_compute_network.gym_network_new.self_link
+    # link to the new "gym-network-052"
+    network       = google_compute_network.gym_network_052.self_link
     access_config {}
   }
 
+  # Startup script to install Docker, clone your repo, run docker-compose
   metadata_startup_script = <<-EOT
     #!/bin/bash
     apt-get update -y
@@ -162,15 +169,16 @@ resource "google_compute_instance" "gym_instance_new" {
 ########################################
 output "instance_external_ip" {
   description = "Public IP of the new GCE instance"
-  value       = google_compute_instance.gym_instance_new.network_interface[0].access_config[0].nat_ip
+  value       = google_compute_instance.gym_instance_052.network_interface[0].access_config[0].nat_ip
 }
 
 output "storage_bucket_name" {
   description = "Name of the new bucket"
-  value       = google_storage_bucket.exercise_videos_new.name
+  value       = google_storage_bucket.exercise_videos_052.name
 }
 
 output "cloudsql_public_ip" {
   description = "Public IP of the new Cloud SQL instance"
-  value       = google_sql_database_instance.gym_sql_new.public_ip_address
+  value       = google_sql_database_instance.gym_sql_052.public_ip_address
 }
+
