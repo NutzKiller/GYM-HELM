@@ -23,7 +23,7 @@ provider "google" {
 ########################################
 # 1) Enable Cloud SQL Admin API
 ########################################
-resource "google_project_service" "enable_sqladmin_052" {
+resource "google_project_service" "enable_sqladmin_053" {
   project = var.project_id
   service = "sqladmin.googleapis.com"
 
@@ -31,18 +31,17 @@ resource "google_project_service" "enable_sqladmin_052" {
 }
 
 ########################################
-# 2) New VPC Network + Firewall
+# 2) VPC Network + Firewall (New Names)
 ########################################
-# We'll suffix with -052 so we don't conflict with any older resources
-resource "google_compute_network" "gym_network_052" {
-  name    = "gym-network-052"
+resource "google_compute_network" "gym_network_053" {
+  name    = "gym-network-053"
   project = var.project_id
 }
 
-resource "google_compute_firewall" "gym_firewall_052" {
-  name    = "gym-firewall-052"
+resource "google_compute_firewall" "gym_firewall_053" {
+  name    = "gym-firewall-053"
   project = var.project_id
-  network = google_compute_network.gym_network_052.name
+  network = google_compute_network.gym_network_053.name
 
   allow {
     protocol = "tcp"
@@ -53,11 +52,10 @@ resource "google_compute_firewall" "gym_firewall_052" {
 }
 
 ########################################
-# 3) New Bucket
+# 3) Cloud Storage Bucket (New Name)
 ########################################
-resource "google_storage_bucket" "exercise_videos_052" {
-  # Add '-052' so it's unique
-  name          = "${var.project_id}-exercise-videos-052"
+resource "google_storage_bucket" "exercise_videos_053" {
+  name          = "${var.project_id}-exercise-videos-053"
   location      = var.region
   force_destroy = true
   uniform_bucket_level_access = false
@@ -69,10 +67,10 @@ resource "google_storage_bucket" "exercise_videos_052" {
 }
 
 ########################################
-# 4) Cloud SQL MySQL instance
+# 4) Cloud SQL Instance (Use Existing)
 ########################################
 resource "google_sql_database_instance" "gym_sql_052" {
-  depends_on = [google_project_service.enable_sqladmin_052]
+  depends_on = [google_project_service.enable_sqladmin_053]
 
   name             = "gym-db-instance-052"
   project          = var.project_id
@@ -87,11 +85,10 @@ resource "google_sql_database_instance" "gym_sql_052" {
     }
   }
 
-  # Protect DB from accidental destroy
-  deletion_protection = true
+  deletion_protection = false
 }
 
-# Create the "GYM" database inside that instance
+# Use the "GYM" database inside that instance
 resource "google_sql_database" "gym_db_052" {
   depends_on = [google_sql_database_instance.gym_sql_052]
 
@@ -100,7 +97,7 @@ resource "google_sql_database" "gym_db_052" {
   project  = var.project_id
 }
 
-# Create a MySQL user named "postgres" with password "password"
+# Create the MySQL user named "postgres"
 resource "google_sql_user" "app_user_052" {
   depends_on = [google_sql_database_instance.gym_sql_052]
 
@@ -112,10 +109,10 @@ resource "google_sql_user" "app_user_052" {
 }
 
 ########################################
-# 5) GCE VM for Docker + Your App
+# 5) GCE VM for Docker + Your App (New Name)
 ########################################
-resource "google_compute_instance" "gym_instance_052" {
-  name         = "gym-instance-052"
+resource "google_compute_instance" "gym_instance_053" {
+  name         = "gym-instance-053"
   machine_type = "e2-micro"
   project      = var.project_id
   zone         = var.zone
@@ -127,8 +124,7 @@ resource "google_compute_instance" "gym_instance_052" {
   }
 
   network_interface {
-    # link to the new "gym-network-052"
-    network       = google_compute_network.gym_network_052.self_link
+    network       = google_compute_network.gym_network_053.self_link
     access_config {}
   }
 
@@ -168,17 +164,16 @@ resource "google_compute_instance" "gym_instance_052" {
 # 6) Outputs
 ########################################
 output "instance_external_ip" {
-  description = "Public IP of the new GCE instance"
-  value       = google_compute_instance.gym_instance_052.network_interface[0].access_config[0].nat_ip
+  description = "Public IP of the GCE instance"
+  value       = google_compute_instance.gym_instance_053.network_interface[0].access_config[0].nat_ip
 }
 
 output "storage_bucket_name" {
   description = "Name of the new bucket"
-  value       = google_storage_bucket.exercise_videos_052.name
+  value       = google_storage_bucket.exercise_videos_053.name
 }
 
 output "cloudsql_public_ip" {
-  description = "Public IP of the new Cloud SQL instance"
+  description = "Public IP of the Cloud SQL instance"
   value       = google_sql_database_instance.gym_sql_052.public_ip_address
 }
-

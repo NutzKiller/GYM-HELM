@@ -11,15 +11,17 @@ from sqlalchemy.exc import IntegrityError
 from flask_migrate import Migrate
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY")
-if not app.secret_key:
-    raise ValueError("No SECRET_KEY set for Flask application")
+
+# Hardcode a secret_key for demonstration. If not set, you can pass from env.
+app.secret_key = os.environ.get("SECRET_KEY") or "YourVerySecureSecretKey"
 
 # ---------------- DATABASE SETUP ----------------
-# Format: mysql+pymysql://username:password@host:port/database
-DATABASE_URL = os.environ.get("DATABASE_URL")
-if not DATABASE_URL:
-    raise ValueError("No DATABASE_URL set for Flask application")
+# Replacing the environment variable approach with a direct MySQL URI:
+DATABASE_URL = "mysql+pymysql://postgres:password@34.122.238.144:3306/GYM"
+# ^ This connects to your Cloud SQL instance. 
+#   If you prefer environment variables, remove this line 
+#   and revert to the original approach.
+
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -61,9 +63,10 @@ class DBUser(db.Model):
     selected_plan = db.Column(db.String(20))  # e.g., 'ppl', 'ab', etc.
     workout_data = db.Column(db.Text)  # Removed default value
 
-
     def verify_password(self, password_plaintext):
-        return self.password == password_plaintext# -------------------------------------------------
+        return self.password == password_plaintext
+
+# -------------------------------------------------
 #  HELPER FUNCTIONS: DB ROW -> DICTIONARY
 # -------------------------------------------------
 def exercise_to_dict(row: DBExercise):
@@ -79,7 +82,7 @@ def product_to_dict(row: DBProduct):
         "id": row.id,
         "name": row.name,
         "price": row.price,
-        "description": row.description,  # Updated
+        "description": row.description,
         "category": row.category
     }
 
@@ -102,7 +105,6 @@ def user_to_dict(row: DBUser):
 
 # -------------------------------------------------
 #               LOADING / SAVING DATA
-#      (These keep the same function names but use DB)
 # -------------------------------------------------
 def load_exercises():
     rows = DBExercise.query.all()
@@ -178,17 +180,16 @@ def update_user_workout(username, plan_type, plan_data):
     row = DBUser.query.filter_by(username=username).first()
     if row:
         try:
-            print(f"Updating user {username} with plan {plan_type}")  # Debugging
+            print(f"Updating user {username} with plan {plan_type}")
             row.selected_plan = plan_type
             row.workout_data = json.dumps(plan_data)
             db.session.commit()
-            print("Update successful")  # Debugging
+            print("Update successful")
         except Exception as e:
-            print(f"Error updating workout for user {username}: {e}")  # Debugging
+            print(f"Error updating workout for user {username}: {e}")
             db.session.rollback()
     else:
-        print(f"User {username} not found")  # Debugging
-
+        print(f"User {username} not found")
 
 def update_user_profile(username, public_name, phone, email, birthday, profile_photo, location, bio, weight, height):
     row = DBUser.query.filter_by(username=username).first()
@@ -411,7 +412,6 @@ def generate_ppl_plan(ex):
         tricep_main = get_exercise_by_name(ex, "Cable tricep pushdown")
         if tricep_main:
             w.append({"name": tricep_main['name'], "sets": 4})
-            # Assuming there's another tricep exercise like "Overhead Tricep Extension" or "Dips"
             tricep_pool = [t for t in ex if t['topic'].lower() == 'triceps' and t['name'] != tricep_main['name']]
             if tricep_pool:
                 tricep_secondary = random.choice(tricep_pool)
@@ -434,7 +434,7 @@ def generate_ppl_plan(ex):
 
         # Additional back exercises to make it 4
         back_pool = [b for b in ex if b['topic'].lower() == 'back' and b['name'] not in [back_main['name'], back_option['name'] if back_option else None]]
-        for _ in range(2):  # Add up to 2 more exercises
+        for _ in range(2):
             if back_pool:
                 additional_back = random.choice(back_pool)
                 w.append({"name": additional_back['name'], "sets": 3})
@@ -478,23 +478,21 @@ def generate_ppl_plan(ex):
 
         # Additional leg exercises to make it 5 or 6
         leg_pool = [lg for lg in ex if lg['topic'].lower() == 'legs' and lg['name'] not in [squat['name'], leg_extension['name'], calf['name'], leg_curl['name'] if leg_curl else None]]
-        for _ in range(1):  # Add up to 2 more exercises
+        for _ in range(1):
             if leg_pool and len(w) < 6:
                 additional_leg = random.choice(leg_pool)
                 w.append({"name": additional_leg['name'], "sets": 3})
                 leg_pool.remove(additional_leg)
 
         # Adjust sets if total exceeds 17
-        total_sets = sum(item['sets'] for item in w)
+        total_sets = sum(item['sets'] for item in w]
         if total_sets > 17:
-            # Reduce the last added exercise sets to fit
             excess = total_sets - 17
             if w[-1]['sets'] > 3:
                 w[-1]['sets'] -= excess
                 if w[-1]['sets'] < 3:
                     w[-1]['sets'] = 3
 
-        # Formatting
         final = [f"{item['name']} - {item['sets']} sets" for item in w]
         return final
 
@@ -547,7 +545,6 @@ def generate_new_abc_plan(ex):
                     w.append({"name": additional_back['name'], "sets": 3})
                     back_pool.remove(additional_back)
 
-        # Formatting
         final = [f"{item['name']} - {item['sets']} sets" for item in w]
         return final
 
@@ -594,7 +591,6 @@ def generate_new_abc_plan(ex):
                     w.append({"name": additional_tricep['name'], "sets": 3})
                     tricep_pool.remove(additional_tricep)
 
-        # Formatting
         final = [f"{item['name']} - {item['sets']} sets" for item in w]
         return final
 
@@ -617,7 +613,6 @@ def generate_new_abc_plan(ex):
         if leg_curl:
             w.append({"name": leg_curl['name'], "sets": 3})
 
-        # Select one or two more leg exercises
         leg_pool = [lg for lg in ex if lg['topic'].lower() == 'legs' and lg['name'] not in [squat['name'], leg_extension['name'], calf['name'], leg_curl['name'] if leg_curl else None]]
         for _ in range(2):
             if leg_pool and len(w) < 6:
@@ -625,7 +620,6 @@ def generate_new_abc_plan(ex):
                 w.append({"name": additional_leg['name'], "sets": 3})
                 leg_pool.remove(additional_leg)
 
-        # Formatting
         final = [f"{item['name']} - {item['sets']} sets" for item in w]
         return final
 
