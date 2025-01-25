@@ -7,20 +7,24 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import IntegrityError
 
+# ---------------- MIGRATE IMPORTS ----------------
+from flask_migrate import Migrate
+
 app = Flask(__name__)
-app.secret_key = "CHANGE_ME_TO_SOMETHING_SECURE"
+app.secret_key = os.environ.get("SECRET_KEY")
+if not app.secret_key:
+    raise ValueError("No SECRET_KEY set for Flask application")
 
 # ---------------- DATABASE SETUP ----------------
-DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://postgres:postgres@db:5432/gymdb")
+# Format: mysql+pymysql://username:password@host:port/database
+DATABASE_URL = os.environ.get("DATABASE_URL")
+if not DATABASE_URL:
+    raise ValueError("No DATABASE_URL set for Flask application")
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
-
-# ---------------- PATHS TO YOUR JSON FILES (FOR FIRST-TIME SEEDING) ----------------
-DATA_EXERCISES_FILE = 'exercises.json'
-DATA_PRODUCTS_FILE = 'products.json'
-DATA_USERS_FILE = 'users.json'
+migrate = Migrate(app, db)
 
 # -------------------------------------------------
 #                DATABASE MODELS
@@ -37,14 +41,14 @@ class DBProduct(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False)
     price = db.Column(db.Float, nullable=False)
-    desc = db.Column(db.Text)
+    description = db.Column(db.Text)  # Renamed from 'desc'
     category = db.Column(db.String(50))
 
 class DBUser(db.Model):
     __tablename__ = "users"
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
-    password = db.Column(db.String(50), nullable=False)
+    password = db.Column(db.String(128), nullable=False)
     public_name = db.Column(db.String(100))
     birthday = db.Column(db.String(20))
     phone = db.Column(db.String(50))
@@ -55,9 +59,11 @@ class DBUser(db.Model):
     weight = db.Column(db.String(20))
     height = db.Column(db.String(20))
     selected_plan = db.Column(db.String(20))  # e.g., 'ppl', 'ab', etc.
-    workout_data = db.Column(db.Text, default='{}')
+    workout_data = db.Column(db.Text)  # Removed default value
 
-# -------------------------------------------------
+
+    def verify_password(self, password_plaintext):
+        return self.password == password_plaintext# -------------------------------------------------
 #  HELPER FUNCTIONS: DB ROW -> DICTIONARY
 # -------------------------------------------------
 def exercise_to_dict(row: DBExercise):
@@ -73,14 +79,14 @@ def product_to_dict(row: DBProduct):
         "id": row.id,
         "name": row.name,
         "price": row.price,
-        "desc": row.desc,
+        "description": row.description,  # Updated
         "category": row.category
     }
 
 def user_to_dict(row: DBUser):
     return {
+        "id": row.id,
         "username": row.username,
-        "password": row.password,
         "public_name": row.public_name,
         "birthday": row.birthday,
         "phone": row.phone,
@@ -91,70 +97,8 @@ def user_to_dict(row: DBUser):
         "weight": row.weight,
         "height": row.height,
         "selected_plan": row.selected_plan,
-        "workout_data": json.loads(row.workout_data) if row.workout_data else {}
+        "workout_data": json.loads(row.workout_data) if row.workout_data else {},
     }
-
-# -------------------------------------------------
-#  ONE-TIME SEEDING IF DB IS EMPTY
-# -------------------------------------------------
-def seed_db_if_empty():
-    db.create_all()
-
-    # Seed exercises
-    if not DBExercise.query.first():
-        if os.path.exists(DATA_EXERCISES_FILE):
-            with open(DATA_EXERCISES_FILE, 'r') as f:
-                data = json.load(f)
-            for ex in data:
-                db_ex = DBExercise(
-                    id=ex['id'],
-                    name=ex['name'],
-                    category=ex.get('category', ""),
-                    topic=ex.get('topic', "")
-                )
-                db.session.add(db_ex)
-            db.session.commit()
-
-    # Seed products
-    if not DBProduct.query.first():
-        if os.path.exists(DATA_PRODUCTS_FILE):
-            with open(DATA_PRODUCTS_FILE, 'r') as f:
-                data = json.load(f)
-            for prod in data:
-                db_prod = DBProduct(
-                    id=prod['id'],
-                    name=prod['name'],
-                    price=prod['price'],
-                    desc=prod.get('desc', ""),
-                    category=prod.get('category', "")
-                )
-                db.session.add(db_prod)
-            db.session.commit()
-
-    # Seed users
-    if not DBUser.query.first():
-        if os.path.exists(DATA_USERS_FILE):
-            with open(DATA_USERS_FILE, 'r') as f:
-                data = json.load(f)
-            for u in data:
-                w_data = u.get('workout_data', {})
-                db_user = DBUser(
-                    username=u['username'],
-                    password=u['password'],
-                    public_name=u.get('public_name', ""),
-                    birthday=u.get('birthday', ""),
-                    phone=u.get('phone', ""),
-                    email=u.get('email', ""),
-                    profile_photo=u.get('profile_photo', ""),
-                    location=u.get('location', ""),
-                    bio=u.get('bio', ""),
-                    weight=u.get('weight', ""),
-                    height=u.get('height', ""),
-                    selected_plan=u.get('selected_plan', None),
-                    workout_data=json.dumps(w_data)
-                )
-                db.session.add(db_user)
-            db.session.commit()
 
 # -------------------------------------------------
 #               LOADING / SAVING DATA
@@ -203,7 +147,7 @@ def find_user(username):
 
 def authenticate_user(username, password):
     row = DBUser.query.filter_by(username=username).first()
-    if row and row.password == password:
+    if row and row.verify_password(password):
         return user_to_dict(row)
     return None
 
@@ -213,8 +157,8 @@ def register_user(username, password, public_name, birthday, phone, email, profi
         return False
     db_user = DBUser(
         username=username,
-        password=password,
         public_name=public_name,
+        password=password,
         birthday=birthday,
         phone=phone,
         email=email,
@@ -224,7 +168,7 @@ def register_user(username, password, public_name, birthday, phone, email, profi
         weight=weight,
         height=height,
         selected_plan=None,
-        workout_data=json.dumps({})
+        workout_data=json.dumps({}),
     )
     db.session.add(db_user)
     db.session.commit()
@@ -233,9 +177,18 @@ def register_user(username, password, public_name, birthday, phone, email, profi
 def update_user_workout(username, plan_type, plan_data):
     row = DBUser.query.filter_by(username=username).first()
     if row:
-        row.selected_plan = plan_type
-        row.workout_data = json.dumps(plan_data)
-        db.session.commit()
+        try:
+            print(f"Updating user {username} with plan {plan_type}")  # Debugging
+            row.selected_plan = plan_type
+            row.workout_data = json.dumps(plan_data)
+            db.session.commit()
+            print("Update successful")  # Debugging
+        except Exception as e:
+            print(f"Error updating workout for user {username}: {e}")  # Debugging
+            db.session.rollback()
+    else:
+        print(f"User {username} not found")  # Debugging
+
 
 def update_user_profile(username, public_name, phone, email, birthday, profile_photo, location, bio, weight, height):
     row = DBUser.query.filter_by(username=username).first()
@@ -340,7 +293,7 @@ def generate_ab_plan(ex):
         if chest_pair:
             w.append(chest_pair)
 
-        # Exclude cm & chest_pair from chest_pool
+        # Select a third chest exercise
         chest_pool = [c for c in ex if c['topic'].lower() == 'chest']
         if cm:
             chest_pool = [c for c in chest_pool if c['name'] != cm['name']]
@@ -393,7 +346,7 @@ def generate_ab_plan(ex):
         if calf:
             w.append(calf)
         legs_pool = [lg for lg in ex if lg['topic'].lower() == 'legs' 
-                     and lg['name'] not in [sq['name'] if sq else None, calf['name'] if calf else None]]
+                     and lg['name'] not in [sq['name'], calf['name'] if calf else None]]
         if legs_pool:
             selected = random.choice(legs_pool)
             w.append(selected)
@@ -425,7 +378,7 @@ def generate_ab_plan(ex):
     }
 
 # -------------------------------------------------
-# PPL => updated as per user requirements
+# PPL PLAN
 # -------------------------------------------------
 def generate_ppl_plan(ex):
     def push_day():
@@ -555,7 +508,7 @@ def generate_ppl_plan(ex):
     }
 
 # -------------------------------------------------
-# NEW A/B/C PLAN => updated as per user requirements
+# NEW A/B/C PLAN
 # -------------------------------------------------
 def generate_new_abc_plan(ex):
     def workout_A():
@@ -972,6 +925,4 @@ def progress():
 #   MAIN ENTRY POINT
 # -------------------------------------------------
 if __name__ == "__main__":
-    with app.app_context():
-        seed_db_if_empty()
     app.run(debug=True, host='0.0.0.0', port=5000)
