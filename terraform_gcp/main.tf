@@ -31,30 +31,20 @@ resource "google_project_service" "enable_sqladmin_052" {
 }
 
 ########################################
-# 2) Use Existing or Create New VPC Network + Firewall
+# 2) Use Existing VPC Network + Firewall
 ########################################
 
 # Reference existing VPC network
 data "google_compute_network" "existing_network" {
-  name    = "gym-network-053" # Existing network name
+  name    = "gym-network-053" # Changed network name
   project = var.project_id
 }
 
-# Create a new VPC network if the existing one does not exist
-resource "google_compute_network" "new_network" {
-  count   = data.google_compute_network.existing_network.id == null ? 1 : 0
-  name    = "gym-network-052"
-  project = var.project_id
-}
-
-# Create a new firewall rule for the existing or new network
+# Create a new firewall rule for the existing network
 resource "google_compute_firewall" "gym_firewall_052" {
   name    = "gym-firewall-052"
   project = var.project_id
-  network = coalesce(
-    data.google_compute_network.existing_network.self_link,
-    google_compute_network.new_network[0].self_link
-  )
+  network = data.google_compute_network.existing_network.name
 
   allow {
     protocol = "tcp"
@@ -104,16 +94,16 @@ resource "google_compute_instance" "gym_instance_052" {
   }
 
   network_interface {
-    network       = coalesce(
-      data.google_compute_network.existing_network.self_link,
-      google_compute_network.new_network[0].self_link
-    )
+    network       = data.google_compute_network.existing_network.self_link
     access_config {}
   }
 
   # Startup script to install Docker, clone your repo, run docker-compose
   metadata_startup_script = <<-EOT
     #!/bin/bash
+    exec > >(tee /var/log/startup-script.log) 2>&1
+    set -e
+
     apt-get update -y
     apt-get install -y gnupg apt-transport-https ca-certificates curl software-properties-common git
 
@@ -131,12 +121,15 @@ resource "google_compute_instance" "gym_instance_052" {
       -o /usr/local/bin/docker-compose
     chmod +x /usr/local/bin/docker-compose
 
-    # Clone your GitHub repo
-    cd /root
-    git clone https://github.com/NutzKiller/gym.git
-    cd gym
+    # Clone your GitHub repo and run docker-compose
+    if [ ! -d "/root/gym" ]; then
+      cd /root
+      git clone https://github.com/NutzKiller/gym.git
+    fi
+    cd /root/gym
 
-    # Up the containers
+    docker-compose down || true
+    docker-compose pull
     docker-compose up -d
   EOT
 
