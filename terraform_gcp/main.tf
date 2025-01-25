@@ -17,13 +17,24 @@ provider "google" {
   credentials = file("${path.module}/gcp-keyfile.json")
 }
 
-# Create a network + firewall (port 22,80,5000)
-resource "google_compute_network" "gym_network" {
-  name = "gym-network"
+# 1) Enable Cloud SQL Admin API
+resource "google_project_service" "enable_sqladmin" {
+  project = var.project_id
+  service = "sqladmin.googleapis.com"
+
+  disable_on_destroy = false
 }
 
+# 2) Network (import if it already exists)
+resource "google_compute_network" "gym_network" {
+  name    = "gym-network"
+  project = var.project_id
+}
+
+# 3) Firewall
 resource "google_compute_firewall" "gym_firewall" {
   name    = "gym-firewall"
+  project = var.project_id
   network = google_compute_network.gym_network.name
 
   allow {
@@ -34,22 +45,24 @@ resource "google_compute_firewall" "gym_firewall" {
   source_ranges = ["0.0.0.0/0"]
 }
 
-# (Optional) Bucket for videos
+# 4) Bucket (import if it already exists)
 resource "google_storage_bucket" "exercise_videos" {
   name          = "${var.project_id}-exercise-videos"
   location      = var.region
   force_destroy = true
+  uniform_bucket_level_access = false
+
   website {
     main_page_suffix = "index.html"
     not_found_page   = "404.html"
   }
-  uniform_bucket_level_access = false
 }
 
-# Create a VM instance that runs Docker + your app
+# 5) GCE VM
 resource "google_compute_instance" "gym_instance" {
   name         = "gym-instance"
   machine_type = "e2-micro"
+  project      = var.project_id
   zone         = var.zone
 
   boot_disk {
@@ -63,8 +76,6 @@ resource "google_compute_instance" "gym_instance" {
     access_config {}
   }
 
-  # Startup script: install Docker, git clone your repo, run docker-compose
-  # (No local MySQL container needed now)
   metadata_startup_script = <<-EOT
     #!/bin/bash
     apt-get update -y
@@ -89,7 +100,7 @@ resource "google_compute_instance" "gym_instance" {
     git clone https://github.com/NutzKiller/gym.git
     cd gym
 
-    # Start the containers (only the web container if you remove 'db:' from docker-compose.yml)
+    # Up the containers
     docker-compose up -d
   EOT
 
@@ -97,11 +108,9 @@ resource "google_compute_instance" "gym_instance" {
 }
 
 output "instance_external_ip" {
-  description = "The public IP of the GCE instance"
-  value       = google_compute_instance.gym_instance.network_interface[0].access_config[0].nat_ip
+  value = google_compute_instance.gym_instance.network_interface[0].access_config[0].nat_ip
 }
 
 output "storage_bucket_name" {
-  description = "Name of the optional bucket for videos"
-  value       = google_storage_bucket.exercise_videos.name
+  value = google_storage_bucket.exercise_videos.name
 }

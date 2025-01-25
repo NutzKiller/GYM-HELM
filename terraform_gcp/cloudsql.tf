@@ -1,35 +1,34 @@
-########################################################
-# terraform_gcp/cloudsql.tf
-########################################################
-
+# Make sure we enable the API before creating an instance
 resource "google_sql_database_instance" "gym_sql" {
+  depends_on = [google_project_service.enable_sqladmin]
+
   name             = "gym-db-instance"
   project          = var.project_id
   region           = var.region
   database_version = "MYSQL_8_0"
 
+  # For a cheap tier:
   settings {
-    tier = "db-f1-micro"  # cheap, minimal tier
+    tier = "db-f1-micro"
+
     ip_configuration {
       ipv4_enabled = true
-      # optionally, you can allow only your GCE VM's IP if you want
-      # authorized_networks {
-      #   name  = "my-gce-vm"
-      #   value = "VM_EXTERNAL_IP/32"
-      # }
     }
   }
+
+  # Keep the instance if you destroy:
+  deletion_protection = true
 }
 
-# Create the actual "GYM" database
 resource "google_sql_database" "gym_db" {
+  depends_on = [google_sql_database_instance.gym_sql]
   name     = "GYM"
   instance = google_sql_database_instance.gym_sql.name
   project  = var.project_id
 }
 
-# Create a user for your app
 resource "google_sql_user" "app_user" {
+  depends_on = [google_sql_database_instance.gym_sql]
   name     = "postgres"
   instance = google_sql_database_instance.gym_sql.name
   host     = "%"
@@ -37,8 +36,6 @@ resource "google_sql_user" "app_user" {
   project  = var.project_id
 }
 
-# Optionally, output the public IP so you can see it easily
 output "cloudsql_public_ip" {
-  description = "Public IP address of the Cloud SQL instance"
-  value       = google_sql_database_instance.gym_sql.public_ip_address
+  value = google_sql_database_instance.gym_sql.public_ip_address
 }
