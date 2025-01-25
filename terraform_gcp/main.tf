@@ -31,17 +31,17 @@ resource "google_project_service" "enable_sqladmin_055" {
 }
 
 ########################################
-# 2) VPC Network + Firewall (New Names)
+# 2) Use Existing VPC Network & Firewall
 ########################################
-resource "google_compute_network" "gym_network_055" {
-  name    = "gym-network-055"
+data "google_compute_network" "existing_network" {
+  name    = "gym-network-052" # Change this to the name of your existing network
   project = var.project_id
 }
 
 resource "google_compute_firewall" "gym_firewall_055" {
   name    = "gym-firewall-055"
   project = var.project_id
-  network = google_compute_network.gym_network_055.name
+  network = data.google_compute_network.existing_network.name
 
   allow {
     protocol = "tcp"
@@ -83,9 +83,6 @@ data "google_sql_database" "existing_gym_database" {
   project  = var.project_id
 }
 
-# Reference existing Cloud SQL user (commented to avoid invalid data block)
-# The user `postgres` is assumed to already exist in the instance.
-
 ########################################
 # 5) GCE VM for Docker + Your App (New Name)
 ########################################
@@ -102,7 +99,8 @@ resource "google_compute_instance" "gym_instance_055" {
   }
 
   network_interface {
-    network       = google_compute_network.gym_network_055.self_link
+    # Use the existing network
+    network       = data.google_compute_network.existing_network.self_link
     access_config {}
   }
 
