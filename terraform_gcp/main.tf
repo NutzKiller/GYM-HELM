@@ -38,25 +38,26 @@ resource "google_project_service" "enable_sqladmin_052" {
 data "google_compute_network" "existing_network" {
   name    = "gym-network-053"
   project = var.project_id
-  depends_on = [google_project_service.enable_sqladmin_052]
 }
 
-# Conditionally create a new VPC network if it doesn't exist
+# Conditional local variable to check if the network exists
+locals {
+  network_exists = can(data.google_compute_network.existing_network.self_link)
+}
+
+# Create a new VPC network only if it doesn't exist
 resource "google_compute_network" "new_network" {
-  count                = length(try(data.google_compute_network.existing_network.self_link, [])) == 0 ? 1 : 0
-  name                 = "gym-network-053"
+  count                 = local.network_exists ? 0 : 1
+  name                  = "gym-network-053"
   auto_create_subnetworks = true
-  project              = var.project_id
+  project               = var.project_id
 }
 
 # Create a new firewall rule linked to the VPC network
 resource "google_compute_firewall" "gym_firewall_052" {
   name    = "gym-firewall-052"
   project = var.project_id
-  network = coalesce(
-    try(data.google_compute_network.existing_network.self_link, null),
-    google_compute_network.new_network[0].self_link
-  )
+  network = local.network_exists ? data.google_compute_network.existing_network.self_link : google_compute_network.new_network[0].self_link
 
   allow {
     protocol = "tcp"
@@ -106,10 +107,7 @@ resource "google_compute_instance" "gym_instance_052" {
   }
 
   network_interface {
-    network       = coalesce(
-      try(data.google_compute_network.existing_network.self_link, null),
-      google_compute_network.new_network[0].self_link
-    )
+    network       = local.network_exists ? data.google_compute_network.existing_network.self_link : google_compute_network.new_network[0].self_link
     access_config {}
   }
 
