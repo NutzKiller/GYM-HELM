@@ -31,25 +31,31 @@ resource "google_project_service" "enable_sqladmin_052" {
 }
 
 ########################################
-# 2) VPC Network + Firewall
+# 2) Existing or New VPC Network + Firewall
 ########################################
 
-# If network exists, use it. Otherwise, create a new one.
+# Check for existing VPC network
 data "google_compute_network" "existing_network" {
-  name    = "gym-network-052" # Change this if you verify a different network name
+  count   = 1
+  name    = "gym-network-053"
   project = var.project_id
 }
 
+# Create a new VPC network if none exists
 resource "google_compute_network" "new_network" {
-  count   = length([for net in [data.google_compute_network.existing_network.name] : net if net != null]) == 0 ? 1 : 0
-  name    = "gym-network-052"
+  count = length(data.google_compute_network.existing_network) == 0 ? 1 : 0
+
+  name    = "gym-network-053"
   project = var.project_id
 }
 
+# Use existing or new network for firewall
 resource "google_compute_firewall" "gym_firewall_052" {
   name    = "gym-firewall-052"
   project = var.project_id
-  network = coalesce(data.google_compute_network.existing_network.self_link, google_compute_network.new_network.self_link)
+  network = length(data.google_compute_network.existing_network) > 0
+    ? data.google_compute_network.existing_network[0].self_link
+    : google_compute_network.new_network[0].self_link
 
   allow {
     protocol = "tcp"
@@ -99,58 +105,39 @@ resource "google_compute_instance" "gym_instance_052" {
   }
 
   network_interface {
-    network       = coalesce(data.google_compute_network.existing_network.self_link, google_compute_network.new_network.self_link)
+    network       = length(data.google_compute_network.existing_network) > 0
+      ? data.google_compute_network.existing_network[0].self_link
+      : google_compute_network.new_network[0].self_link
     access_config {}
   }
 
-  # Improved startup script with escaped shell variables
+  # Startup script to install Docker, clone your repo, run docker-compose
   metadata_startup_script = <<-EOT
     #!/bin/bash
-    set -e
-
-    LOGFILE=/var/log/startup-script.log
-    exec > >(tee -i $${LOGFILE})
-    exec 2>&1
-
-    echo "Startup script started at $$(date)"
-
-    # Update packages
     apt-get update -y
-
-    # Install required packages
     apt-get install -y gnupg apt-transport-https ca-certificates curl software-properties-common git
 
     # Install Docker
-    echo "Installing Docker..."
     curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add -
     add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs) stable"
     apt-get update -y
     apt-get install -y docker-ce docker-ce-cli containerd.io
 
-    # Enable and start Docker
     systemctl enable docker
     systemctl start docker
 
     # Install docker-compose
-    echo "Installing Docker-Compose..."
     curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" \
       -o /usr/local/bin/docker-compose
     chmod +x /usr/local/bin/docker-compose
 
-    # Clone the GitHub repository
-    echo "Cloning the GitHub repository..."
-    if [ ! -d "/root/gym" ]; then
-      git clone https://github.com/NutzKiller/gym.git /root/gym
-    else
-      echo "Repository already cloned."
-    fi
+    # Clone your GitHub repo
+    cd /root
+    git clone https://github.com/NutzKiller/gym.git
+    cd gym
 
-    # Navigate to the repo and start containers
-    cd /root/gym
-    echo "Starting Docker containers..."
+    # Up the containers
     docker-compose up -d
-
-    echo "Startup script completed at $$(date)"
   EOT
 
   tags = ["gym-instance"]
