@@ -23,7 +23,7 @@ provider "google" {
 ########################################
 # 1) Enable Cloud SQL Admin API
 ########################################
-resource "google_project_service" "enable_sqladmin_054" {
+resource "google_project_service" "enable_sqladmin_055" {
   project = var.project_id
   service = "sqladmin.googleapis.com"
 
@@ -33,15 +33,15 @@ resource "google_project_service" "enable_sqladmin_054" {
 ########################################
 # 2) VPC Network + Firewall (New Names)
 ########################################
-resource "google_compute_network" "gym_network_054" {
-  name    = "gym-network-054"
+resource "google_compute_network" "gym_network_055" {
+  name    = "gym-network-055"
   project = var.project_id
 }
 
-resource "google_compute_firewall" "gym_firewall_054" {
-  name    = "gym-firewall-054"
+resource "google_compute_firewall" "gym_firewall_055" {
+  name    = "gym-firewall-055"
   project = var.project_id
-  network = google_compute_network.gym_network_054.name
+  network = google_compute_network.gym_network_055.name
 
   allow {
     protocol = "tcp"
@@ -54,8 +54,8 @@ resource "google_compute_firewall" "gym_firewall_054" {
 ########################################
 # 3) Cloud Storage Bucket (New Name)
 ########################################
-resource "google_storage_bucket" "exercise_videos_054" {
-  name          = "${var.project_id}-exercise-videos-054"
+resource "google_storage_bucket" "exercise_videos_055" {
+  name          = "${var.project_id}-exercise-videos-055"
   location      = var.region
   force_destroy = true
   uniform_bucket_level_access = false
@@ -83,19 +83,14 @@ data "google_sql_database" "existing_gym_database" {
   project  = var.project_id
 }
 
-# Reference the existing MySQL user 'postgres'
-data "google_sql_user" "existing_postgres_user" {
-  name     = "postgres"
-  instance = data.google_sql_database_instance.existing_gym_sql_instance.name
-  host     = "%"
-  project  = var.project_id
-}
+# Reference existing Cloud SQL user (commented to avoid invalid data block)
+# The user `postgres` is assumed to already exist in the instance.
 
 ########################################
 # 5) GCE VM for Docker + Your App (New Name)
 ########################################
-resource "google_compute_instance" "gym_instance_054" {
-  name         = "gym-instance-054"
+resource "google_compute_instance" "gym_instance_055" {
+  name         = "gym-instance-055"
   machine_type = "e2-micro"
   project      = var.project_id
   zone         = var.zone
@@ -107,7 +102,7 @@ resource "google_compute_instance" "gym_instance_054" {
   }
 
   network_interface {
-    network       = google_compute_network.gym_network_054.self_link
+    network       = google_compute_network.gym_network_055.self_link
     access_config {}
   }
 
@@ -148,12 +143,12 @@ resource "google_compute_instance" "gym_instance_054" {
 ########################################
 output "instance_external_ip" {
   description = "Public IP of the GCE instance"
-  value       = google_compute_instance.gym_instance_054.network_interface[0].access_config[0].nat_ip
+  value       = google_compute_instance.gym_instance_055.network_interface[0].access_config[0].nat_ip
 }
 
 output "storage_bucket_name" {
   description = "Name of the new bucket"
-  value       = google_storage_bucket.exercise_videos_054.name
+  value       = google_storage_bucket.exercise_videos_055.name
 }
 
 output "cloudsql_public_ip" {
