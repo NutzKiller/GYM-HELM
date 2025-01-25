@@ -34,16 +34,15 @@ resource "google_project_service" "enable_sqladmin_052" {
 # 2) Use Existing or Create New VPC Network + Firewall
 ########################################
 
-# Try to reference an existing network
+# Reference existing VPC network
 data "google_compute_network" "existing_network" {
-  count   = 1
   name    = "gym-network-053" # Existing network name
   project = var.project_id
 }
 
 # Create a new VPC network if the existing one does not exist
 resource "google_compute_network" "new_network" {
-  count   = length(data.google_compute_network.existing_network) == 0 ? 1 : 0
+  count   = data.google_compute_network.existing_network.id == null ? 1 : 0
   name    = "gym-network-052"
   project = var.project_id
 }
@@ -52,9 +51,10 @@ resource "google_compute_network" "new_network" {
 resource "google_compute_firewall" "gym_firewall_052" {
   name    = "gym-firewall-052"
   project = var.project_id
-  network = length(data.google_compute_network.existing_network) > 0
-    ? data.google_compute_network.existing_network[0].self_link
-    : google_compute_network.new_network[0].self_link
+  network = coalesce(
+    data.google_compute_network.existing_network.self_link,
+    google_compute_network.new_network[0].self_link
+  )
 
   allow {
     protocol = "tcp"
@@ -104,9 +104,10 @@ resource "google_compute_instance" "gym_instance_052" {
   }
 
   network_interface {
-    network       = length(data.google_compute_network.existing_network) > 0
-      ? data.google_compute_network.existing_network[0].self_link
-      : google_compute_network.new_network[0].self_link
+    network       = coalesce(
+      data.google_compute_network.existing_network.self_link,
+      google_compute_network.new_network[0].self_link
+    )
     access_config {}
   }
 
