@@ -98,17 +98,17 @@ resource "google_compute_instance" "gym_instance_052" {
     access_config {}
   }
 
-  # Improved startup script to handle errors and ensure execution
+  # Improved startup script with escaped shell variables
   metadata_startup_script = <<-EOT
     #!/bin/bash
     set -e
 
     # Logging setup
     LOGFILE=/var/log/startup-script.log
-    exec > >(tee -i ${LOGFILE})
+    exec > >(tee -i $${LOGFILE})
     exec 2>&1
 
-    echo "Startup script started at $(date)"
+    echo "Startup script started at $$(date)"
 
     # Update packages
     apt-get update -y
@@ -146,7 +146,7 @@ resource "google_compute_instance" "gym_instance_052" {
     echo "Starting Docker containers..."
     docker-compose up -d
 
-    echo "Startup script completed at $(date)"
+    echo "Startup script completed at $$(date)"
   EOT
 
   tags = ["gym-instance"]
