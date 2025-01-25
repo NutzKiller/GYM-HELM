@@ -31,33 +31,30 @@ resource "google_project_service" "enable_sqladmin_052" {
 }
 
 ########################################
-# 2) Create or Use Existing VPC Network + Firewall
+# 2) Create or Reuse VPC Network + Firewall
 ########################################
 
-# Try to reference an existing VPC network
+# Try to find the existing network
 data "google_compute_network" "existing_network" {
   name    = "gym-network-053"
   project = var.project_id
+  depends_on = [google_project_service.enable_sqladmin_052]
+  # Will fail gracefully if it doesn't exist, allowing the resource below to create it.
 }
 
-# Conditional local variable to check if the network exists
-locals {
-  network_exists = can(data.google_compute_network.existing_network.self_link)
-}
-
-# Create a new VPC network only if it doesn't exist
+# Create the network if it doesn't exist
 resource "google_compute_network" "new_network" {
-  count                 = local.network_exists ? 0 : 1
-  name                  = "gym-network-053"
+  count = length(try(data.google_compute_network.existing_network.id, [])) == 0 ? 1 : 0
+  name  = "gym-network-053"
   auto_create_subnetworks = true
-  project               = var.project_id
+  project = var.project_id
 }
 
-# Create a new firewall rule linked to the VPC network
+# Create the firewall rule
 resource "google_compute_firewall" "gym_firewall_052" {
   name    = "gym-firewall-052"
   project = var.project_id
-  network = local.network_exists ? data.google_compute_network.existing_network.self_link : google_compute_network.new_network[0].self_link
+  network = coalesce(data.google_compute_network.existing_network.self_link, google_compute_network.new_network[0].self_link)
 
   allow {
     protocol = "tcp"
@@ -68,10 +65,23 @@ resource "google_compute_firewall" "gym_firewall_052" {
 }
 
 ########################################
-# 3) Use Existing Storage Bucket
+# 3) Use Existing or Create Storage Bucket
 ########################################
 data "google_storage_bucket" "existing_exercise_videos" {
   name = "${var.project_id}-exercise-videos-052"
+}
+
+resource "google_storage_bucket" "exercise_videos_052" {
+  count = length(try(data.google_storage_bucket.existing_exercise_videos.id, [])) == 0 ? 1 : 0
+  name  = "${var.project_id}-exercise-videos-052"
+  location = var.region
+  force_destroy = true
+  uniform_bucket_level_access = false
+
+  website {
+    main_page_suffix = "index.html"
+    not_found_page   = "404.html"
+  }
 }
 
 ########################################
@@ -107,7 +117,7 @@ resource "google_compute_instance" "gym_instance_052" {
   }
 
   network_interface {
-    network       = local.network_exists ? data.google_compute_network.existing_network.self_link : google_compute_network.new_network[0].self_link
+    network       = coalesce(data.google_compute_network.existing_network.self_link, google_compute_network.new_network[0].self_link)
     access_config {}
   }
 
@@ -158,11 +168,11 @@ output "instance_external_ip" {
 }
 
 output "storage_bucket_name" {
-  description = "Name of the existing bucket"
-  value       = data.google_storage_bucket.existing_exercise_videos.name
+  description = "Name of the storage bucket"
+  value       = coalesce(data.google_storage_bucket.existing_exercise_videos.name, google_storage_bucket.exercise_videos_052[0].name)
 }
 
 output "cloudsql_public_ip" {
-  description = "Public IP of the existing Cloud SQL instance"
+  description = "Public IP of the Cloud SQL instance"
   value       = data.google_sql_database_instance.existing_gym_sql_instance.public_ip_address
 }
