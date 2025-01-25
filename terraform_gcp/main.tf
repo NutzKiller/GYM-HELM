@@ -31,15 +31,17 @@ resource "google_project_service" "enable_sqladmin_052" {
 }
 
 ########################################
-# 2) VPC Network + Firewall
+# 2) Create or Use Existing VPC Network + Firewall
 ########################################
 
-# Try to reference an existing VPC network, fallback to creating a new one
+# Try to reference an existing VPC network
 data "google_compute_network" "existing_network" {
   name    = "gym-network-053"
   project = var.project_id
+  depends_on = [google_project_service.enable_sqladmin_052]
 }
 
+# Conditionally create a new VPC network if it doesn't exist
 resource "google_compute_network" "new_network" {
   count                = length(try(data.google_compute_network.existing_network.self_link, [])) == 0 ? 1 : 0
   name                 = "gym-network-053"
@@ -47,6 +49,7 @@ resource "google_compute_network" "new_network" {
   project              = var.project_id
 }
 
+# Create a new firewall rule linked to the VPC network
 resource "google_compute_firewall" "gym_firewall_052" {
   name    = "gym-firewall-052"
   project = var.project_id
@@ -67,7 +70,7 @@ resource "google_compute_firewall" "gym_firewall_052" {
 # 3) Use Existing Storage Bucket
 ########################################
 data "google_storage_bucket" "existing_exercise_videos" {
-  name = "${var.project_id}-exercise-videos-052" # Reference existing bucket
+  name = "${var.project_id}-exercise-videos-052"
 }
 
 ########################################
