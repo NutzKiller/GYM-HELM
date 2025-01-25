@@ -31,20 +31,16 @@ resource "google_project_service" "enable_sqladmin_055" {
 }
 
 ########################################
-# 2) Use Existing VPC Network & Firewall
+# 2) Use Existing VPC Network
 ########################################
 data "google_compute_network" "existing_network" {
   name    = "gym-network-052" # Use the existing VPC name
   project = var.project_id
 }
 
-data "google_compute_firewall" "existing_firewall" {
-  name    = "gym-firewall-052" # Use the existing firewall name
-  project = var.project_id
-}
-
+# Reference existing firewall by name instead of creating a data block
 resource "google_compute_firewall" "gym_firewall_055" {
-  name    = "gym-firewall-055" # Creating a new firewall if necessary
+  name    = "gym-firewall-055" # Creating a new firewall if needed
   project = var.project_id
   network = data.google_compute_network.existing_network.name
 
@@ -64,7 +60,7 @@ data "google_storage_bucket" "existing_exercise_videos" {
 }
 
 ########################################
-# 4) Use Existing Cloud SQL Instance
+# 4) Cloud SQL Instance (Use Existing)
 ########################################
 
 data "google_sql_database_instance" "existing_gym_sql_instance" {
