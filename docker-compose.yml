@@ -8,8 +8,8 @@ services:
     ports:
       - "5000:5000"                        # Exposes Flask app on host port 5000
     environment:
-      - DATABASE_URL=mysql+pymysql://postgres:password@34.122.238.144:3306/GYM
-      - SECRET_KEY=Kanao159632!!           # Replace with a strong, secure key
+      - DATABASE_URL=${DATABASE_URL}
+      - SECRET_KEY=${SECRET_KEY}           # Replace with a strong, secure key
     networks:
       - gym_network
     volumes:

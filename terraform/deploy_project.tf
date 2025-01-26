@@ -57,6 +57,11 @@ resource "aws_instance" "project_instance" {
               curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
               chmod +x /usr/local/bin/docker-compose
 
+              # Set environment variables
+              echo "DATABASE_URL=${DATABASE_URL}" >> /etc/environment
+              echo "SECRET_KEY=${SECRET_KEY}" >> /etc/environment
+              source /etc/environment
+              
               # Run docker-compose
               /usr/local/bin/docker-compose up -d
               EOF
