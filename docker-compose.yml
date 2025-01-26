@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   web:
-    build: .
+    image: nutzkiller/gym:latest
     container_name: gym_web
     restart: always
     ports:
