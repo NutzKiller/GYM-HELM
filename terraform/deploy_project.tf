@@ -36,35 +36,11 @@ resource "aws_instance" "project_instance" {
 
   security_groups = [data.aws_security_group.project_sg.name]
 
-  # User data script to set up Docker, clone the repository, and run docker-compose
-  user_data = <<-EOF
-              #!/bin/bash
-              yum update -y
-              # Install Docker
-              amazon-linux-extras enable docker
-              yum install -y docker
-              service docker start
-              usermod -a -G docker ec2-user
-
-              # Install Git
-              yum install -y git
-
-              # Clone the repository
-              git clone https://github.com/NutzKiller/gym.git /home/ec2-user/gym
-              cd /home/ec2-user/gym
-
-              # Install Docker Compose
-              curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-              chmod +x /usr/local/bin/docker-compose
-
-              # Set environment variables
-              echo "DATABASE_URL=${var.DATABASE_URL}" >> /etc/environment
-              echo "SECRET_KEY=${var.SECRET_KEY}" >> /etc/environment
-              source /etc/environment
-              
-              # Run docker-compose
-              /usr/local/bin/docker-compose up -d
-              EOF
+  # Pass variables into user data
+  user_data = templatefile("${path.module}/user_data.sh", {
+    database_url = var.DATABASE_URL
+    secret_key   = var.SECRET_KEY
+  })
 
   tags = {
     Name = "GymProject"
