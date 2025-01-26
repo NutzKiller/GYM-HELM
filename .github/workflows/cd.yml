@@ -24,7 +24,9 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: "us-east-1" # or replace with your default region
+          AWS_DEFAULT_REGION: "us-east-1"
+          TF_VAR_DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          TF_VAR_SECRET_KEY: ${{ secrets.SECRET_KEY }}
         working-directory: terraform
         run: |
           terraform init
@@ -39,7 +41,9 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: "us-east-1" # or replace with your default region
+          AWS_DEFAULT_REGION: "us-east-1"
+          TF_VAR_DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          TF_VAR_SECRET_KEY: ${{ secrets.SECRET_KEY }}
         working-directory: terraform
         run: |
           terraform destroy -auto-approve

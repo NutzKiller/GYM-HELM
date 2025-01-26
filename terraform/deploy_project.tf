@@ -58,8 +58,8 @@ resource "aws_instance" "project_instance" {
               chmod +x /usr/local/bin/docker-compose
 
               # Set environment variables
-              echo "DATABASE_URL=${DATABASE_URL}" >> /etc/environment
-              echo "SECRET_KEY=${SECRET_KEY}" >> /etc/environment
+              echo "DATABASE_URL=${var.DATABASE_URL}" >> /etc/environment
+              echo "SECRET_KEY=${var.SECRET_KEY}" >> /etc/environment
               source /etc/environment
               
               # Run docker-compose
@@ -81,3 +81,7 @@ resource "local_file" "private_key" {
 output "public_ip" {
   value = aws_instance.project_instance.public_ip
 }
+
+# Declare Terraform variables for secrets
+variable "DATABASE_URL" {}
+variable "SECRET_KEY" {}
