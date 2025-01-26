@@ -281,94 +281,79 @@ def generate_full_body_plan(ex):
 # -------------------------------------------------
 # A/B PLAN
 # -------------------------------------------------
+import random
+
 def generate_ab_plan(ex):
     def workout_A():
         w = []
-        # chest(3)
+
+        # Chest (3 exercises, 3 sets each)
         cm = get_exercise_by_name(ex, "Smith Machine Incline Bench Press")
         if cm:
-            w.append(cm)
+            w.append(f"{cm['name']} - 3 sets")
 
-        chest_pair = pick_one_from_pair(ex, "Cable Crossover", "Flys")
-        if chest_pair:
-            w.append(chest_pair)
+        chest_pool = [c for c in ex if c['topic'].lower() == 'chest' and c['name'] != cm['name']]
+        if len(chest_pool) >= 2:
+            selected_chest = random.sample(chest_pool, 2)
+            w.extend([f"{c['name']} - 3 sets" for c in selected_chest])
 
-        # Select a third chest exercise
-        chest_pool = [c for c in ex if c['topic'].lower() == 'chest']
-        if cm:
-            chest_pool = [c for c in chest_pool if c['name'] != cm['name']]
-        if chest_pair:
-            chest_pool = [c for c in chest_pool if c['name'] != chest_pair['name']]
+        # Shoulders (2 exercises: 1 with 4 sets, 1 with 3 sets)
+        shoulder_pair = pick_one_from_pair(ex, "Dumbbell Lateral raise", "Sitting Lateral raise")
+        if shoulder_pair:
+            w.append(f"{shoulder_pair['name']} - 4 sets")
 
-        if chest_pool:
-            selected = random.choice(chest_pool)
-            w.append(selected)
+        shoulder_pool = [s for s in ex if s['topic'].lower() == 'shoulders' and s['name'] != shoulder_pair['name']]
+        if shoulder_pool:
+            selected_shoulder = random.choice(shoulder_pool)
+            w.append(f"{selected_shoulder['name']} - 3 sets")
 
-        # shoulders(2)
-        sp = get_exercise_by_name(ex, "Shoulder Press")
-        if sp:
-            w.append(sp)
-        s_pair = pick_one_from_pair(ex, "Sitting Lateral raise", "Cable Lateral raise")
-        if s_pair:
-            w.append(s_pair)
+        # Triceps (2 exercises: 1 with 4 sets, 1 with 3 sets)
+        tricep_pool = [t for t in ex if t['topic'].lower() == 'triceps']
+        if len(tricep_pool) >= 2:
+            tricep_main, tricep_secondary = random.sample(tricep_pool, 2)
+            w.append(f"{tricep_main['name']} - 4 sets")
+            w.append(f"{tricep_secondary['name']} - 3 sets")
 
-        # tricep(2)
-        tri_main = get_exercise_by_name(ex, "Cable tricep pushdown")
-        if tri_main:
-            w.append(tri_main)
-            tri_pool = [t for t in ex if t['topic'].lower() == 'triceps' and t['name'] != tri_main['name']]
-            if tri_pool:
-                tri_secondary = random.choice(tri_pool)
-                w.append(tri_secondary)
-
-        return [f"{x['name']} - 3 sets" for x in w if x]
+        return w
 
     def workout_B():
         w = []
-        # back(3)
-        b1 = pick_one_from_pair(ex, "Pull Ups", "Pully")
-        b2 = pick_one_from_pair(ex, "Smith machine Rows", "T-Bar row")
-        if b1:
-            w.append(b1)
-        if b2:
-            w.append(b2)
-        back_pool = [bk for bk in ex if bk['topic'].lower() == 'back' 
-                     and bk['name'] not in [b1['name'] if b1 else None, b2['name'] if b2 else None]]
-        if back_pool:
-            selected = random.choice(back_pool)
-            w.append(selected)
 
-        # legs(3 => 1 w/4 sets, 2 w/3 sets)
+        # Back (3 exercises, 3 sets each)
+        back_pair1 = pick_one_from_pair(ex, "Pull Ups", "Pully")
+        back_pair2 = pick_one_from_pair(ex, "Smith machine Rows", "T-Bar row")
+        if back_pair1:
+            w.append(f"{back_pair1['name']} - 3 sets")
+        if back_pair2:
+            w.append(f"{back_pair2['name']} - 3 sets")
+
+        back_pool = [bk for bk in ex if bk['topic'].lower() == 'back' and bk['name'] not in [back_pair1['name'] if back_pair1 else None, back_pair2['name'] if back_pair2 else None]]
+        if back_pool:
+            selected_back = random.choice(back_pool)
+            w.append(f"{selected_back['name']} - 3 sets")
+
+        # Legs (3 exercises: 1 with 4 sets, 2 with 3 sets)
         sq = get_exercise_by_name(ex, "Smith Machine Squat")
         if sq:
-            w.append(sq)
-        calf = pick_one_from_pair(ex, "Calf Raises", "Sitting Calf Raises")
-        if calf:
-            w.append(calf)
-        legs_pool = [lg for lg in ex if lg['topic'].lower() == 'legs' 
-                     and lg['name'] not in [sq['name'], calf['name'] if calf else None]]
+            w.append(f"{sq['name']} - 4 sets")
+
+        calf_pair = pick_one_from_pair(ex, "Calf Raises", "Sitting Calf Raises")
+        if calf_pair:
+            w.append(f"{calf_pair['name']} - 3 sets")
+
+        legs_pool = [lg for lg in ex if lg['topic'].lower() == 'legs' and lg['name'] not in [sq['name'], calf_pair['name'] if calf_pair else None]]
         if legs_pool:
-            selected = random.choice(legs_pool)
-            w.append(selected)
+            selected_leg = random.choice(legs_pool)
+            w.append(f"{selected_leg['name']} - 3 sets")
 
-        # bicep(2 => must contain cable curl)
-        bc_main = get_exercise_by_name(ex, "Cable Curl")
-        if bc_main:
-            w.append(bc_main)
-            bicep_pool = [b for b in ex if b['topic'].lower() == 'biceps' and b['name'] != bc_main['name']]
-            if bicep_pool:
-                bicep_secondary = random.choice(bicep_pool)
-                w.append(bicep_secondary)
+        # Biceps (2 exercises: 1 with 4 sets, 1 with 3 sets)
+        bicep_pool = [b for b in ex if b['topic'].lower() == 'biceps']
+        if len(bicep_pool) >= 2:
+            bicep_main, bicep_secondary = random.sample(bicep_pool, 2)
+            w.append(f"{bicep_main['name']} - 4 sets")
+            w.append(f"{bicep_secondary['name']} - 3 sets")
 
-        final = []
-        used_4 = False
-        for item in w:
-            if item and item['topic'].lower() == 'legs' and not used_4:
-                final.append(f"{item['name']} - 4 sets")
-                used_4 = True
-            else:
-                final.append(f"{item['name']} - 3 sets")
-        return final
+        return w
 
     return {
         "Sunday": workout_A(),
@@ -376,6 +361,15 @@ def generate_ab_plan(ex):
         "Wednesday": workout_A(),
         "Thursday": workout_B()
     }
+
+# Helper functions (you should ensure these are properly defined in your code)
+def get_exercise_by_name(exercises, name):
+    return next((e for e in exercises if e['name'] == name), None)
+
+def pick_one_from_pair(exercises, name1, name2):
+    pair = [e for e in exercises if e['name'] in [name1, name2]]
+    return random.choice(pair) if pair else None
+
 
 # -------------------------------------------------
 # PPL PLAN
