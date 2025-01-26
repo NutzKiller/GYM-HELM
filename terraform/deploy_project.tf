@@ -83,5 +83,12 @@ output "public_ip" {
 }
 
 # Declare Terraform variables for secrets
-variable "DATABASE_URL" {}
-variable "SECRET_KEY" {}
+variable "DATABASE_URL" {
+  description = "The database connection string"
+  type        = string
+}
+
+variable "SECRET_KEY" {
+  description = "The Flask application secret key"
+  type        = string
+}

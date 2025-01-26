@@ -32,10 +32,10 @@ jobs:
           terraform init
           terraform apply -auto-approve
 
-      - name: Wait for 240 seconds
+      - name: Wait for 300 seconds
         run: |
-          echo "Waiting for 240 seconds..."
-          sleep 240
+          echo "Waiting for 300 seconds..."
+          sleep 300
 
       - name: Destroy Terraform Configuration
         env:

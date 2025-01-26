@@ -1,4 +1,4 @@
-version: '3.8'  # Specify Docker Compose version
+version: '3.8'
 
 services:
   web:
@@ -6,15 +6,15 @@ services:
     container_name: gym_web
     restart: always
     ports:
-      - "5000:5000"                        # Exposes Flask app on host port 5000
+      - "5000:5000"
     environment:
       - DATABASE_URL=${DATABASE_URL}
-      - SECRET_KEY=${SECRET_KEY}           # Replace with a strong, secure key
+      - SECRET_KEY=${SECRET_KEY}
     networks:
       - gym_network
     volumes:
-      - .:/app                             # Mounts project directory (optional for development)
+      - .:/app
 
 networks:
   gym_network:
-    driver: bridge                        # Uses Docker's default bridge driver
+    driver: bridge
