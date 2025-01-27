@@ -27,10 +27,12 @@ jobs:
           AWS_DEFAULT_REGION: "us-east-1"
           TF_VAR_DATABASE_URL: ${{ secrets.DATABASE_URL }}
           TF_VAR_SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         working-directory: terraform
         run: |
           terraform init
           terraform apply -auto-approve
+
 
       # - name: Wait for 300 seconds
       #   run: |
