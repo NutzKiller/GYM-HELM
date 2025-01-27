@@ -1,3 +1,10 @@
+# Configure Terraform backend to store the state locally
+terraform {
+  backend "local" {
+    path = "terraform_state/terraform.tfstate"
+  }
+}
+
 # Define AWS provider
 provider "aws" {
   region = "us-east-1"
@@ -51,6 +58,44 @@ resource "aws_instance" "project_instance" {
 resource "local_file" "private_key" {
   content  = tls_private_key.example.private_key_pem
   filename = "generated_key.pem"
+}
+
+# Push the Terraform state file to GitHub after `terraform apply`
+resource "null_resource" "push_to_github" {
+  provisioner "local-exec" {
+    command = <<EOT
+      # Install Git if not already installed
+      if ! command -v git &> /dev/null; then
+        echo "Git not found. Installing..."
+        if [ -x "$(command -v apt)" ]; then
+          sudo apt update && sudo apt install -y git
+        elif [ -x "$(command -v yum)" ]; then
+          sudo yum install -y git
+        else
+          echo "Unsupported package manager. Install Git manually."
+          exit 1
+        fi
+      fi
+
+      # Ensure Git is initialized
+      git init
+
+      # Add GitHub remote
+      git remote add origin https://github.com/NutzKiller/TF.git || true
+
+      # Add and commit the Terraform state file
+      git add terraform_state/terraform.tfstate
+      git commit -m "Update Terraform state file"
+
+      # Push to GitHub
+      git push -u origin main
+    EOT
+  }
+
+  # Trigger this resource after the EC2 instance is created
+  triggers = {
+    instance_id = aws_instance.project_instance.id
+  }
 }
 
 # Output the public IP address
