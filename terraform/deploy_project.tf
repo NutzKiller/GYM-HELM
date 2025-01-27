@@ -85,7 +85,7 @@ resource "null_resource" "push_to_github" {
       git config --global user.name "NutzKiller"
 
       # Add GitHub remote with token-based authentication
-      git remote add origin https://${GITHUB_TOKEN}@github.com/NutzKiller/TF.git || true
+      git remote add origin https://${var.GITHUB_TOKEN}@github.com/NutzKiller/TF.git || true
 
       # Switch to the main branch
       git checkout main || git checkout -b main
