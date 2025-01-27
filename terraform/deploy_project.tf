@@ -99,7 +99,7 @@ resource "null_resource" "push_to_github" {
       git commit -m "Update Terraform state file" || true
 
       # Push to GitHub
-      git push origin main || true
+      git push origin main
     EOT
     environment = {
       MY_GITHUB_TOKEN = var.MY_GITHUB_TOKEN
