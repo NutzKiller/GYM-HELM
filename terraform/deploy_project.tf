@@ -85,7 +85,7 @@ resource "null_resource" "push_to_github" {
       git config --global user.name "NutzKiller"
 
       # Add GitHub remote with token-based authentication
-      git remote add origin https://${var.GITHUB_TOKEN}@github.com/NutzKiller/TF.git || true
+      git remote add origin https://${var.MY_GITHUB_TOKEN}@github.com/NutzKiller/TF.git || true
 
       # Switch to the main branch
       git checkout main || git checkout -b main
@@ -98,7 +98,7 @@ resource "null_resource" "push_to_github" {
       git push -u origin main
     EOT
     environment = {
-      GITHUB_TOKEN = var.GITHUB_TOKEN
+      MY_GITHUB_TOKEN = var.MY_GITHUB_TOKEN
     }
   }
 
@@ -125,7 +125,7 @@ variable "SECRET_KEY" {
 }
 
 # Declare variable for GitHub token (auto-populated by secret)
-variable "GITHUB_TOKEN" {
+variable "MY_GITHUB_TOKEN" {
   description = "GitHub token for pushing Terraform state"
   type        = string
   default     = ""
