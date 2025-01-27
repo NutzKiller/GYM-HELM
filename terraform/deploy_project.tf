@@ -84,8 +84,8 @@ resource "null_resource" "push_to_github" {
       git config --global user.email "yuvalshmuely8@gmail.com"
       git config --global user.name "NutzKiller"
 
-      # Add GitHub remote
-      git remote add origin https://github.com/NutzKiller/TF.git || true
+      # Add GitHub remote with token-based authentication
+      git remote add origin https://${GITHUB_TOKEN}@github.com/NutzKiller/TF.git || true
 
       # Switch to the main branch
       git checkout main || git checkout -b main
@@ -97,6 +97,9 @@ resource "null_resource" "push_to_github" {
       # Push to GitHub
       git push -u origin main
     EOT
+    environment = {
+      GITHUB_TOKEN = var.GITHUB_TOKEN
+    }
   }
 
   # Trigger this resource after the EC2 instance is created
@@ -119,4 +122,11 @@ variable "DATABASE_URL" {
 variable "SECRET_KEY" {
   description = "The Flask application secret key"
   type        = string
+}
+
+# Declare variable for GitHub token (auto-populated by secret)
+variable "GITHUB_TOKEN" {
+  description = "GitHub token for pushing Terraform state"
+  type        = string
+  default     = "REPLACE_WITH_YOUR_SECRET"
 }
