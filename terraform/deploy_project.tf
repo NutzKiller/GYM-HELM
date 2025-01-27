@@ -90,6 +90,12 @@ resource "null_resource" "push_to_github" {
       # Switch to the main branch
       git checkout main || git checkout -b main
 
+      # Add untracked files to avoid merge conflicts
+      git add -A
+
+      # Stash local changes to ensure a clean pull
+      git stash || true
+      
       # Pull any remote changes to avoid conflicts
       git pull origin main --rebase || true
 
