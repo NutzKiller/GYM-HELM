@@ -87,27 +87,19 @@ resource "null_resource" "push_to_github" {
       # Add GitHub remote with token-based authentication
       git remote add origin https://${var.MY_GITHUB_TOKEN}@github.com/NutzKiller/TF.git || true
 
-      # Switch to the main branch
+      # Ensure branch exists and check it out
+      git fetch origin main || true
       git checkout main || git checkout -b main
 
-      # Fetch the latest changes from the remote repository
-      git fetch origin main
-
-      # Stash any local changes to ensure a clean pull
-      git stash || true
-
-      # Rebase local changes on top of the fetched remote branch
-      git rebase origin/main || true
-
-      # Apply stashed changes back after rebasing
-      git stash pop || true
+      # Pull the latest changes and rebase
+      git pull --rebase origin main || true
 
       # Add and commit the Terraform state file
       git add terraform_state/terraform.tfstate
       git commit -m "Update Terraform state file" || true
 
-      # Push to GitHub
-      git push -u origin main
+      # Push to GitHub, resolving conflicts
+      git push origin main || (git pull --rebase origin main && git push origin main)
     EOT
     environment = {
       MY_GITHUB_TOKEN = var.MY_GITHUB_TOKEN
