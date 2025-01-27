@@ -90,18 +90,21 @@ resource "null_resource" "push_to_github" {
       # Switch to the main branch
       git checkout main || git checkout -b main
 
-      # Add untracked files to avoid merge conflicts
-      git add -A
+      # Fetch the latest changes from the remote repository
+      git fetch origin main
 
-      # Stash local changes to ensure a clean pull
+      # Stash any local changes to ensure a clean pull
       git stash || true
-      
-      # Pull any remote changes to avoid conflicts
-      git pull origin main --rebase || true
+
+      # Rebase local changes on top of the fetched remote branch
+      git rebase origin/main || true
+
+      # Apply stashed changes back after rebasing
+      git stash pop || true
 
       # Add and commit the Terraform state file
       git add terraform_state/terraform.tfstate
-      git commit -m "Update Terraform state file"
+      git commit -m "Update Terraform state file" || true
 
       # Push to GitHub
       git push -u origin main
