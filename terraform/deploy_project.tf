@@ -80,8 +80,15 @@ resource "null_resource" "push_to_github" {
       # Ensure Git is initialized
       git init
 
+      # Configure Git user identity
+      git config --global user.email "yuvalshmuely8@gmail.com"
+      git config --global user.name "NutzKiller"
+
       # Add GitHub remote
       git remote add origin https://github.com/NutzKiller/TF.git || true
+
+      # Switch to the main branch
+      git checkout main || git checkout -b main
 
       # Add and commit the Terraform state file
       git add terraform_state/terraform.tfstate
