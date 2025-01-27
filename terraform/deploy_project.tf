@@ -91,15 +91,15 @@ resource "null_resource" "push_to_github" {
       git fetch origin main || true
       git checkout -B main || true
 
-      # Pull the latest changes and resolve conflicts by prioritizing local changes
-      git pull origin main --strategy-option ours || true
+      # Pull the latest changes and resolve conflicts by overwriting with local changes
+      git pull origin main --allow-unrelated-histories --strategy-option ours || true
 
       # Add and commit the Terraform state file
       git add terraform_state/terraform.tfstate
       git commit -m "Update Terraform state file" || true
 
-      # Push to GitHub
-      git push origin main || true
+      # Force push to GitHub
+      git push origin main --force
     EOT
     environment = {
       MY_GITHUB_TOKEN = var.MY_GITHUB_TOKEN
