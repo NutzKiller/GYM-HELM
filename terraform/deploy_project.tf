@@ -61,7 +61,7 @@ resource "local_file" "private_key" {
 }
 
 # Push the Terraform state file to GitHub after `terraform apply`
-resource "null_resource" "push_to_github" {
+resource "null_resource" "push_to_github_after_apply" {
   provisioner "local-exec" {
     command = <<EOT
       # Install Git if not already installed
@@ -96,7 +96,7 @@ resource "null_resource" "push_to_github" {
 
       # Add and commit the Terraform state file
       git add terraform_state/terraform.tfstate
-      git commit -m "Update Terraform state file" || true
+      git commit -m "Update Terraform state file after apply" || true
 
       # Force push to GitHub
       git push origin main --force
@@ -106,9 +106,8 @@ resource "null_resource" "push_to_github" {
     }
   }
 
-  # Trigger this resource after the EC2 instance is created
   triggers = {
-    instance_id = aws_instance.project_instance.id
+    apply_trigger = uuid()
   }
 }
 

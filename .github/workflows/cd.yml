@@ -33,7 +33,6 @@ jobs:
           terraform init
           terraform apply -auto-approve
 
-
       - name: Wait for 300 seconds
         run: |
           echo "Waiting for 300 seconds..."
@@ -50,3 +49,18 @@ jobs:
         run: |
           terraform destroy -auto-approve
 
+      - name: Push Terraform State to GitHub
+        env:
+          MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+        working-directory: terraform
+        run: |
+          git init
+          git config --global user.email "yuvalshmuely8@gmail.com"
+          git config --global user.name "NutzKiller"
+          git remote add origin https://${{ secrets.MY_GITHUB_TOKEN }}@github.com/NutzKiller/TF.git || true
+          git fetch origin main || true
+          git checkout -B main || true
+          git pull origin main --allow-unrelated-histories --strategy-option ours || true
+          git add terraform_state/terraform.tfstate
+          git commit -m "Update Terraform state file after destroy" || true
+          git push origin main --force
