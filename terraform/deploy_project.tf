@@ -91,22 +91,15 @@ resource "null_resource" "push_to_github" {
       git fetch origin main || true
       git checkout -B main || true
 
-      # Stash any local changes to ensure a clean pull
-      git add -A || true
-      git stash || true
-
-      # Pull the latest changes and rebase
-      git pull --rebase origin main || true
-
-      # Apply stashed changes back after rebasing
-      git stash pop || true
+      # Pull the latest changes and resolve conflicts by prioritizing local changes
+      git pull origin main --strategy-option ours || true
 
       # Add and commit the Terraform state file
       git add terraform_state/terraform.tfstate
       git commit -m "Update Terraform state file" || true
 
-      # Push to GitHub, resolving conflicts
-      git push origin main || (git pull --rebase origin main && git push origin main)
+      # Push to GitHub
+      git push origin main || true
     EOT
     environment = {
       MY_GITHUB_TOKEN = var.MY_GITHUB_TOKEN
