@@ -89,10 +89,17 @@ resource "null_resource" "push_to_github" {
 
       # Ensure branch exists and check it out
       git fetch origin main || true
-      git checkout main || git checkout -b main
+      git checkout -B main || true
+
+      # Stash any local changes to ensure a clean pull
+      git add -A || true
+      git stash || true
 
       # Pull the latest changes and rebase
       git pull --rebase origin main || true
+
+      # Apply stashed changes back after rebasing
+      git stash pop || true
 
       # Add and commit the Terraform state file
       git add terraform_state/terraform.tfstate
