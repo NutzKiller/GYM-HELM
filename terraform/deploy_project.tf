@@ -128,5 +128,5 @@ variable "SECRET_KEY" {
 variable "GITHUB_TOKEN" {
   description = "GitHub token for pushing Terraform state"
   type        = string
-  default     = "REPLACE_WITH_YOUR_SECRET"
+  default     = ""
 }
