@@ -79,7 +79,11 @@ jobs:
           project_id: ${{ secrets.GCP_PROJECT }}
         env:
           GOOGLE_APPLICATION_CREDENTIALS: terraform/gcp_credentials.json
-
+      # Step: Create Namespace
+      - name: Create Namespace
+        run: |
+          kubectl create namespace gym-namespace || true
+          
       # Step 9: Apply Kubernetes Manifests
       - name: Apply Kubernetes Manifests
         run: |
