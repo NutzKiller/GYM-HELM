@@ -39,8 +39,9 @@ jobs:
       # Step 5: Sync Terraform State from NutzKiller/TF Repository
       - name: Sync Terraform State from NutzKiller/TF Repository
         run: |
+          mkdir -p terraform/terraform_state
           if [ -f TF/terraform_state/terraform.tfstate ]; then
-            mv TF/terraform_state/terraform.tfstate terraform/terraform.tfstate
+            cp TF/terraform_state/terraform.tfstate terraform/terraform_state/terraform.tfstate
             echo "Terraform state pulled from NutzKiller/TF repository."
           else
             echo "No existing Terraform state found in NutzKiller/TF repository. Proceeding with empty state."
@@ -58,6 +59,7 @@ jobs:
       - name: Apply Terraform Configuration
         working-directory: terraform
         env:
+          GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
           TF_VAR_GCP_CREDENTIALS_FILE: "gcp_credentials.json"
           TF_VAR_GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
           TF_VAR_GCP_REGION: ${{ secrets.GCP_REGION }}
@@ -65,8 +67,8 @@ jobs:
           TF_VAR_SECRET_KEY: ${{ secrets.SECRET_KEY }}
           TF_VAR_MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
         run: |
-          terraform init
-          terraform apply -auto-approve
+          terraform init -input=false
+          terraform apply -auto-approve -input=false
 
       # Step 8: Configure kubectl to connect to GKE
       - name: Get GKE Credentials
@@ -110,16 +112,30 @@ jobs:
         run: |
           echo "The application is accessible at http://${{ env.EXTERNAL_IP }}"
 
-      # Step 12: Wait for 300 seconds (e.g., to allow services to initialize)
-      - name: Wait for 300 seconds
+      # Step 12: Push Updated Terraform State to NutzKiller/TF Repository
+      - name: Push Updated Terraform State to NutzKiller/TF Repository
+        env:
+          MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
         run: |
-          echo "Waiting for 300 seconds..."
-          sleep 300
+          if [ -f terraform/terraform_state/terraform.tfstate ]; then
+            cp terraform/terraform_state/terraform.tfstate TF/terraform_state/terraform.tfstate
+            cd TF
+
+            git config --global user.email "yuvalshmuely8@gmail.com"
+            git config --global user.name "NutzKiller"
+
+            git add terraform_state/terraform.tfstate
+            git commit -m "Update Terraform state file" || echo "No changes to commit."
+            git push origin main
+          else
+            echo "No Terraform state file found to push. Skipping this step."
+          fi
 
       # Step 13: Destroy Terraform Configuration
       - name: Destroy Terraform Configuration
         working-directory: terraform
         env:
+          GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
           TF_VAR_GCP_CREDENTIALS_FILE: "gcp_credentials.json"
           TF_VAR_GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
           TF_VAR_GCP_REGION: ${{ secrets.GCP_REGION }}
@@ -127,15 +143,15 @@ jobs:
           TF_VAR_SECRET_KEY: ${{ secrets.SECRET_KEY }}
           TF_VAR_MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
         run: |
-          terraform destroy -auto-approve
+          terraform destroy -auto-approve -input=false
 
       # Step 14: Push Updated Terraform State to NutzKiller/TF Repository
       - name: Push Updated Terraform State to NutzKiller/TF Repository
         env:
           MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
         run: |
-          if [ -f terraform/terraform.tfstate ]; then
-            mv terraform/terraform.tfstate TF/terraform_state/terraform.tfstate
+          if [ -f terraform/terraform_state/terraform.tfstate ]; then
+            cp terraform/terraform_state/terraform.tfstate TF/terraform_state/terraform.tfstate
             cd TF
 
             git config --global user.email "yuvalshmuely8@gmail.com"
