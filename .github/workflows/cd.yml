@@ -1,3 +1,5 @@
+# File: .github/workflows/cd.yml
+
 name: CD Workflow
 
 on:
@@ -12,19 +14,36 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Step 1: Check out the code from the repository
       - name: Check out code
         uses: actions/checkout@v2
 
+      # Step 2: Set up Terraform
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: latest
 
+      # Step 3: Create GCP credentials file for Terraform
+      - name: Create GCP credentials file
+        run: |
+          echo "${{ secrets.GCP_CREDENTIALS_FILE }}" > terraform/gcp_credentials.json
+        shell: bash
+
+      # Step 4: Set up Google Cloud SDK
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: ${{ secrets.GCP_PROJECT }}
+          service_account_key_file: terraform/gcp_credentials.json
+          export_default_credentials: true
+
+      # Step 5: Apply Terraform Configuration
       - name: Apply Terraform Configuration
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: "us-east-1"
+          TF_VAR_GCP_CREDENTIALS_FILE: "terraform/gcp_credentials.json"
+          TF_VAR_GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
+          TF_VAR_GCP_REGION: ${{ secrets.GCP_REGION }}
           TF_VAR_DATABASE_URL: ${{ secrets.DATABASE_URL }}
           TF_VAR_SECRET_KEY: ${{ secrets.SECRET_KEY }}
           TF_VAR_MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
@@ -33,22 +52,43 @@ jobs:
           terraform init
           terraform apply -auto-approve
 
+      # Step 6: Configure kubectl to connect to GKE
+      - name: Get GKE Credentials
+        uses: google-github-actions/get-gke-credentials@v1
+        with:
+          cluster_name: gym-cluster
+          location: ${{ secrets.GCP_REGION }}
+          project_id: ${{ secrets.GCP_PROJECT }}
+
+      # Step 7: Apply Kubernetes Manifests
+      - name: Apply Kubernetes Manifests
+        run: |
+          kubectl apply -f ../k8s/configmap.yaml
+          kubectl apply -f ../k8s/secret.yaml
+          kubectl apply -f ../k8s/deployment.yaml
+          kubectl apply -f ../k8s/service.yaml
+        shell: bash
+
+      # Step 8: Wait for 300 seconds (e.g., to allow services to initialize)
       - name: Wait for 300 seconds
         run: |
           echo "Waiting for 300 seconds..."
           sleep 300
 
+      # Step 9: Destroy Terraform Configuration
       - name: Destroy Terraform Configuration
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: "us-east-1"
+          TF_VAR_GCP_CREDENTIALS_FILE: "terraform/gcp_credentials.json"
+          TF_VAR_GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
+          TF_VAR_GCP_REGION: ${{ secrets.GCP_REGION }}
           TF_VAR_DATABASE_URL: ${{ secrets.DATABASE_URL }}
           TF_VAR_SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          TF_VAR_MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
         working-directory: terraform
         run: |
           terraform destroy -auto-approve
 
+      # Step 10: Push Terraform State to GitHub
       - name: Push Terraform State to GitHub
         env:
           MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: gym-service
+  namespace: gym-namespace
+spec:
+  type: LoadBalancer
+  selector:
+    app: gym
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 5000

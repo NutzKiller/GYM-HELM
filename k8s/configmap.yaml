@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gym-config
+  namespace: gym-namespace
+data:
+  DATABASE_URL: "${DATABASE_URL}"
