@@ -35,6 +35,14 @@ jobs:
         run: |
           printf "%s" "${{ secrets.GCP_CREDENTIALS_FILE }}" > terraform/gcp_credentials.json
 
+      # Debug: Check GCP credentials file
+      - name: Debug GCP credentials file
+        run: |
+          echo "Contents of GCP credentials file:"
+          cat terraform/gcp_credentials.json
+          echo "Validating JSON formatting:"
+          jq . terraform/gcp_credentials.json || echo "Invalid JSON!"
+
       # Step 5: Sync Terraform State from NutzKiller/TF Repository
       - name: Sync Terraform State from NutzKiller/TF Repository
         run: |
