@@ -173,7 +173,7 @@ jobs:
             git commit -m "Update Terraform state file" || git commit --allow-empty -m "Dummy commit to ensure sync"
 
             # Push changes to the remote repository
-            git push origin main
+            git push origin main --force
           else
             echo "No Terraform state file found to push. Skipping this step."
           fi
