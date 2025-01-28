@@ -69,13 +69,39 @@ jobs:
           kubectl apply -f ../k8s/service.yaml
         shell: bash
 
-      # Step 8: Wait for 300 seconds (e.g., to allow services to initialize)
+      # Step 8: Retrieve External IP of the Service
+      - name: Retrieve External IP
+        id: get_ip
+        run: |
+          echo "Waiting for LoadBalancer IP..."
+          for i in {1..30}; do
+            EXTERNAL_IP=$(kubectl get svc gym-service -n gym-namespace -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+            if [ -n "$EXTERNAL_IP" ]; then
+              echo "EXTERNAL_IP=$EXTERNAL_IP" >> $GITHUB_ENV
+              echo "External IP: $EXTERNAL_IP"
+              break
+            fi
+            echo "Attempt $i: External IP not assigned yet. Retrying in 10 seconds..."
+            sleep 10
+          done
+
+          if [ -z "$EXTERNAL_IP" ]; then
+            echo "Failed to retrieve External IP."
+            exit 1
+          fi
+
+      # Step 9: Output the External IP
+      - name: Output External IP
+        run: |
+          echo "The application is accessible at http://${{ env.EXTERNAL_IP }}"
+
+      # Step 10: Wait for 300 seconds (e.g., to allow services to initialize)
       - name: Wait for 300 seconds
         run: |
           echo "Waiting for 300 seconds..."
           sleep 300
 
-      # Step 9: Destroy Terraform Configuration
+      # Step 11: Destroy Terraform Configuration
       - name: Destroy Terraform Configuration
         env:
           TF_VAR_GCP_CREDENTIALS_FILE: "terraform/gcp_credentials.json"
@@ -88,7 +114,7 @@ jobs:
         run: |
           terraform destroy -auto-approve
 
-      # Step 10: Push Terraform State to GitHub
+      # Step 12: Push Terraform State to GitHub
       - name: Push Terraform State to GitHub
         env:
           MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}

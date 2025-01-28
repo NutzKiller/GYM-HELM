@@ -14,8 +14,3 @@ output "kubernetes_cluster_ca_certificate" {
   description = "CA certificate for the GKE cluster"
   value       = google_container_cluster.primary.master_auth.0.cluster_ca_certificate
 }
-
-output "public_ip" {
-  description = "External IP address of the service"
-  value       = kubernetes_service.gym_service.load_balancer_ingress[0].ip
-}
