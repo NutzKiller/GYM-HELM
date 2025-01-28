@@ -14,45 +14,62 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Check out the code from the repository
-      - name: Check out code
+      # Step 1: Check out the main repository code
+      - name: Check out main repository
         uses: actions/checkout@v2
 
-      # Step 2: Set up Terraform
+      # Step 2: Clone the Terraform State Repository
+      - name: Clone Terraform State Repository
+        env:
+          MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+        run: |
+          git clone https://x-access-token:${{ secrets.MY_GITHUB_TOKEN }}@github.com/NutzKiller/TF.git tf_repo
+        shell: bash
+
+      # Step 3: Set up Terraform
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: latest
 
-      # Step 3: Create GCP credentials file for Terraform
+      # Step 4: Create GCP credentials file for Terraform
       - name: Create GCP credentials file
         run: |
-          echo "${{ secrets.GCP_CREDENTIALS_FILE }}" > terraform/gcp_credentials.json
+          echo "${{ secrets.GCP_CREDENTIALS_FILE }}" > gcp_credentials.json
         shell: bash
 
-      # Step 4: Set up Google Cloud SDK
+      # Step 5: Sync Terraform State from TF Repository
+      - name: Sync Terraform State from TF Repository
+        run: |
+          if [ -f tf_repo/terraform.tfstate ]; then
+            mv tf_repo/terraform.tfstate ./terraform.tfstate
+            echo "Terraform state pulled from TF repository."
+          else
+            echo "No existing Terraform state found in TF repository. Proceeding with an empty state."
+          fi
+        shell: bash
+
+      # Step 6: Set up Google Cloud SDK
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
         with:
           project_id: ${{ secrets.GCP_PROJECT }}
-          service_account_key_file: terraform/gcp_credentials.json
+          service_account_key_file: gcp_credentials.json
           export_default_credentials: true
 
-      # Step 5: Apply Terraform Configuration
+      # Step 7: Apply Terraform Configuration
       - name: Apply Terraform Configuration
         env:
-          TF_VAR_GCP_CREDENTIALS_FILE: "terraform/gcp_credentials.json"
+          TF_VAR_GCP_CREDENTIALS_FILE: "gcp_credentials.json"
           TF_VAR_GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
           TF_VAR_GCP_REGION: ${{ secrets.GCP_REGION }}
           TF_VAR_DATABASE_URL: ${{ secrets.DATABASE_URL }}
           TF_VAR_SECRET_KEY: ${{ secrets.SECRET_KEY }}
-          TF_VAR_MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
-        working-directory: terraform
         run: |
           terraform init
           terraform apply -auto-approve
 
-      # Step 6: Configure kubectl to connect to GKE
+      # Step 8: Configure kubectl to connect to GKE
       - name: Get GKE Credentials
         uses: google-github-actions/get-gke-credentials@v1
         with:
@@ -60,16 +77,16 @@ jobs:
           location: ${{ secrets.GCP_REGION }}
           project_id: ${{ secrets.GCP_PROJECT }}
 
-      # Step 7: Apply Kubernetes Manifests
+      # Step 9: Apply Kubernetes Manifests
       - name: Apply Kubernetes Manifests
         run: |
-          kubectl apply -f ../k8s/configmap.yaml
-          kubectl apply -f ../k8s/secret.yaml
-          kubectl apply -f ../k8s/deployment.yaml
-          kubectl apply -f ../k8s/service.yaml
+          kubectl apply -f ./k8s/configmap.yaml
+          kubectl apply -f ./k8s/secret.yaml
+          kubectl apply -f ./k8s/deployment.yaml
+          kubectl apply -f ./k8s/service.yaml
         shell: bash
 
-      # Step 8: Retrieve External IP of the Service
+      # Step 10: Retrieve External IP of the Service
       - name: Retrieve External IP
         id: get_ip
         run: |
@@ -90,43 +107,44 @@ jobs:
             exit 1
           fi
 
-      # Step 9: Output the External IP
+      # Step 11: Output the External IP
       - name: Output External IP
         run: |
           echo "The application is accessible at http://${{ env.EXTERNAL_IP }}"
 
-      # Step 10: Wait for 300 seconds (e.g., to allow services to initialize)
+      # Step 12: Wait for 300 seconds (e.g., to allow services to initialize)
       - name: Wait for 300 seconds
         run: |
           echo "Waiting for 300 seconds..."
           sleep 300
 
-      # Step 11: Destroy Terraform Configuration
+      # Step 13: Destroy Terraform Configuration
       - name: Destroy Terraform Configuration
         env:
-          TF_VAR_GCP_CREDENTIALS_FILE: "terraform/gcp_credentials.json"
+          TF_VAR_GCP_CREDENTIALS_FILE: "gcp_credentials.json"
           TF_VAR_GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
           TF_VAR_GCP_REGION: ${{ secrets.GCP_REGION }}
           TF_VAR_DATABASE_URL: ${{ secrets.DATABASE_URL }}
           TF_VAR_SECRET_KEY: ${{ secrets.SECRET_KEY }}
-          TF_VAR_MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
-        working-directory: terraform
         run: |
           terraform destroy -auto-approve
 
-      # Step 12: Push Terraform State to GitHub
-      - name: Push Terraform State to GitHub
+      # Step 14: Push Updated Terraform State to TF Repository
+      - name: Push Updated Terraform State to TF Repository
         env:
           MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
-        working-directory: terraform
         run: |
-          git init
-          git config --global user.email "yuvalshmuely8@gmail.com"
-          git config --global user.name "NutzKiller"
-          git remote add origin https://${{ secrets.MY_GITHUB_TOKEN }}@github.com/NutzKiller/TF.git || true
-          git fetch origin main || true
-          git checkout -B main || true
-          git pull origin main --allow-unrelated-histories --strategy-option ours || true
-          git add terraform_state/terraform.tfstate
-          git commit -m "Update Terraform state file after destroy" || true
-          git push origin main --force
+          if [ -f terraform.tfstate ]; then
+            mv terraform.tfstate tf_repo/terraform.tfstate
+            cd tf_repo
+
+            git config --global user.email "yuvalshmuely8@gmail.com"
+            git config --global user.name "NutzKiller"
+
+            git add terraform.tfstate
+            git commit -m "Update Terraform state file after destroy" || echo "No changes to commit."
+            git push origin main
+          else
+            echo "No Terraform state file found to push. Skipping this step."
+          fi
+        shell: bash
