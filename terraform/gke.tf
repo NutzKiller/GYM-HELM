@@ -1,6 +1,22 @@
-# terraform/gke.tf
+# Create a subnetwork with secondary ranges
+resource "google_compute_subnetwork" "default" {
+  name          = "default"
+  ip_cidr_range = "10.0.0.0/20"
+  region        = var.GCP_REGION
+  network       = "default" # Use the default VPC
 
-# Create a GKE cluster within the Free Tier limits
+  secondary_ip_range {
+    range_name    = "pods"
+    ip_cidr_range = "10.1.0.0/16"
+  }
+
+  secondary_ip_range {
+    range_name    = "services"
+    ip_cidr_range = "10.2.0.0/20"
+  }
+}
+
+# Create a GKE cluster
 resource "google_container_cluster" "primary" {
   name               = "gym-cluster"
   location           = var.GCP_REGION
@@ -9,32 +25,29 @@ resource "google_container_cluster" "primary" {
   # Remove the default node pool to manage node pools separately
   remove_default_node_pool = true
 
-  # Use the existing default VPC network and subnetwork
+  # Explicitly specify the default VPC network and subnetwork
   network    = "default"
-  subnetwork = "default" # Use the existing default subnetwork
+  subnetwork = google_compute_subnetwork.default.name
 
   ip_allocation_policy {
-    cluster_secondary_range_name  = "pods"       # Ensure these secondary ranges exist
-    services_secondary_range_name = "services"   # Ensure these secondary ranges exist
+    cluster_secondary_range_name  = "pods"
+    services_secondary_range_name = "services"
   }
 
-  node_config {
-    machine_type = "e2-micro"  # Eligible for Free Tier
+  logging_service    = "logging.googleapis.com/kubernetes"
+  monitoring_service = "monitoring.googleapis.com/kubernetes"
 
-    oauth_scopes = [
-      "https://www.googleapis.com/auth/cloud-platform",
-    ]
-  }
+  enable_http_load_balancing = true
 }
 
-# Create a node pool with e2-micro instances
+# Create a node pool
 resource "google_container_node_pool" "primary_nodes" {
   cluster    = google_container_cluster.primary.name
   location   = var.GCP_REGION
   node_count = 1
 
   node_config {
-    machine_type = "e2-micro"  # Eligible for Free Tier
+    machine_type = "e2-micro"
 
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform",
@@ -42,7 +55,20 @@ resource "google_container_node_pool" "primary_nodes" {
   }
 
   management {
-    auto_upgrade = true  # Automatically upgrade nodes to the latest version
-    auto_repair  = true  # Automatically repair unhealthy nodes
+    auto_upgrade = true
+    auto_repair  = true
   }
+}
+
+# Output cluster details
+output "kubernetes_cluster_name" {
+  value = google_container_cluster.primary.name
+}
+
+output "kubernetes_cluster_endpoint" {
+  value = google_container_cluster.primary.endpoint
+}
+
+output "kubernetes_cluster_ca_certificate" {
+  value = google_container_cluster.primary.master_auth[0].cluster_ca_certificate
 }
