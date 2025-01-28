@@ -1,9 +1,11 @@
+# terraform/gke.tf
+
 # Create a subnetwork with secondary ranges
 resource "google_compute_subnetwork" "default" {
   name          = "default"
   ip_cidr_range = "10.0.0.0/20"
   region        = var.GCP_REGION
-  network       = "default" # Use the default VPC
+  network       = "default"
 
   secondary_ip_range {
     range_name    = "pods"
@@ -22,10 +24,8 @@ resource "google_container_cluster" "primary" {
   location           = var.GCP_REGION
   initial_node_count = 1
 
-  # Remove the default node pool to manage node pools separately
   remove_default_node_pool = true
 
-  # Explicitly specify the default VPC network and subnetwork
   network    = "default"
   subnetwork = google_compute_subnetwork.default.name
 
@@ -58,17 +58,4 @@ resource "google_container_node_pool" "primary_nodes" {
     auto_upgrade = true
     auto_repair  = true
   }
-}
-
-# Output cluster details
-output "kubernetes_cluster_name" {
-  value = google_container_cluster.primary.name
-}
-
-output "kubernetes_cluster_endpoint" {
-  value = google_container_cluster.primary.endpoint
-}
-
-output "kubernetes_cluster_ca_certificate" {
-  value = google_container_cluster.primary.master_auth[0].cluster_ca_certificate
 }
