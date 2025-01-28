@@ -2,7 +2,7 @@
 
 # Create a GKE cluster
 resource "google_container_cluster" "primary" {
-  name               = "gym-cluster"
+  name               = "gym-cluster1"
   location           = var.GCP_REGION
   initial_node_count = 1
 
