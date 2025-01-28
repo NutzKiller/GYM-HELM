@@ -130,12 +130,21 @@ jobs:
             git config --global user.email "yuvalshmuely8@gmail.com"
             git config --global user.name "NutzKiller"
 
+            # Pull the latest changes from the remote branch to avoid conflicts
+            git pull origin main --rebase || echo "Pull failed. Continuing with local changes."
+
+            # Add the updated terraform state file
             git add terraform_state/terraform.tfstate
-            git commit -m "Update Terraform state file" || echo "No changes to commit."
-            git push origin main
+
+            # Commit changes if there are any, or create an empty commit if none
+            git commit -m "Update Terraform state file" || git commit --allow-empty -m "Dummy commit to ensure sync"
+
+            # Force push to overwrite remote changes and ensure the push succeeds
+            git push origin main --force
           else
             echo "No Terraform state file found to push. Skipping this step."
           fi
+
 
       # Step 13: Destroy Terraform Configuration
       - name: Destroy Terraform Configuration
