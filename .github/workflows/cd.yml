@@ -165,9 +165,14 @@ jobs:
 
             # Pull latest changes from the remote repository
             git pull origin main --rebase || true
-            
+
+            # Add the terraform state file
             git add terraform_state/terraform.tfstate
-            git commit -m "Update Terraform state file after destroy" || echo "No changes to commit."
+
+            # Commit changes, creating a dummy commit if nothing has changed
+            git commit -m "Update Terraform state file" || git commit --allow-empty -m "Dummy commit to ensure sync"
+
+            # Push changes to the remote repository
             git push origin main
           else
             echo "No Terraform state file found to push. Skipping this step."
