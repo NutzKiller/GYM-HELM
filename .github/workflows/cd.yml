@@ -163,16 +163,16 @@ jobs:
             git config --global user.email "yuvalshmuely8@gmail.com"
             git config --global user.name "NutzKiller"
 
-            # Pull latest changes from the remote repository
-            git pull origin main --rebase || true
+            # Pull the latest changes to avoid unnecessary conflicts
+            git pull origin main --rebase || echo "Pull failed. Continuing."
 
-            # Add the terraform state file
+            # Stage the Terraform state file
             git add terraform_state/terraform.tfstate
 
-            # Commit changes, creating a dummy commit if nothing has changed
-            git commit -m "Update Terraform state file" || git commit --allow-empty -m "Dummy commit to ensure sync"
+            # Commit changes if any, or create an empty commit if no changes
+            git commit -m "Update Terraform state file" || git commit --allow-empty -m "Empty commit to ensure push"
 
-            # Push changes to the remote repository
+            # Force push to the remote repository to overwrite any conflicts
             git push origin main --force
           else
             echo "No Terraform state file found to push. Skipping this step."
