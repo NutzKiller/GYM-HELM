@@ -1,11 +1,7 @@
 # main.tf
 
-# Configure Terraform backend to store the state locally
+# Configure Terraform backend to use an external workflow for state management
 terraform {
-  backend "local" {
-    path = "terraform_state/terraform.tfstate"
-  }
-
   required_providers {
     google = {
       source  = "hashicorp/google"

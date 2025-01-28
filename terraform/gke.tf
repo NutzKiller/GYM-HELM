@@ -1,5 +1,23 @@
 # terraform/gke.tf
 
+# Create a subnetwork with secondary ranges
+resource "google_compute_subnetwork" "default" {
+  name          = "default"
+  ip_cidr_range = "10.0.0.0/20"
+  region        = var.GCP_REGION
+  network       = "default" # Ensure this matches your network name
+
+  secondary_ip_range {
+    range_name    = "pods"
+    ip_cidr_range = "10.1.0.0/16"
+  }
+
+  secondary_ip_range {
+    range_name    = "services"
+    ip_cidr_range = "10.2.0.0/20"
+  }
+}
+
 # Create a GKE cluster within the Free Tier limits
 resource "google_container_cluster" "primary" {
   name               = "gym-cluster"
@@ -9,12 +27,11 @@ resource "google_container_cluster" "primary" {
   # Remove the default node pool to manage node pools separately
   remove_default_node_pool = true
 
-  # Explicitly specify the default VPC network
-  network    = "default"  # Ensure this matches the name of your recreated VPC network
+  # Explicitly specify the default VPC network and subnetwork
+  network    = "default"
+  subnetwork = google_compute_subnetwork.default.name
 
   ip_allocation_policy {
-    # Specify secondary ranges if they exist in the default subnet
-    # These should be automatically created if you used --subnet-mode=auto
     cluster_secondary_range_name  = "pods"
     services_secondary_range_name = "services"
   }
