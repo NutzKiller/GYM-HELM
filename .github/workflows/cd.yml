@@ -14,7 +14,7 @@ jobs:
     steps:
       # Step 1: Check out the main repository code
       - name: Check out main repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       # Step 2: Clone the Terraform State Repository
       - name: Clone Terraform State Repository
@@ -26,23 +26,23 @@ jobs:
 
       # Step 3: Set up Terraform
       - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v2
+        uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: latest
 
-      # Step 4: Create GCP credentials file for Terraform
+      # Step 4: Create GCP credentials file
       - name: Create GCP credentials file
         run: |
           mkdir -p terraform
-          printf "%s" "${{ secrets.GCP_CREDENTIALS_FILE }}" > terraform/gcp_credentials.json
+          echo "${{ secrets.GCP_CREDENTIALS_FILE_B64 }}" | base64 --decode > terraform/gcp_credentials.json
 
-      # Debug: Check GCP credentials file
+      # Debug: Check GCP credentials file (Optional - Remove or Secure After Verification)
       - name: Debug GCP credentials file
         run: |
-          echo "Contents of GCP credentials file:"
-          cat terraform/gcp_credentials.json
+          echo "Contents of GCP credentials file (first 100 characters):"
+          head -c 100 terraform/gcp_credentials.json
           echo "Validating JSON formatting:"
-          jq . terraform/gcp_credentials.json || echo "Invalid JSON!"
+          jq . terraform/gcp_credentials.json || { echo "Invalid JSON!"; cat terraform/gcp_credentials.json; exit 1; }
 
       # Step 5: Sync Terraform State from NutzKiller/TF Repository
       - name: Sync Terraform State from NutzKiller/TF Repository
@@ -66,7 +66,6 @@ jobs:
       - name: Apply Terraform Configuration
         working-directory: terraform
         env:
-          TF_VAR_GCP_CREDENTIALS_FILE: "gcp_credentials.json"
           TF_VAR_GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
           TF_VAR_GCP_REGION: ${{ secrets.GCP_REGION }}
           TF_VAR_DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -128,7 +127,6 @@ jobs:
       - name: Destroy Terraform Configuration
         working-directory: terraform
         env:
-          TF_VAR_GCP_CREDENTIALS_FILE: "gcp_credentials.json"
           TF_VAR_GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
           TF_VAR_GCP_REGION: ${{ secrets.GCP_REGION }}
           TF_VAR_DATABASE_URL: ${{ secrets.DATABASE_URL }}
