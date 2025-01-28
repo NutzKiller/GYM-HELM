@@ -65,8 +65,8 @@ jobs:
           TF_VAR_SECRET_KEY: ${{ secrets.SECRET_KEY }}
           TF_VAR_MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
         run: |
-          terraform init -input=false
-          terraform apply -auto-approve -input=false
+          terraform init
+          terraform apply -auto-approve
 
       # Step 8: Configure kubectl to connect to GKE
       - name: Get GKE Credentials
@@ -127,7 +127,7 @@ jobs:
           TF_VAR_SECRET_KEY: ${{ secrets.SECRET_KEY }}
           TF_VAR_MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
         run: |
-          terraform destroy -auto-approve -input=false
+          terraform destroy -auto-approve
 
       # Step 14: Push Updated Terraform State to NutzKiller/TF Repository
       - name: Push Updated Terraform State to NutzKiller/TF Repository
