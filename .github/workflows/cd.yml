@@ -33,6 +33,7 @@ jobs:
       # Step 4: Create GCP credentials file for Terraform
       - name: Create GCP credentials file
         run: |
+          mkdir -p terraform
           printf "%s" "${{ secrets.GCP_CREDENTIALS_FILE }}" > terraform/gcp_credentials.json
 
       # Debug: Check GCP credentials file
