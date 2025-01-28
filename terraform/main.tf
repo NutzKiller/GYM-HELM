@@ -28,9 +28,9 @@ terraform {
 
 # Define Google Cloud provider
 provider "google" {
-  credentials = file(secret.GCP_CREDENTIALS_FILE) # Uses the file created from the GitHub secret
-  project     = secret.GCP_PROJECT               # Passed as a variable from the workflow
-  region      = secret.GCP_REGION
+  credentials = file("terraform/gcp_credentials.json") # File created in the GitHub Actions workflow from the secret
+  project     = "noted-victory-448912-q2"             # Hardcoded or passed as an environment variable via the workflow
+  region      = "us-central1"                         # Hardcoded or passed as an environment variable via the workflow
 }
 
 # Generate a random ID to make key names unique
