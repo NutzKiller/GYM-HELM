@@ -163,9 +163,12 @@ jobs:
             git config --global user.email "yuvalshmuely8@gmail.com"
             git config --global user.name "NutzKiller"
 
+            # Pull latest changes from the remote repository
+            git pull origin main --rebase || true
+            
             git add terraform_state/terraform.tfstate
             git commit -m "Update Terraform state file after destroy" || echo "No changes to commit."
-            git push origin main --force
+            git push origin main
           else
             echo "No Terraform state file found to push. Skipping this step."
           fi
