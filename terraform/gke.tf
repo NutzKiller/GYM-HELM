@@ -37,7 +37,12 @@ resource "google_container_cluster" "primary" {
   logging_service    = "logging.googleapis.com/kubernetes"
   monitoring_service = "monitoring.googleapis.com/kubernetes"
 
-  enable_http_load_balancing = true
+  # Addons configuration for HTTP load balancing
+  addons_config {
+    http_load_balancing {
+      disabled = false
+    }
+  }
 }
 
 # Create a node pool
