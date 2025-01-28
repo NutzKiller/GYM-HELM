@@ -2,7 +2,7 @@
 set -e  # Exit immediately if a command exits with a non-zero status.
 
 # Update the system
-yum update -y
+apt update -y
 
 # Install Docker
 amazon-linux-extras enable docker
@@ -11,7 +11,7 @@ service docker start
 usermod -a -G docker ec2-user
 
 # Install Git
-yum install -y git
+apt install -y git
 
 # Clone the repository
 if [ ! -d "/home/ec2-user/gym" ]; then
