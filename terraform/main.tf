@@ -26,11 +26,11 @@ terraform {
   required_version = ">= 1.0.0"
 }
 
-# Define Google Cloud provider using GitHub Actions secrets
+# Define Google Cloud provider using environment variables directly
 provider "google" {
-  credentials = file("terraform/gcp_credentials.json")  # Created in GitHub Actions
-  project     = "${env.GCP_PROJECT}"                   # From GitHub Actions secret
-  region      = "${env.GCP_REGION}"                    # From GitHub Actions secret
+  credentials = file("terraform/gcp_credentials.json") # Created in GitHub Actions
+  project     = "${var.GCP_PROJECT}"                  # Passed from GitHub Actions as an environment variable
+  region      = "${var.GCP_REGION}"                   # Passed from GitHub Actions as an environment variable
 }
 
 # Generate a random ID to make key names unique
@@ -49,3 +49,4 @@ resource "local_file" "private_key" {
   content  = tls_private_key.example.private_key_pem
   filename = "generated_key.pem"
 }
+
