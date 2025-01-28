@@ -77,6 +77,8 @@ jobs:
           cluster_name: gym-cluster
           location: ${{ secrets.GCP_REGION }}
           project_id: ${{ secrets.GCP_PROJECT }}
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: terraform/gcp_credentials.json
 
       # Step 9: Apply Kubernetes Manifests
       - name: Apply Kubernetes Manifests
