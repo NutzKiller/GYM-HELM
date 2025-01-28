@@ -165,7 +165,7 @@ jobs:
 
             git add terraform_state/terraform.tfstate
             git commit -m "Update Terraform state file after destroy" || echo "No changes to commit."
-            git push origin main
+            git push origin main --force
           else
             echo "No Terraform state file found to push. Skipping this step."
           fi
