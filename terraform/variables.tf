@@ -35,4 +35,3 @@ variable "MY_GITHUB_TOKEN" {
   description = "GitHub token with permissions to push to the TF repository"
   type        = string
 }
-
