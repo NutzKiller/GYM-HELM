@@ -62,9 +62,10 @@ jobs:
           TF_VAR_GCP_REGION: ${{ secrets.GCP_REGION }}
           TF_VAR_DATABASE_URL: ${{ secrets.DATABASE_URL }}
           TF_VAR_SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          TF_VAR_MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
         run: |
-          terraform init
-          terraform apply -auto-approve
+          terraform init -input=false
+          terraform apply -auto-approve -input=false
 
       # Step 8: Configure kubectl to connect to GKE
       - name: Get GKE Credentials
@@ -123,6 +124,7 @@ jobs:
           TF_VAR_GCP_REGION: ${{ secrets.GCP_REGION }}
           TF_VAR_DATABASE_URL: ${{ secrets.DATABASE_URL }}
           TF_VAR_SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          TF_VAR_MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
         run: |
           terraform destroy -auto-approve
 
