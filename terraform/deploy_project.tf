@@ -175,13 +175,11 @@ output "public_ip" {
 variable "DATABASE_URL" {
   description = "The database connection string"
   type        = string
-  secret      = true
 }
 
 variable "SECRET_KEY" {
   description = "The Flask application secret key"
   type        = string
-  secret      = true
 }
 
 # Declare variable for GitHub token (auto-populated by secret)
@@ -189,5 +187,4 @@ variable "MY_GITHUB_TOKEN" {
   description = "GitHub token for pushing Terraform state"
   type        = string
   default     = ""
-  secret      = true
 }
