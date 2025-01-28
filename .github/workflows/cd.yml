@@ -1,4 +1,4 @@
-# File: .github/workflows/cd.yml
+# .github/workflows/cd.yml
 
 name: CD Workflow
 
