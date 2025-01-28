@@ -26,11 +26,11 @@ terraform {
   required_version = ">= 1.0.0"
 }
 
-# Define Google Cloud provider
+# Define Google Cloud provider using GitHub Actions secrets
 provider "google" {
-  credentials = file("terraform/gcp_credentials.json") # File created in the GitHub Actions workflow from the secret
-  project     = "noted-victory-448912-q2"             # Hardcoded or passed as an environment variable via the workflow
-  region      = "us-central1"                         # Hardcoded or passed as an environment variable via the workflow
+  credentials = file("terraform/gcp_credentials.json")  # Created in GitHub Actions
+  project     = "${env.GCP_PROJECT}"                   # From GitHub Actions secret
+  region      = "${env.GCP_REGION}"                    # From GitHub Actions secret
 }
 
 # Generate a random ID to make key names unique
