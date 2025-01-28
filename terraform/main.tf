@@ -1,3 +1,5 @@
+# main.tf
+
 # Configure Terraform backend to store the state locally
 terraform {
   backend "local" {
@@ -28,9 +30,9 @@ terraform {
 
 # Define Google Cloud provider using environment variables directly
 provider "google" {
-  credentials = file("gcp_credentials.json") # Created in GitHub Actions
-  project     = "${var.GCP_PROJECT}"                  # Passed from GitHub Actions as an environment variable
-  region      = "${var.GCP_REGION}"                   # Passed from GitHub Actions as an environment variable
+  credentials = file(var.GCP_CREDENTIALS_FILE) # Updated to use the variable
+  project     = var.GCP_PROJECT
+  region      = var.GCP_REGION
 }
 
 # Generate a random ID to make key names unique
@@ -49,4 +51,3 @@ resource "local_file" "private_key" {
   content  = tls_private_key.example.private_key_pem
   filename = "generated_key.pem"
 }
-
