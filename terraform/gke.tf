@@ -6,11 +6,15 @@ resource "google_container_cluster" "primary" {
   location           = var.GCP_REGION
   initial_node_count = 1
 
+  # Remove the default node pool to manage node pools separately
   remove_default_node_pool = true
 
+  # Explicitly specify the default VPC network
+  network    = "default"  # Ensure this matches the name of your recreated VPC network
+
   ip_allocation_policy {
-    # Optional: Specify secondary ranges if you have pre-defined subnets
-    # If not, GKE can create them automatically
+    # Specify secondary ranges if they exist in the default subnet
+    # These should be automatically created if you used --subnet-mode=auto
     cluster_secondary_range_name  = "pods"
     services_secondary_range_name = "services"
   }
@@ -21,10 +25,17 @@ resource "google_container_cluster" "primary" {
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform",
     ]
+
+    # (Optional) Specify additional configurations such as labels or tags
+    # labels = {
+    #   environment = "production"
+    # }
   }
 
-  # Optional: Enable additional features as needed
+  # (Optional) Enable additional features as needed
   # For example, enable HTTP/HTTPS load balancing, etc.
+  # enable_autorepair = true
+  # enable_autoupgrade = true
 }
 
 # Create a node pool with e2-micro instances
@@ -39,10 +50,23 @@ resource "google_container_node_pool" "primary_nodes" {
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform",
     ]
+
+    # (Optional) Specify additional configurations such as labels or tags
+    # labels = {
+    #   role = "worker"
+    # }
   }
 
   management {
-    auto_upgrade = true
-    auto_repair  = true
+    auto_upgrade = true  # Automatically upgrade nodes to the latest version
+    auto_repair  = true  # Automatically repair unhealthy nodes
   }
+
+  # (Optional) Specify additional node pool configurations
+  # For example, specify taints or local SSDs
+  # taints = [{
+  #   key    = "key"
+  #   value  = "value"
+  #   effect = "NO_SCHEDULE"
+  # }]
 }
