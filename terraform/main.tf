@@ -28,7 +28,7 @@ terraform {
 
 # Define Google Cloud provider using environment variables directly
 provider "google" {
-  credentials = file("terraform/gcp_credentials.json") # Created in GitHub Actions
+  credentials = file("gcp_credentials.json") # Created in GitHub Actions
   project     = "${var.GCP_PROJECT}"                  # Passed from GitHub Actions as an environment variable
   region      = "${var.GCP_REGION}"                   # Passed from GitHub Actions as an environment variable
 }
