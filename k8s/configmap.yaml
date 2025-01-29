@@ -1,7 +1,7 @@
+# configmap.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: gym-config
   namespace: gym-namespace
-data:
-  DATABASE_URL: ""
+data: {}  # No hardcoded values, keep it empty
