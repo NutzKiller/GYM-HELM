@@ -80,44 +80,43 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: terraform/gcp_credentials.json
      
-          # Step: Create Namespace
+      # Step 9: Create Namespace (if it doesn't exist)
       - name: Create Namespace
         run: |
           kubectl create namespace gym-namespace || true
-          
-        
-          - name: Inject GitHub Secrets into Kubernetes
-          run: |
-            # Ensure namespace exists
-            kubectl create namespace gym-namespace --dry-run=client -o yaml | kubectl apply -f -
-        
-            # Delete old secrets/configmaps to avoid stale values
-            kubectl delete secret gym-secret -n gym-namespace --ignore-not-found
-            kubectl delete configmap gym-config -n gym-namespace --ignore-not-found
-        
-            # Create new Kubernetes Secret from GitHub Actions Secrets
-            kubectl create secret generic gym-secret \
-              --from-literal=SECRET_KEY="${{ secrets.SECRET_KEY }}" \
-              -n gym-namespace --dry-run=client -o yaml | kubectl apply -f -
-        
-            # Create new ConfigMap from GitHub Actions Secrets
-            kubectl create configmap gym-config \
-              --from-literal=DATABASE_URL="${{ secrets.DATABASE_URL }}" \
-              -n gym-namespace --dry-run=client -o yaml | kubectl apply -f -
-        
-            # Verify if secrets were created properly
-            kubectl get secret gym-secret -n gym-namespace -o yaml
-            kubectl get configmap gym-config -n gym-namespace -o yaml
-        
-        # Step 9.5: Apply Kubernetes Manifests
+
+      # Step 10: Inject GitHub Secrets into Kubernetes (DYNAMIC SECRETS)
+      - name: Inject GitHub Secrets into Kubernetes
+        run: |
+          echo "Deleting old secrets and configmaps to avoid stale values..."
+          kubectl delete secret gym-secret -n gym-namespace --ignore-not-found
+          kubectl delete configmap gym-config -n gym-namespace --ignore-not-found
+
+          echo "Creating new secrets and configmaps from GitHub Actions Secrets..."
+          kubectl create secret generic gym-secret \
+            --from-literal=SECRET_KEY="${{ secrets.SECRET_KEY }}" \
+            -n gym-namespace --dry-run=client -o yaml | kubectl apply -f -
+
+          kubectl create configmap gym-config \
+            --from-literal=DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+            -n gym-namespace --dry-run=client -o yaml | kubectl apply -f -
+
+          echo "Verifying secrets and configmaps..."
+          kubectl get secret gym-secret -n gym-namespace -o yaml
+          kubectl get configmap gym-config -n gym-namespace -o yaml
+
+      # Step 11: Apply Kubernetes Manifests (🚀 IMPORTANT: Remove configmap.yaml & secret.yaml)
       - name: Apply Kubernetes Manifests
         run: |
-          kubectl apply -f k8s/configmap.yaml
-          kubectl apply -f k8s/secret.yaml
           kubectl apply -f k8s/deployment.yaml
           kubectl apply -f k8s/service.yaml
 
-      # Step 10: Retrieve External IP of the Service
+      # Step 12: Restart Deployment to Load Secrets
+      - name: Restart Deployment
+        run: |
+          kubectl rollout restart deployment gym-deployment -n gym-namespace
+
+      # Step 13: Retrieve External IP of the Service
       - name: Retrieve External IP
         id: get_ip
         run: |
@@ -138,12 +137,12 @@ jobs:
             exit 1
           fi
 
-      # Step 11: Output the External IP
+      # Step 14: Output the External IP
       - name: Output External IP
         run: |
           echo "The application is accessible at http://${{ env.EXTERNAL_IP }}"
 
-      # Step 12: Push Updated Terraform State to NutzKiller/TF Repository
+      # Step 15: Push Updated Terraform State to NutzKiller/TF Repository
       - name: Push Updated Terraform State to NutzKiller/TF Repository
         env:
           MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
@@ -155,59 +154,17 @@ jobs:
             git config --global user.email "yuvalshmuely8@gmail.com"
             git config --global user.name "NutzKiller"
 
-            # Pull the latest changes from the remote branch to avoid conflicts
+            # Pull latest changes before pushing
             git pull origin main --rebase || echo "Pull failed. Continuing with local changes."
 
-            # Add the updated terraform state file
+            # Add updated Terraform state file
             git add terraform_state/terraform.tfstate
 
             # Commit changes if there are any, or create an empty commit if none
             git commit -m "Update Terraform state file" || git commit --allow-empty -m "Dummy commit to ensure sync"
 
-            # Force push to overwrite remote changes and ensure the push succeeds
+            # Force push to ensure the push succeeds
             git push origin main --force
           else
             echo "No Terraform state file found to push. Skipping this step."
           fi
-
-
-      # # Step 13: Destroy Terraform Configuration
-      # - name: Destroy Terraform Configuration
-      #   working-directory: terraform
-      #   env:
-      #     GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
-      #     TF_VAR_GCP_CREDENTIALS_FILE: "gcp_credentials.json"
-      #     TF_VAR_GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
-      #     TF_VAR_GCP_REGION: ${{ secrets.GCP_REGION }}
-      #     TF_VAR_DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      #     TF_VAR_SECRET_KEY: ${{ secrets.SECRET_KEY }}
-      #     TF_VAR_MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
-      #   run: |
-      #     terraform destroy -auto-approve -input=false
-
-      # # Step 14: Push Updated Terraform State to NutzKiller/TF Repository
-      # - name: Push Updated Terraform State to NutzKiller/TF Repository
-      #   env:
-      #     MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
-      #   run: |
-      #     if [ -f terraform/terraform_state/terraform.tfstate ]; then
-      #       cp terraform/terraform_state/terraform.tfstate TF/terraform_state/terraform.tfstate
-      #       cd TF
-
-      #       git config --global user.email "yuvalshmuely8@gmail.com"
-      #       git config --global user.name "NutzKiller"
-
-      #       # Pull the latest changes to avoid unnecessary conflicts
-      #       git pull origin main --rebase || echo "Pull failed. Continuing."
-
-      #       # Stage the Terraform state file
-      #       git add terraform_state/terraform.tfstate
-
-      #       # Commit changes if any, or create an empty commit if no changes
-      #       git commit -m "Update Terraform state file" || git commit --allow-empty -m "Empty commit to ensure push"
-
-      #       # Force push to the remote repository to overwrite any conflicts
-      #       git push origin main --force
-      #     else
-      #       echo "No Terraform state file found to push. Skipping this step."
-      #     fi
