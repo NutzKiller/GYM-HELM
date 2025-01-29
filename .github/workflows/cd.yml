@@ -79,12 +79,25 @@ jobs:
           project_id: ${{ secrets.GCP_PROJECT }}
         env:
           GOOGLE_APPLICATION_CREDENTIALS: terraform/gcp_credentials.json
-      # Step: Create Namespace
+     
+          # Step: Create Namespace
       - name: Create Namespace
         run: |
           kubectl create namespace gym-namespace || true
           
-      # Step 9: Apply Kubernetes Manifests
+        
+        # Step 9: Inject GitHub Secrets into Kubernetes
+      - name: Inject GitHub Secrets into Kubernetes
+        run: |
+          kubectl create secret generic gym-secret \
+            --from-literal=SECRET_KEY="${{ secrets.SECRET_KEY }}" \
+            -n gym-namespace --dry-run=client -o yaml | kubectl apply -f -
+
+          kubectl create configmap gym-config \
+            --from-literal=DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+            -n gym-namespace --dry-run=client -o yaml | kubectl apply -f -
+
+        # Step 9.5: Apply Kubernetes Manifests
       - name: Apply Kubernetes Manifests
         run: |
           kubectl apply -f k8s/configmap.yaml
