@@ -168,3 +168,44 @@ jobs:
           else
             echo "No Terraform state file found to push. Skipping this step."
           fi
+
+      # # Step 16: Destroy Terraform Configuration
+      # - name: Destroy Terraform Configuration
+      #   working-directory: terraform
+      #   env:
+      #     GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
+      #     TF_VAR_GCP_CREDENTIALS_FILE: "gcp_credentials.json"
+      #     TF_VAR_GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
+      #     TF_VAR_GCP_REGION: ${{ secrets.GCP_REGION }}
+      #     TF_VAR_DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      #     TF_VAR_SECRET_KEY: ${{ secrets.SECRET_KEY }}
+      #     TF_VAR_MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+      #   run: |
+      #     terraform destroy -auto-approve -input=false
+
+      # # Step 17: Push Updated Terraform State to NutzKiller/TF Repository
+      # - name: Push Updated Terraform State to NutzKiller/TF Repository
+      #   env:
+      #     MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+      #   run: |
+      #     if [ -f terraform/terraform_state/terraform.tfstate ]; then
+      #       cp terraform/terraform_state/terraform.tfstate TF/terraform_state/terraform.tfstate
+      #       cd TF
+
+      #       git config --global user.email "yuvalshmuely8@gmail.com"
+      #       git config --global user.name "NutzKiller"
+
+      #       # Pull the latest changes to avoid unnecessary conflicts
+      #       git pull origin main --rebase || echo "Pull failed. Continuing."
+
+      #       # Stage the Terraform state file
+      #       git add terraform_state/terraform.tfstate
+
+      #       # Commit changes if any, or create an empty commit if no changes
+      #       git commit -m "Update Terraform state file" || git commit --allow-empty -m "Empty commit to ensure push"
+
+      #       # Force push to the remote repository to overwrite any conflicts
+      #       git push origin main --force
+      #     else
+      #       echo "No Terraform state file found to push. Skipping this step."
+      #     fi

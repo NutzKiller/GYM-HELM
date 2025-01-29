@@ -1,7 +1,7 @@
 import json
 import os
 import random
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 
 # ---------------- NEW IMPORTS FOR DATABASE ----------------
 from flask_sqlalchemy import SQLAlchemy
@@ -915,6 +915,9 @@ def progress():
         return redirect(url_for('home'))
     return "<h2>Progress Tracking (Coming Soon)</h2>"
 
+@app.route('/health', methods=['GET'])
+def health():
+    return jsonify({"status": "healthy"}), 200
 # -------------------------------------------------
 #   MAIN ENTRY POINT
 # -------------------------------------------------
