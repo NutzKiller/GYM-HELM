@@ -29,6 +29,13 @@ spec:
                 secretKeyRef:
                   name: gym-secret
                   key: SECRET_KEY
+          resources:
+            requests:
+              memory: "256Mi"  # Minimum memory guaranteed
+              cpu: "250m"       # Minimum CPU guaranteed (0.25 CPU core)
+            limits:
+              memory: "512Mi"  # Maximum memory allowed
+              cpu: "500m"       # Maximum CPU allowed (0.5 CPU core)
           readinessProbe:
             httpGet:
               path: /health
