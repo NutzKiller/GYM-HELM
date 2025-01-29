@@ -86,17 +86,29 @@ jobs:
           kubectl create namespace gym-namespace || true
           
         
-        # Step 9: Inject GitHub Secrets into Kubernetes
-      - name: Inject GitHub Secrets into Kubernetes
-        run: |
-          kubectl create secret generic gym-secret \
-            --from-literal=SECRET_KEY="${{ secrets.SECRET_KEY }}" \
-            -n gym-namespace --dry-run=client -o yaml | kubectl apply -f -
-
-          kubectl create configmap gym-config \
-            --from-literal=DATABASE_URL="${{ secrets.DATABASE_URL }}" \
-            -n gym-namespace --dry-run=client -o yaml | kubectl apply -f -
-
+          - name: Inject GitHub Secrets into Kubernetes
+          run: |
+            # Ensure namespace exists
+            kubectl create namespace gym-namespace --dry-run=client -o yaml | kubectl apply -f -
+        
+            # Delete old secrets/configmaps to avoid stale values
+            kubectl delete secret gym-secret -n gym-namespace --ignore-not-found
+            kubectl delete configmap gym-config -n gym-namespace --ignore-not-found
+        
+            # Create new Kubernetes Secret from GitHub Actions Secrets
+            kubectl create secret generic gym-secret \
+              --from-literal=SECRET_KEY="${{ secrets.SECRET_KEY }}" \
+              -n gym-namespace --dry-run=client -o yaml | kubectl apply -f -
+        
+            # Create new ConfigMap from GitHub Actions Secrets
+            kubectl create configmap gym-config \
+              --from-literal=DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+              -n gym-namespace --dry-run=client -o yaml | kubectl apply -f -
+        
+            # Verify if secrets were created properly
+            kubectl get secret gym-secret -n gym-namespace -o yaml
+            kubectl get configmap gym-config -n gym-namespace -o yaml
+        
         # Step 9.5: Apply Kubernetes Manifests
       - name: Apply Kubernetes Manifests
         run: |
