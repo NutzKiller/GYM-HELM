@@ -36,7 +36,13 @@ jobs:
           mkdir -p terraform
           echo "${{ secrets.GCP_CREDENTIALS_FILE_B64 }}" | base64 --decode > terraform/gcp_credentials.json
 
-      # Step 5: Sync Terraform State from NutzKiller/TF Repository
+      # Step 5: Validate GCP Authentication
+      - name: Verify GCP Authentication
+        run: |
+          gcloud auth list
+          gcloud config list
+
+      # Step 6: Sync Terraform State from NutzKiller/TF Repository
       - name: Sync Terraform State from NutzKiller/TF Repository
         run: |
           mkdir -p terraform/terraform_state
@@ -47,7 +53,7 @@ jobs:
             echo "No existing Terraform state found in NutzKiller/TF repository. Proceeding with empty state."
           fi
 
-      # Step 6: Set up Google Cloud SDK
+      # Step 7: Set up Google Cloud SDK
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
         with:
@@ -55,7 +61,7 @@ jobs:
           service_account_key_file: terraform/gcp_credentials.json
           export_default_credentials: true
 
-      # Step 7: Apply Terraform Configuration
+      # Step 8: Apply Terraform Configuration
       - name: Apply Terraform Configuration
         working-directory: terraform
         env:
@@ -70,7 +76,7 @@ jobs:
           terraform init -input=false
           terraform apply -auto-approve -input=false
 
-      # Step 8: Configure kubectl to connect to GKE
+      # Step 9: Configure kubectl to connect to GKE
       - name: Get GKE Credentials
         uses: google-github-actions/get-gke-credentials@v1
         with:
@@ -79,20 +85,32 @@ jobs:
           project_id: ${{ secrets.GCP_PROJECT }}
         env:
           GOOGLE_APPLICATION_CREDENTIALS: terraform/gcp_credentials.json
-     
-      # Step 9: Create Namespace (if it doesn't exist)
+
+      # Step 10: Validate Kubernetes Connection
+      - name: Verify Kubernetes Connection
+        run: |
+          kubectl cluster-info
+          kubectl get nodes
+
+      # Step 11: Ensure Firewall Allows External Traffic
+      - name: Ensure Firewall Rule for GKE
+        run: |
+          gcloud compute firewall-rules create allow-gke-5000 \
+            --allow=tcp:5000 \
+            --target-tags=gke-gym-cluster \
+            --source-ranges=0.0.0.0/0 || echo "Firewall rule already exists."
+
+      # Step 12: Create Namespace (if it doesn't exist)
       - name: Create Namespace
         run: |
           kubectl create namespace gym-namespace || true
 
-      # Step 10: Inject GitHub Secrets into Kubernetes (DYNAMIC SECRETS)
+      # Step 13: Inject GitHub Secrets into Kubernetes
       - name: Inject GitHub Secrets into Kubernetes
         run: |
-          echo "Deleting old secrets and configmaps to avoid stale values..."
           kubectl delete secret gym-secret -n gym-namespace --ignore-not-found
           kubectl delete configmap gym-config -n gym-namespace --ignore-not-found
 
-          echo "Creating new secrets and configmaps from GitHub Actions Secrets..."
           kubectl create secret generic gym-secret \
             --from-literal=SECRET_KEY="${{ secrets.SECRET_KEY }}" \
             -n gym-namespace --dry-run=client -o yaml | kubectl apply -f -
@@ -101,22 +119,18 @@ jobs:
             --from-literal=DATABASE_URL="${{ secrets.DATABASE_URL }}" \
             -n gym-namespace --dry-run=client -o yaml | kubectl apply -f -
 
-          echo "Verifying secrets and configmaps..."
-          kubectl get secret gym-secret -n gym-namespace -o yaml
-          kubectl get configmap gym-config -n gym-namespace -o yaml
-
-      # Step 11: Apply Kubernetes Manifests (🚀 IMPORTANT: Remove configmap.yaml & secret.yaml)
+      # Step 14: Apply Kubernetes Manifests
       - name: Apply Kubernetes Manifests
         run: |
           kubectl apply -f k8s/deployment.yaml
           kubectl apply -f k8s/service.yaml
 
-      # Step 12: Restart Deployment to Load Secrets
+      # Step 15: Restart Deployment to Load Secrets
       - name: Restart Deployment
         run: |
           kubectl rollout restart deployment gym-deployment -n gym-namespace
 
-      # Step 13: Retrieve External IP of the Service
+      # Step 16: Retrieve External IP of the LoadBalancer
       - name: Retrieve External IP
         id: get_ip
         run: |
@@ -137,12 +151,21 @@ jobs:
             exit 1
           fi
 
-      # Step 14: Output the External IP
+      # Step 17: Output the External IP
       - name: Output External IP
         run: |
           echo "The application is accessible at http://${{ env.EXTERNAL_IP }}"
 
-      # Step 15: Push Updated Terraform State to NutzKiller/TF Repository
+      # Step 18: Debug Kubernetes Setup (if LoadBalancer Fails)
+      - name: Debug Kubernetes Setup
+        run: |
+          echo "Debugging Kubernetes Configuration..."
+          kubectl get svc -n gym-namespace
+          kubectl get pods -n gym-namespace
+          kubectl describe svc gym-service -n gym-namespace
+          kubectl describe deployment gym-deployment -n gym-namespace
+
+      # Step 19: Push Updated Terraform State to GitHub
       - name: Push Updated Terraform State to NutzKiller/TF Repository
         env:
           MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
@@ -154,20 +177,15 @@ jobs:
             git config --global user.email "yuvalshmuely8@gmail.com"
             git config --global user.name "NutzKiller"
 
-            # Pull latest changes before pushing
             git pull origin main --rebase || echo "Pull failed. Continuing with local changes."
 
-            # Add updated Terraform state file
             git add terraform_state/terraform.tfstate
-
-            # Commit changes if there are any, or create an empty commit if none
             git commit -m "Update Terraform state file" || git commit --allow-empty -m "Dummy commit to ensure sync"
-
-            # Force push to ensure the push succeeds
             git push origin main --force
           else
             echo "No Terraform state file found to push. Skipping this step."
           fi
+
 
       # # Step 16: Destroy Terraform Configuration
       # - name: Destroy Terraform Configuration
