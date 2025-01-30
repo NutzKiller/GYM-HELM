@@ -4,7 +4,7 @@
 resource "google_container_cluster" "primary" {
   name               = "gym-cluster"
   location           = var.GCP_REGION
-  initial_node_count = 3  # Increased for better scheduling
+  initial_node_count = 2  # Increased for better scheduling
 
   remove_default_node_pool = true
 
@@ -40,7 +40,7 @@ resource "google_container_node_pool" "primary_nodes" {
 
   node_config {
     machine_type = "e2-medium"  # Upgraded from e2-micro to e2-medium (4GB RAM)
-    disk_size_gb = 30           # Increased disk space for better performance
+    disk_size_gb = 20           # Increased disk space for better performance
 
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform",
