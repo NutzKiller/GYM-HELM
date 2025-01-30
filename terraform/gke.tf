@@ -40,7 +40,7 @@ resource "google_container_node_pool" "primary_nodes" {
 
   node_config {
     machine_type = "e2-medium"  # Upgraded from e2-micro to e2-medium (4GB RAM)
-    disk_size_gb = 20           # Increased disk space for better performance
+    disk_size_gb = 15           # Increased disk space for better performance
 
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform",
