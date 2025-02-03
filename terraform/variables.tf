@@ -1,5 +1,3 @@
-# terraform/variables.tf
-
 # GCP Service Account Credentials JSON File
 variable "GCP_CREDENTIALS_FILE" {
   description = "Path to the GCP service account credentials JSON file"

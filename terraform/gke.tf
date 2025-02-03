@@ -1,6 +1,3 @@
-# terraform/gke.tf
-
-# Create a GKE cluster
 resource "google_container_cluster" "primary" {
   name               = "gym-cluster"
   location           = var.GCP_REGION
@@ -27,12 +24,10 @@ resource "google_container_cluster" "primary" {
   }
 }
 
-# Create a node pool with auto-scaling enabled
 resource "google_container_node_pool" "primary_nodes" {
   cluster  = google_container_cluster.primary.name
   location = var.GCP_REGION
 
-  # Enable auto-scaling
   autoscaling {
     min_node_count = 2
     max_node_count = 2

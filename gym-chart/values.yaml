@@ -1,0 +1,38 @@
+replicaCount: 1
+
+image:
+  repository: nutzkiller/gym
+  tag: latest
+  pullPolicy: IfNotPresent
+
+containerPort: 5000
+
+configMap:
+  data: {}  # Populate via CI/CD if needed
+
+secret:
+  stringData: {}  # Populate securely via Terraform or environment variables
+
+resources:
+  requests:
+    memory: "512Mi"
+    cpu: "250m"
+  limits:
+    memory: "1Gi"
+    cpu: "500m"
+
+readinessProbe:
+  initialDelaySeconds: 5
+  periodSeconds: 10
+
+livenessProbe:
+  initialDelaySeconds: 15
+  periodSeconds: 20
+
+service:
+  type: LoadBalancer
+  port: 5000
+
+# Optional overrides for naming if needed
+nameOverride: ""
+fullnameOverride: ""

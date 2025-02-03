@@ -1,11 +1,11 @@
 #####################
 # Python Specific
 #####################
-__pycache__/          # Ignore compiled Python files
-*.py[cod]             # Ignore Python cache files
-*.pyo                 # Ignore Python optimized files
-.Python               # Ignore virtual environments
-venv/                 # Ignore virtual env directory
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+venv/
 
 #####################
 # Environment Files
@@ -14,24 +14,20 @@ venv/                 # Ignore virtual env directory
 *.env
 
 #####################
-# Terraform
+# Terraform & Deployment Directories
 #####################
-# Ignore Terraform state & backup
+# Ignore Terraform state, backups and the entire Terraform directory
 *.tfstate
 *.tfstate.*
 .terraform/
+terraform/
 
-# If you have a separate 'terraform/' folder with *only* local stuff, ignore it:
-# terraform/
-
-# But DO NOT ignore .tf files in general so they remain in version control:
-# (Removed the line that said `*.tf`)
-
-# Specifically ignore the JSON key we create at runtime in GitHub Actions:
-terraform_gcp/gcp-keyfile.json
+# Ignore deployment manifests that are no longer needed for Docker builds
+gym-chart/
+k8s/
 
 #####################
-# Docker
+# Docker Specific
 #####################
 docker-compose.override.yml
 .dockerignore
@@ -39,7 +35,7 @@ docker-compose.override.yml
 *.bak
 
 #####################
-# Static / Templates
+# Static / Temporary Files
 #####################
 *.css.map
 static/*.tmp
@@ -52,7 +48,7 @@ static/*.tmp
 logs/
 
 #####################
-# JSON Files
+# JSON Files (if these are generated or sensitive)
 #####################
 exercises.json
 products.json
@@ -66,6 +62,7 @@ Thumbs.db
 *.swp
 .idea/
 .vscode/
+.github/
 
 #####################
 # Misc

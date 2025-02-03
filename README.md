@@ -8,23 +8,22 @@ Welcome to the **Gym Workout Plan Generator**! This web application is designed 
   - **Workout A**: Chest, Shoulders, Triceps (3 chest exercises, 2 shoulder exercises, 2 tricep exercises).
   - **Workout B**: Back, Biceps (4 back exercises, 3 bicep exercises).
   - **Workout C**: Legs (5 leg exercises).
-- **Personalized Routine**: The app allows for customization based on specific user needs and goals.
-- **Exercise Database**: A collection of exercises for each muscle group.
+- **Personalized Routine**: Customize your workout plan based on specific needs and goals.
+- **Exercise Database**: Access a curated collection of exercises for each muscle group.
 
 ## Technologies Used
 
-- **Flask**: A lightweight Python web framework for building the backend of the application.
-- **Docker**: Used for containerization, making the app easy to deploy and manage in different environments.
-- **Python**: The main programming language for implementing the workout plan generator logic.
-- **SQLite/MySQL**: For storing exercise data and user information (optional, based on your implementation).
-- **HTML/CSS**: For front-end development to display the generated workout plans.
-- **Bootstrap**: For styling and responsive design.
+- **Flask**: A lightweight Python web framework for building the backend.
+- **Docker**: Containerization for ease of deployment and consistent environments.
+- **Python**: The primary language for implementing the workout logic.
+- **Terraform & Helm**: Infrastructure as Code (IaC) tools used to provision a GKE cluster and deploy the application.
+- **Google Cloud Platform (GCP)**: Hosting the Kubernetes cluster on GKE.
+- **HTML/CSS & Bootstrap**: Front-end development for a responsive user interface.
 
-## Installation
+## Installation & Local Development
 
-To run the application locally:
+### 1. Clone the Repository
 
-1. **Clone the repository**:
-
-   ```bash
-   git clone https://github.com/NutzKiller/gym.git
+```bash
+git clone https://github.com/NutzKiller/gym.git
+cd gym

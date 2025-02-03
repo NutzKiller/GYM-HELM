@@ -16,7 +16,7 @@ jobs:
       - name: Check out main repository
         uses: actions/checkout@v3
 
-      # Step 2: Clone the Terraform State Repository
+      # Step 2: Clone Terraform State Repository
       - name: Clone Terraform State Repository
         env:
           MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
@@ -61,7 +61,7 @@ jobs:
           service_account_key_file: terraform/gcp_credentials.json
           export_default_credentials: true
 
-      # Step 8: Apply Terraform Configuration
+      # Step 8: Apply Terraform Configuration (Deploys the Helm Release)
       - name: Apply Terraform Configuration
         working-directory: terraform
         env:
@@ -92,7 +92,7 @@ jobs:
           kubectl cluster-info
           kubectl get nodes
 
-      # Step 11: Ensure Firewall Allows External Traffic
+      # Step 11: Ensure Firewall Rule for GKE (if not already set)
       - name: Ensure Firewall Rule for GKE
         run: |
           gcloud compute firewall-rules create allow-gke-5000 \
@@ -100,43 +100,21 @@ jobs:
             --target-tags=gke-gym-cluster \
             --source-ranges=0.0.0.0/0 || echo "Firewall rule already exists."
 
-      # Step 12: Create Namespace (if it doesn't exist)
+      # Optional: Create Namespace (Terraform creates it, but safe-check is harmless)
       - name: Create Namespace
         run: |
           kubectl create namespace gym-namespace || true
 
-      # Step 13: Inject GitHub Secrets into Kubernetes
-      - name: Inject GitHub Secrets into Kubernetes
-        run: |
-          kubectl delete secret gym-secret -n gym-namespace --ignore-not-found
-          kubectl delete configmap gym-config -n gym-namespace --ignore-not-found
-
-          kubectl create secret generic gym-secret \
-            --from-literal=SECRET_KEY="${{ secrets.SECRET_KEY }}" \
-            -n gym-namespace --dry-run=client -o yaml | kubectl apply -f -
-
-          kubectl create configmap gym-config \
-            --from-literal=DATABASE_URL="${{ secrets.DATABASE_URL }}" \
-            -n gym-namespace --dry-run=client -o yaml | kubectl apply -f -
-
-      # Step 14: Apply Kubernetes Manifests
-      - name: Apply Kubernetes Manifests
-        run: |
-          kubectl apply -f k8s/deployment.yaml
-          kubectl apply -f k8s/service.yaml
-
-      # Step 15: Restart Deployment to Load Secrets
-      - name: Restart Deployment
-        run: |
-          kubectl rollout restart deployment gym-deployment -n gym-namespace
-
-      # Step 16: Retrieve External IP of the LoadBalancer
-      - name: Retrieve External IP
+      # The following steps that manually inject secrets and apply raw k8s manifests have been removed.
+      
+      # Step 12: Retrieve External IP of the Helm-Managed Service
+      - name: Retrieve External IP of Helm Release Service
         id: get_ip
         run: |
           echo "Waiting for LoadBalancer IP..."
           for i in {1..30}; do
-            EXTERNAL_IP=$(kubectl get svc gym-service -n gym-namespace -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+            # Update this service name to match your Helm chart's generated service name.
+            EXTERNAL_IP=$(kubectl get svc gym-gym-chart-service -n gym-namespace -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
             if [ -n "$EXTERNAL_IP" ]; then
               echo "EXTERNAL_IP=$EXTERNAL_IP" >> $GITHUB_ENV
               echo "External IP: $EXTERNAL_IP"
@@ -151,21 +129,21 @@ jobs:
             exit 1
           fi
 
-      # Step 17: Output the External IP
+      # Step 13: Output the External IP
       - name: Output External IP
         run: |
           echo "The application is accessible at http://${{ env.EXTERNAL_IP }}"
 
-      # Step 18: Debug Kubernetes Setup (if LoadBalancer Fails)
+      # Step 14: Debug Kubernetes Setup (if needed)
       - name: Debug Kubernetes Setup
         run: |
           echo "Debugging Kubernetes Configuration..."
           kubectl get svc -n gym-namespace
           kubectl get pods -n gym-namespace
-          kubectl describe svc gym-service -n gym-namespace
-          kubectl describe deployment gym-deployment -n gym-namespace
+          kubectl describe svc gym-gym-chart-service -n gym-namespace
+          kubectl describe deployment gym-gym-chart-deployment -n gym-namespace
 
-      # Step 19: Push Updated Terraform State to GitHub
+      # Step 15: Push Updated Terraform State to NutzKiller/TF Repository
       - name: Push Updated Terraform State to NutzKiller/TF Repository
         env:
           MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
