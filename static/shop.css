@@ -1,0 +1,92 @@
+/* ==========================================================================
+       SHOP (GRID LAYOUT)
+   ========================================================================== */
+
+/* Sub-navigation for the shop */
+.shop-subnav {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.shop-subnav a {
+  background: var(--bg-white);
+  color: var(--primary-color);
+  border: 2px solid var(--primary-color);
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  font-weight: 500;
+  transition: background var(--transition-speed), color var(--transition-speed);
+  text-decoration: none;
+}
+.shop-subnav a:hover {
+  background: var(--primary-color);
+  color: var(--bg-white);
+}
+
+/* Shop Grid Layout */
+.shop-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  justify-items: center;
+}
+
+/* Product Card */
+.product-card {
+  background: var(--bg-light);
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 1rem;
+  width: 220px;
+  min-height: 230px;
+  transition: transform 0.3s;
+  font-size: 1.1rem; /* Increase text size for better readability */
+}
+.product-card:hover {
+  transform: scale(1.02);
+}
+.product-card h3 {
+  font-size: 1rem;
+  margin-bottom: 0.3rem;
+  color: var(--primary-color);
+}
+
+/* Responsive adjustments for shop grid */
+@media (max-width: 768px) {
+  .shop-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .product-card {
+    width: 100%;
+    max-width: 300px;
+    margin: 0 auto;
+  }
+  .shop-subnav {
+    justify-content: center;
+  }
+  .shop-container {
+    max-width: 100%;
+    padding: 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .shop-grid {
+    grid-template-columns: 1fr;
+  }
+  .product-card {
+    width: 95%;
+    margin: 0 auto;
+    font-size: 1.1rem;
+  }
+  .shop-subnav a {
+    font-size: 0.9rem;
+    padding: 0.3rem 0.5rem;
+  }
+  .shop-container {
+    max-width: 100%;
+    padding: 0.5rem;
+  }
+}

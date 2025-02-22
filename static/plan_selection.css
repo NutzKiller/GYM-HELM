@@ -1,0 +1,20 @@
+/* ==========================================================================
+       PLAN SELECTION (CARD STYLE, IF USED)
+       ========================================================================== */
+       .plan-choice-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 1rem;
+      }
+      .plan-choice-card {
+        background: var(--bg-light);
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        padding: 1rem;
+        text-align: center;
+        transition: transform var(--transition-speed);
+      }
+      .plan-choice-card:hover {
+        transform: scale(1.02);
+      }
+      

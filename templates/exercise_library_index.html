@@ -17,13 +17,12 @@
 
 <div class="exercise-library-row">
   {% for ex in exercises %}
-    <div class="exercise-card">
-      <h4>{{ ex.name }}</h4>
-      <p>
-        <a class="view-video-link" href="{{ url_for('exercise_detail', exercise_name=ex.name) }}">
-          View Video
+    <div class="exercise-card" {% if(ex.trainer_id) != 0 %}style="background: #94BADF; color:#fff"{% endif %}>
+      <h4>
+        <a href="{{ url_for('exercise_detail', exercise_name=ex.name) }}">
+          {{ ex.name }}
         </a>
-      </p>
+      </h4>
     </div>
   {% endfor %}
 </div>

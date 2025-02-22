@@ -1,37 +1,40 @@
 {% extends 'base.html' %}
 {% block content %}
-<h2>Shop</h2>
+<div class="shop-container">
+  <h2>Shop</h2>
 
-<div class="shop-subnav">
-  <a href="{{ url_for('shop_category', cat='all') }}"
-     {% if current_cat|lower == 'all' %}style="background:#1c2a48; color:#fff"{% endif %}>
-    All
-  </a>
-  {% for cat in categories %}
-    <a href="{{ url_for('shop_category', cat=cat) }}"
-       {% if current_cat|lower == cat|lower %}style="background:#1c2a48; color:#fff"{% endif %}>
-      {{ cat }}
+  <div class="shop-subnav">
+    <a href="{{ url_for('shop_category', cat='all') }}"
+       {% if current_cat|lower == 'all' %}style="background:#1c2a48; color:#fff"{% endif %}>
+      All
     </a>
-  {% endfor %}
-</div>
-
-<div class="shop-grid">
-  {% for product in products %}
-    <div class="product-card">
-      <div style="margin-bottom:0.5rem;">
-        <img src="https://via.placeholder.com/200x150?text=Product" 
-             alt="Product" style="max-width:100%;">
-      </div>
-      <h3>{{ product.name }}</h3>
-      <p>$ {{ product.price }}</p>
-      <p>{{ product.desc }}</p>
-      <a class="shop-btn" href="{{ url_for('add_item_to_cart', product_id=product.id) }}#stay">
-        Add to Cart
+    {% for cat in categories %}
+      <a href="{{ url_for('shop_category', cat=cat) }}"
+         {% if current_cat|lower == cat|lower %}style="background:#1c2a48; color:#fff"{% endif %}>
+        {{ cat }}
       </a>
-    </div>
-  {% endfor %}
+    {% endfor %}
+  </div>
+
+  <div class="shop-grid">
+    {% for product in products %}
+      <div class="product-card">
+        <div style="margin-bottom:0.5rem;">
+          <img src="https://via.placeholder.com/200x150?text=Product" 
+               alt="Product" style="max-width:100%;">
+        </div>
+        <h3>{{ product.name }}</h3>
+        <p>$ {{ product.price }}</p>
+        <p>{{ product.desc }}</p>
+        <a class="shop-btn" href="{{ url_for('add_item_to_cart', product_id=product.id) }}#stay">
+          Add to Cart
+        </a>
+      </div>
+    {% endfor %}
+  </div>
 </div>
 {% endblock %}
+
 {% block bottom %}
 {{ super() }}
 {% endblock %}

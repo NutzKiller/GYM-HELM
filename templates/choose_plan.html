@@ -9,10 +9,17 @@
     <p style="font-size:0.9rem;">
       Some quick info about {{ option.label }} plan.
     </p>
-    <form method="POST">
-      <input type="hidden" name="plan_type" value="{{ option.id }}">
-      <button class="choose-plan-btn" type="submit">Select This Plan</button>
-    </form>
+    {% if option.id == "custom" %}
+      <!-- For custom plan, redirect to the dedicated custom setup page -->
+      <form method="GET" action="{{ url_for('custom_plan_setup') }}">
+        <button class="choose-plan-btn" type="submit" style="margin-top: 1rem;">Select This Plan</button>
+      </form>
+    {% else %}
+      <form method="POST">
+        <input type="hidden" name="plan_type" value="{{ option.id }}">
+        <button class="choose-plan-btn" type="submit" style="margin-top: 1rem;">Select This Plan</button>
+      </form>
+    {% endif %}
   </div>
   {% endfor %}
 </div>

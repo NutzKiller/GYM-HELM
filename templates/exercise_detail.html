@@ -1,25 +1,58 @@
 {% extends 'base.html' %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='exercise_detail.css') }}">
+{% endblock %}
+
 {% block content %}
 <h2>{{ exercise.name }}</h2>
-<div class="exercise-video" style="margin:1rem 0;">
-  <iframe width="560" height="315"
-          src="https://www.youtube.com/embed/VIDEO_ID?autoplay=0&mute=1"
-          title="{{ exercise.name }} video"
-          frameborder="0"
-          allowfullscreen>
-  </iframe>
+
+<div class="exercise-video" style="margin:1rem 0; text-align: center;">
+  {% if exercise.youtube_video_url %}
+    {% if exercise.youtube_video_url.startswith("https://storage.googleapis.com") %}
+      <!-- ✅ GCS Video Handling with Correct MIME Type -->
+      <video width="560" height="315" controls muted>
+        <source src="{{ exercise.youtube_video_url }}" type="video/mp4">
+        Your browser does not support the video tag.
+      </video>
+    {% elif 'youtube.com' in exercise.youtube_video_url %}
+      <!-- ✅ YouTube Video Handling -->
+      {% set embed_url = exercise.youtube_video_url.replace("watch?v=", "embed/") %}
+      {% if "?" in embed_url %}
+        {% set embed_url = embed_url ~ "&mute=1" %}
+      {% else %}
+        {% set embed_url = embed_url ~ "?mute=1" %}
+      {% endif %}
+      <iframe width="560" height="315"
+              src="{{ embed_url }}"
+              title="{{ exercise.name }} video"
+              frameborder="0"
+              allow="autoplay; encrypted-media"
+              allowfullscreen
+              onerror="this.style.display='none'; document.getElementById('video-fallback').style.display='block';">
+      </iframe>
+      <p id="video-fallback" style="display: none;">
+        <a href="{{ exercise.youtube_video_url }}" target="_blank">🎥 Open video in new tab</a>
+      </p>
+    {% else %}
+      <p><strong>No video available for this exercise.</strong></p>
+      <img src="{{ url_for('static', filename='exercise_placeholder.png') }}" alt="Exercise Placeholder" width="560" height="315">
+    {% endif %}
+  {% else %}
+    <p><strong>No video available for this exercise.</strong></p>
+    <img src="{{ url_for('static', filename='exercise_placeholder.png') }}" alt="Exercise Placeholder" width="560" height="315">
+  {% endif %}
 </div>
-<p><strong>Muscle Group:</strong> {{ exercise.topic }}</p>
-<p><strong>Category:</strong> {{ exercise.category }}</p>
-<p>
-  A placeholder describing how to do {{ exercise.name }} with correct form, tips, etc.
-</p>
+
+<div class="exercise-info">
+  <p><strong>Muscle Group:</strong> {{ exercise.topic }}</p>
+  <p><strong>Description:</strong> {{ exercise.description or "No description provided." }}</p>
+  <p><strong>How to do it:</strong> {{ exercise.how_to or "No instructions provided." }}</p>
+</div>
+
 <p>
   <a class="return-button" href="{{ url_for('exercise_library_all') }}#stay">
     &larr; Return to Library
   </a>
 </p>
-{% endblock %}
-{% block bottom %}
-{{ super() }}
 {% endblock %}

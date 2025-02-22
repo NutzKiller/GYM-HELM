@@ -1,40 +1,45 @@
 {% extends 'base.html' %}
 {% block content %}
-<h2>Create an Account</h2>
-<form method="POST" class="auth-form">
-  <label>Username</label>
-  <input type="text" name="username" required>
+<div class="auth-container">
+  <h2 class="section-title">Create an Account</h2>
+  <form method="POST" class="auth-form">
+    <label for="username">Username</label>
+    <input type="text" name="username" id="username" required>
 
-  <label>Password</label>
-  <input type="password" name="password" required>
+    <label for="password">Password</label>
+    <input type="password" name="password" id="password" required>
 
-  <label>Display Name</label>
-  <input type="text" name="public_name" placeholder="e.g. John Doe">
+    <label for="public_name">Display Name</label>
+    <input type="text" name="public_name" id="public_name" placeholder="e.g. John Doe">
 
-  <label>Birthday</label>
-  <input type="date" name="birthday">
+    <label for="birthday">Birthday</label>
+    <input type="date" name="birthday" id="birthday">
 
-  <label>Phone</label>
-  <input type="text" name="phone">
+    <label for="phone">Phone</label>
+    <input type="text" name="phone" id="phone">
 
-  <label>Email</label>
-  <input type="email" name="email">
+    <label for="email">Email</label>
+    <input type="email" name="email" id="email">
 
-  <label>Profile Photo (URL)</label>
-  <input type="text" name="profile_photo" placeholder="https://example.com/photo.jpg">
+    <label for="profile_photo">Profile Photo (URL)</label>
+    <input type="text" name="profile_photo" id="profile_photo" placeholder="https://example.com/photo.jpg">
 
-  <label>Location</label>
-  <input type="text" name="location" placeholder="e.g. New York, USA">
+    <label for="cover_photo">Cover Photo (URL)</label>
+    <input type="text" name="cover_photo" id="cover_photo" placeholder="https://example.com/photo.jpg">
 
-  <label>Bio</label>
-  <textarea name="bio" rows="2" placeholder="Tell us about yourself..."></textarea>
+    <label for="location">Location</label>
+    <input type="text" name="location" id="location" placeholder="e.g. New York, USA">
 
-  <label>Weight (kg)</label>
-  <input type="number" step="0.1" name="weight" placeholder="e.g. 70.5">
+    <label for="bio">Bio</label>
+    <textarea name="bio" id="bio" rows="3" placeholder="Tell us about yourself..."></textarea>
 
-  <label>Height (cm)</label>
-  <input type="number" step="0.1" name="height" placeholder="e.g. 175.0">
+    <label for="weight">Weight (kg)</label>
+    <input type="number" step="0.1" name="weight" id="weight" placeholder="e.g. 70.5">
 
-  <button type="submit">Sign Up</button>
-</form>
+    <label for="height">Height (cm)</label>
+    <input type="number" step="0.1" name="height" id="height" placeholder="e.g. 175.0">
+
+    <button type="submit" class="btn">Sign Up</button>
+  </form>
+</div>
 {% endblock %}

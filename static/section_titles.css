@@ -1,0 +1,16 @@
+/* ==========================================================================
+       SECTION TITLES, ETC.
+       ========================================================================== */
+       .section-title {
+        text-align: center;
+        font-size: 1.8rem;
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+      }
+      .plan-type-info {
+        text-align: center;
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+        color: var(--secondary-color);
+      }
+      

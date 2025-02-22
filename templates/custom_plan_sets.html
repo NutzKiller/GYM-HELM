@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block extra_css %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='custom_plan_sets.css') }}">
+{% endblock %}
+
+{% block content %}
+<h2>Set Your Exercise Counts</h2>
+<p>Review your selected exercises for each day and adjust the number of sets if desired. (Default is 3 sets for each exercise.)</p>
+<form method="POST" action="{{ url_for('custom_plan_sets') }}">
+  <div class="day-boxes">
+    {% for day, exercises in custom_plan.items() %}
+      <div class="day-box">
+        <h3>{{ day }}</h3>
+        {% if exercises %}
+          <ul>
+            {% for ex in exercises %}
+              <li>
+                <span class="exercise-info">{{ ex }}</span>
+                <span class="set-input-wrapper">
+                  <label for="set_count_{{ day }}_{{ loop.index0 }}">Sets:</label>
+                  <input type="number" id="set_count_{{ day }}_{{ loop.index0 }}" name="set_count_{{ day }}_{{ loop.index0 }}" value="3" min="1">
+                </span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p>No exercises selected for {{ day }}.</p>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+  <button type="submit" class="choose-plan-btn">Finalize Custom Plan</button>
+</form>
+{% endblock %}

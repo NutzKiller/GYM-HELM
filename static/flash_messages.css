@@ -1,0 +1,17 @@
+/* ==========================================================================
+       FLASH MESSAGES
+       ========================================================================== */
+       .flash-messages {
+        text-align: center;
+        margin: 0.5rem 0;
+      }
+      .flash-messages ul {
+        display: inline-block;
+        background: var(--accent-color);
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--accent-color);
+        border-radius: 5px;
+        list-style: none;
+        color: var(--bg-white);
+      }
+      

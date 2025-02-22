@@ -2,56 +2,95 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Your skinny bitch workout program</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <!-- This meta tag ensures the site scales correctly on mobile devices -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#2b2b4e">
+  <title>AmitYuval: Elevate Your Performance</title>
+  
+  <!-- Favicon -->
+  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+  
+  <!-- Montserrat font for a modern look -->
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:300,400,700&display=swap" rel="stylesheet">
+  
+  <!-- Global CSS Files -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='global.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='navigation.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='flash_messages.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='content_footer.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='hero_section.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='section_titles.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='button_styles.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='forms.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='plan_selection.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='workout.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='profile.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='cart.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='login.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='edit_profile.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='exercise_library.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='shop.css') }}">
+  
+  <!-- Extra CSS Block for Page-Specific Styles -->
+  {% block extra_css %}{% endblock %}
+  
+  <!-- Ensure that responsive.css is loaded last -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='responsive.css') }}">
 </head>
 <body>
-
-  <!-- CENTERED NAV -->
+  <!-- Navigation Bar -->
   <nav class="main-nav">
-    <ul>
-      <li><a href="{{ url_for('home') }}">Home</a></li>
-      <li><a href="{{ url_for('my_workout') }}">My Workout</a></li>
-      <li><a href="{{ url_for('exercise_library_all') }}">Exercise Library</a></li>
-      <li><a href="{{ url_for('shop_index') }}">Shop</a></li>
-      {% if 'cart' in session %}
-        <li><a href="{{ url_for('cart') }}">Cart ({{ session['cart']|length }})</a></li>
-      {% else %}
-        <li><a href="{{ url_for('cart') }}">Cart (0)</a></li>
-      {% endif %}
-      {% if session.username %}
-        <li><a href="{{ url_for('profile') }}">Profile</a></li>
-        <li><a href="{{ url_for('logout') }}">Logout ({{ session.username }})</a></li>
-      {% else %}
-        <li><a href="{{ url_for('login') }}">Login</a></li>
-        <li><a href="{{ url_for('signup') }}">Sign Up</a></li>
-      {% endif %}
-    </ul>
+    <div class="nav-container">
+      <!-- Brand (logo) -->
+      <div class="logo">
+        <a href="{{ url_for('home') }}">AmitYuval</a>
+      </div>
+      <!-- Centered Navigation Links -->
+      <ul class="nav-links">
+        <li><a href="{{ url_for('my_workout') }}">My Workout</a></li>
+        <li><a href="{{ url_for('exercise_library_all') }}">Exercises</a></li>
+        <li><a href="{{ url_for('shop_index') }}">Shop</a></li>
+        {% if 'cart' in session %}
+          <li><a href="{{ url_for('cart') }}">Cart ({{ session['cart']|length }})</a></li>
+        {% else %}
+          <li><a href="{{ url_for('cart') }}">Cart (0)</a></li>
+        {% endif %}
+        {% if session.get('username') %}
+          <!-- Profile button shows the username -->
+          <li><a href="{{ url_for('profile') }}">{{ session.get('username') }}</a></li>
+          <li><a href="{{ url_for('logout') }}">Logout</a></li>
+        {% else %}
+          <li><a href="{{ url_for('login') }}">Login</a></li>
+          <li><a href="{{ url_for('signup') }}">Sign Up</a></li>
+        {% endif %}
+      </ul>
+    </div>
   </nav>
 
+  <!-- Flash Messages -->
   <div class="flash-messages">
     {% with messages = get_flashed_messages() %}
       {% if messages %}
         <ul>
-        {% for msg in messages %}
-          <li>{{ msg }}</li>
-        {% endfor %}
+          {% for msg in messages %}
+            <li>{{ msg }}</li>
+          {% endfor %}
         </ul>
       {% endif %}
     {% endwith %}
   </div>
 
+  <!-- Main Content -->
   <div class="content">
     {% block content %}{% endblock %}
   </div>
 
-  <div class="bottom-extra">
+  <!-- Footer -->
+  <footer class="site-footer">
     {% block bottom %}
-    <hr>
-    <p>© 2025 Your skinny bitch workout program - All rights reserved.</p>
-    <p>For inquiries: info@skinnybitch.com</p>
+      <p>© 2025 PulseFit - All rights reserved.</p>
+      <p>For inquiries: info@pulsefit.com</p>
     {% endblock %}
-  </div>
-
+  </footer>
 </body>
 </html>

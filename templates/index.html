@@ -1,39 +1,51 @@
 {% extends 'base.html' %}
+{% block extra_css %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='home.css') }}">
+{% endblock %}
+
 {% block content %}
 
+<!-- Hero Section -->
 <div class="hero-section">
+  <div class="hero-overlay"></div>
   <div class="hero-content">
-    <h1>Your Skinny Bitch Workout Program</h1>
-    <p style="font-size:1.2rem;">
-      Transform your body with our science-based methods — flexible workout splits, 
-      comprehensive exercise library, and a fun re-roll feature to keep it fresh!
+    <h1 class="hero-title">Anime: Elevate Your Performance!</h1>
+    <p class="hero-subtitle">
+      Transform your body with science-based workouts, dynamic training programs, and personalized meal plans.
     </p>
     <a class="hero-btn" href="{{ url_for('choose_plan') }}">Get Started</a>
   </div>
 </div>
 
+<!-- Home Info & About Us Section -->
 <div class="home-info">
-  <h2>Welcome to Your Next Chapter</h2>
+  <h2>Welcome to Your Next Level</h2>
   <p>
-    Explore Full Body, A/B, Push/Pull/Legs, or the brand-new A/B/C plan. 
-    Collect the best equipment in our Shop, manage your profile with weight and height, 
-    and never stop progressing. 
+    At PulseFit, we empower trainers to craft custom workout programs and menus while offering a cutting-edge platform for trainees to build their own routines or choose from our expertly designed plans. Discover innovation, flexibility, and the drive to push beyond limits.
   </p>
-
-  <img src="https://via.placeholder.com/600x300?text=Placeholder+Image" 
-       alt="Placeholder" style="max-width:100%; margin-top:1rem; border:2px solid #333;">
   
-  <h3 style="color:#1c2a48; margin-top:1.5rem;">Why Choose Us?</h3>
+  <div class="about-us">
+    <h3>About Us</h3>
+    <p>
+      AmitYuval is a state-of-the-art fitness platform that connects professional trainers with passionate individuals. Our system allows trainers to design personalized workout programs and meal plans, while users can customize their fitness journey or choose from pre-built plans. Whether you're a seasoned athlete or just beginning your fitness journey, PulseFit is here to help you unlock your true potential.
+    </p>
+  </div>
+  
+  <img src="https://via.placeholder.com/600x300?text=Workout+Inspiration" 
+       alt="Workout Inspiration" class="home-image">
+  
+  <h3 class="benefits-title" style="color: #1c2a48; margin-top:1.5rem;">Why Choose PulseFit?</h3>
   <ul class="benefits-list">
-    <li>Multi-Plan flexibility: Full Body, A/B, PPL, A/B/C</li>
-    <li>Seamless re-roll option for variety</li>
-    <li>Shop for essential gear with a single click</li>
-    <li>Exercise library with video placeholders (coming soon!)</li>
+    <li>Multi-Plan Flexibility: Full Body, A/B, Push/Pull/Legs, A/B/C, Custom Plans</li>
+    <li>Innovative re-roll option to keep your routine fresh</li>
+    <li>Comprehensive exercise library with upcoming video tutorials</li>
   </ul>
 </div>
 
 {% endblock %}
 {% block bottom %}
-{{ super() }}
-<p style="margin-top:1rem;">Join the revolution and get your best shape ever!</p>
+  {{ super() }}
+  <footer class="home-footer">
+    <p>Join AAmitYuval and unlock your true potential!</p>
+  </footer>
 {% endblock %}

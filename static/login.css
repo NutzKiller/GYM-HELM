@@ -1,0 +1,103 @@
+/* ==========================================================================
+   LOGIN PAGE - Project Color Scheme
+   ========================================================================== */
+
+   @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap');
+
+   .auth-container {
+     width: 100%;
+     margin: 0 auto;
+     background: #fff;
+     padding: 2rem;
+     border-radius: 8px;
+     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+     text-align: center;
+     color: #1c2a48;
+     font-family: 'Montserrat', sans-serif;
+     border: 2px solid #1c2a48;
+   }
+   
+   @media (min-width: 768px) {
+     .auth-container {
+       max-width: 400px;
+       margin: 3rem auto;
+     }
+   }
+   
+   @media (max-width: 767px) {
+     .auth-container {
+       width: 90%;
+       padding: 1.5rem;
+     }
+   }
+   
+   .auth-container h2 {
+     margin-bottom: 1.5rem;
+     font-weight: 700;
+     letter-spacing: 1px;
+   }
+   
+   .login-form {
+     display: flex;
+     flex-direction: column;
+     gap: 1rem;
+   }
+   
+   .login-form label {
+     text-align: left;
+     font-size: 0.9rem;
+   }
+   
+   .login-form input[type="text"],
+   .login-form input[type="email"],
+   .login-form input[type="password"] {
+     width: 100%;
+     padding: 0.75rem 1rem;
+     border: 1px solid #1c2a48;
+     border-radius: 4px;
+     background: #f9f9f9;
+     color: #1c2a48;
+     font-size: 1rem;
+     outline: none;
+     transition: background 0.3s ease, border-color 0.3s ease;
+   }
+   
+   .login-form input[type="text"]:focus,
+   .login-form input[type="email"]:focus,
+   .login-form input[type="password"]:focus {
+     background: #fff;
+     border-color: #163a67;
+   }
+   
+   .login-btn {
+     width: 100%;
+     padding: 0.75rem;
+     font-size: 1rem;
+     font-weight: 600;
+     color: #fff;
+     background: #1c2a48;
+     border: none;
+     border-radius: 4px;
+     cursor: pointer;
+     transition: background 0.3s ease, transform 0.2s ease;
+   }
+   
+   .login-btn:hover {
+     background: #163a67;
+     transform: translateY(-2px);
+   }
+   
+   .login-btn:active {
+     transform: translateY(0);
+   }
+   
+   .auth-container a {
+     color: #1c2a48;
+     text-decoration: none;
+     transition: color 0.3s ease;
+   }
+   
+   .auth-container a:hover {
+     color: #163a67;
+   }
+   

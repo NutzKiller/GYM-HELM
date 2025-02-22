@@ -1,0 +1,81 @@
+/* ==========================================================================
+   RESPONSIVE LAYOUTS
+   ========================================================================== */
+
+/* General responsive adjustments */
+body, .content {
+  padding: 0.5rem;
+}
+
+/* For screens up to 768px */
+@media (max-width: 768px) {
+  .nav-links {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+  }
+  
+  /* Adjust shop grid layout on medium screens */
+  .shop-grid {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+  }
+  
+  /* Ensure main content has appropriate padding */
+  .content {
+    padding: 1rem;
+  }
+}
+
+/* For screens up to 600px */
+@media (max-width: 600px) {
+  .profile-info {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-top: 0;
+  }
+  .profile-photo-wrapper {
+    margin-right: 0;
+    margin-bottom: 1rem;
+  }
+  
+  /* Adjust font sizes for better readability */
+  h1.section-title {
+    font-size: 1.8rem;
+  }
+  h2, h3, h4 {
+    font-size: 1.4rem;
+  }
+  
+  /* Adjust button sizes */
+  .choose-plan-btn, .reroll-button, .edit-profile-btn {
+    font-size: 1rem;
+    padding: 0.5rem;
+  }
+  
+  /* Adjust custom plan sections */
+  .day-section {
+    padding: 0.8rem;
+    margin-bottom: 1rem;
+  }
+}
+
+/* For screens up to 480px */
+@media (max-width: 480px) {
+  .shop-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+  
+  .hero-content h1 {
+    font-size: 1.6rem;
+  }
+  
+  /* Further reduce paddings and margins for very small screens */
+  .nav-container {
+    padding: 0.5rem;
+  }
+  .nav-links li a {
+    font-size: 0.9rem;
+  }
+}

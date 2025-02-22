@@ -1,0 +1,59 @@
+/* exercise_detail.css */
+
+/* Base Styles */
+.exercise-video {
+  margin: 1rem 0;
+  text-align: center;
+}
+
+.exercise-info {
+  margin-top: 1rem;
+  font-size: 1.1rem;
+  line-height: 1.5;
+}
+
+.exercise-info p {
+  margin-bottom: 0.75rem;
+}
+
+.return-button {
+  display: inline-block;
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background-color: #007bff;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 4px;
+}
+
+.return-button:hover {
+  background-color: #0056b3;
+}
+
+/* Responsive Styles for Mobile Devices */
+@media (max-width: 600px) {
+  .exercise-info {
+    font-size: 1rem;        /* Slightly smaller text for mobile */
+    line-height: 1.4;
+    padding: 0 1rem;        /* Add horizontal padding to prevent edge-to-edge text */
+  }
+
+  .exercise-video {
+    margin: 0.75rem 0;
+  }
+
+  .return-button {
+    padding: 0.5rem 0.75rem; /* Adjust padding for smaller screens */
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 400px) {
+  .exercise-info {
+    font-size: 0.9rem;
+  }
+  
+  .return-button {
+    padding: 0.5rem;         /* Further adjust padding for very small devices */
+  }
+}

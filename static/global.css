@@ -1,0 +1,59 @@
+/* ==========================================================================
+   CSS VARIABLES & GLOBAL SETTINGS
+   ========================================================================== */
+   :root {
+    --primary-color: #0D47A1;    /* Dark Blue */
+    --secondary-color: #1976D2;  /* Lighter Blue */
+    --accent-color:   #FF5722;   /* Vivid Orange */
+    --bg-white:       #ffffff;
+    --bg-light:       #F5F5F5;
+    --text-color:     #212121;
+    --transition-speed: 0.3s;
+    --font-family-base: 'Montserrat', sans-serif;
+  }
+  
+  /* ==========================================================================
+     RESET & BASE
+     ========================================================================== */
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  body {
+    font-family: var(--font-family-base);
+    background: var(--bg-white);
+    color: var(--text-color);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* ==========================================================================
+     LINKS (Remove Underlines and Borders for Standard Links)
+     ========================================================================== */
+  /* Exclude any anchor that uses specific button classes */
+  a:not(.btn):not(.reroll-button):not(.choose-plan-btn):not(.edit-profile-btn):not(.cart-clear-btn):not(.checkout-btn):not(.return-button):not(.shop-btn),
+  a:not(.btn):not(.reroll-button):not(.choose-plan-btn):not(.edit-profile-btn):not(.cart-clear-btn):not(.checkout-btn):not(.return-button):not(.shop-btn):visited,
+  a:not(.btn):not(.reroll-button):not(.choose-plan-btn):not(.edit-profile-btn):not(.cart-clear-btn):not(.checkout-btn):not(.return-button):not(.shop-btn):hover,
+  a:not(.btn):not(.reroll-button):not(.choose-plan-btn):not(.edit-profile-btn):not(.cart-clear-btn):not(.checkout-btn):not(.return-button):not(.shop-btn):active,
+  a:not(.btn):not(.reroll-button):not(.choose-plan-btn):not(.edit-profile-btn):not(.cart-clear-btn):not(.checkout-btn):not(.return-button):not(.shop-btn):focus {
+    text-decoration: none !important;
+    outline: none;
+    border: none !important;
+  }
+  /* Force visited links to use the same color as unvisited links */
+a:link,
+a:visited {
+  color: var(--primary-color); /* or #1c2a48, etc. */
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline; /* Optional hover style */
+}
+
+a:active {
+  text-decoration: none; /* or underline, your preference */
+}

@@ -1,45 +1,433 @@
 {% extends 'base.html' %}
 {% block content %}
+<div class="workout-container">
+  <h1 class="section-title">My Workout</h1>
+  <p class="plan-type-info">Current Plan: {{ plan_type|upper }}</p>
 
-<h1 class="section-title">My Workout</h1>
-<p class="plan-type-info">Current Plan: {{ plan_type|upper }}</p>
-
-<div style="display:flex; justify-content:flex-end; gap:1rem; margin-bottom:1rem;">
-  <a class="reroll-button" href="{{ url_for('reroll') }}">Re-roll My Plan</a>
-  <a class="choose-plan-btn" href="{{ url_for('choose_plan') }}">Change Plan</a>
-</div>
-
-{% if plan %}
-  {% if plan_type == 'full_body' %}
-    <div class="plan-wrapper grid-fullbody">
-  {% elif plan_type == 'ab' %}
-    <div class="plan-wrapper grid-ab">
-  {% elif plan_type == 'ppl' or plan_type == 'abc' %}
-    <div class="plan-wrapper grid-abc">
-  {% else %}
-    <div class="plan-wrapper">
-  {% endif %}
-  
-    {% for day, exercises in plan.items() %}
-    <div class="day-box">
-      <h2>{{ day }}</h2>
-      <ul>
-        {% for ex in exercises %}
-        {% set parts = ex.split(" - ") %}
-        {% set ex_name = parts[0] %}
-        {% set ex_sets = parts[1] if parts|length > 1 else "" %}
-        <li>
-          <a href="{{ url_for('exercise_detail', exercise_name=ex_name) }}">{{ ex_name }}</a> - {{ ex_sets }}
-        </li>
-        {% endfor %}
-      </ul>
-    </div>
-    {% endfor %}
+  <!-- Button Group -->
+  <div class="workout-actions">
+    {% if plan_type != 'custom' %}
+      <a class="reroll-button" href="{{ url_for('reroll') }}">Re-roll My Plan</a>
+    {% endif %}
+    <a class="choose-plan-btn" href="{{ url_for('choose_plan') }}">Change Plan</a>
   </div>
-{% else %}
-  <p>You have no plan selected. <a href="{{ url_for('choose_plan') }}">Choose one now</a>.</p>
-{% endif %}
+
+  {% if plan %}
+    {% set day_count = plan|length %}
+    {% if plan_type == 'custom' %}
+      <div class="workout-program-section">
+        <h3>My Custom Workout Program</h3>
+        <div class="plan-wrapper custom-plan plan-days-{{ day_count }}">
+          {% for day, exercises_list in plan.items() %}
+            <div class="day-box">
+              <div class="day-header" style="display: flex; align-items: center; justify-content: space-between;">
+                <h4 style="margin: 0;">{{ day }}</h4>
+                <button type="button" class="edit-day-btn" data-day="{{ day }}">Edit</button>
+              </div>
+              {% if exercises_list %}
+                <ul>
+                  {% for ex in exercises_list %}
+                    {% set parts = ex.split(" - ") %}
+                    {% set ex_name = parts[0] %}
+                    {% set ex_sets = parts[1] if parts|length > 1 else "" %}
+                    <li>
+                      <a href="{{ url_for('exercise_detail', exercise_name=ex_name) }}">{{ ex_name }}</a>
+                      {% if ex_sets %} - {{ ex_sets }}{% endif %}
+                    </li>
+                  {% endfor %}
+                </ul>
+              {% else %}
+                <p>No exercises selected for {{ day }}.</p>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% else %}
+      <div class="plan-wrapper plan-days-{{ day_count }}">
+        {% for day, exercises_list in plan.items() %}
+          <div class="day-box">
+            <div class="day-header" style="display: flex; align-items: center; justify-content: space-between;">
+              <h4 style="margin: 0;">{{ day }}</h4>
+              <button type="button" class="edit-day-btn" data-day="{{ day }}">Edit</button>
+            </div>
+            <ul>
+              {% for ex in exercises_list %}
+                {% set parts = ex.split(" - ") %}
+                {% set ex_name = parts[0] %}
+                {% set ex_sets = parts[1] if parts|length > 1 else "" %}
+                <li>
+                  <a href="{{ url_for('exercise_detail', exercise_name=ex_name) }}">{{ ex_name }}</a>
+                  {% if ex_sets %} – {{ ex_sets }}{% endif %}
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% else %}
+    <p class="no-workout-message">
+      You have no workout program selected.
+      <a href="{{ url_for('choose_plan') }}">Choose one now</a>.
+    </p>
+  {% endif %}
+</div>
 {% endblock %}
+
 {% block bottom %}
-{{ super() }}
+  {{ super() }}
+  <!-- Day Edit Modal -->
+  <div id="dayEditModal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      
+      <!-- Step 1: Choose Old Exercises to Remove -->
+      <div id="modalStep1" style="display:block;">
+        <div class="modal-step-header" style="display: flex; justify-content: space-between; align-items: center;">
+          <h2>Select Exercise(s) to Remove</h2>
+          <button type="button" id="goToStep2" class="next-btn">Next</button>
+        </div>
+        <p>Click each exercise you want to remove from this day.</p>
+        <div class="scrollable-container">
+          <ul id="oldExercisesList" class="selectable-list">
+            <!-- Populated dynamically -->
+          </ul>
+        </div>
+      </div>
+      
+      <!-- Step 2: Choose New Exercises from the Library -->
+      <div id="modalStep2" style="display:none;">
+        <div class="modal-step-header" style="display: flex; justify-content: space-between; align-items: center;">
+          <button type="button" id="backToStep1" class="back-btn">Back</button>
+          <h2>Select New Exercise(s)</h2>
+          <button type="button" id="goToStep3" class="next-btn">Next</button>
+        </div>
+        <div class="exercise-search-container">
+          <label for="exerciseSearch">Search Exercises:</label>
+          <input type="text" id="exerciseSearch" placeholder="Type to filter...">
+        </div>
+        <div class="scrollable-container">
+          <ul id="libraryList" class="selectable-list">
+            <!-- Populated dynamically -->
+          </ul>
+        </div>
+      </div>
+      
+      <!-- Step 3: Assign Set Counts to Chosen New Exercises -->
+      <div id="modalStep3" style="display:none;">
+        <div class="modal-step-header" style="display: flex; justify-content: space-between; align-items: center;">
+          <button type="button" id="backToStep2" class="back-btn">Back</button>
+          <h2>Assign Set Counts</h2>
+          <button type="button" id="saveEdit" class="next-btn">Save</button>
+        </div>
+        <div id="chosenExercisesContainer">
+          <!-- Each chosen new exercise with an input for sets will appear here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    /* Modal Popup Styles for Day Edit Modal */
+    .modal {
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.5);
+    }
+    .modal-content {
+      background-color: #fff;
+      margin: 5% auto;
+      padding: 2rem;
+      border: 1px solid #888;
+      width: 80%;
+      max-width: 900px;
+      border-radius: 8px;
+      position: relative;
+    }
+    .modal-content .close {
+      position: absolute;
+      right: 20px;
+      top: 10px;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #333;
+    }
+    /* Remove bullet points for selectable lists */
+    .selectable-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    .selectable-list li {
+      margin: 0.3rem 0;
+      cursor: pointer;
+      padding: 0.3rem 0;
+      border-bottom: 1px solid #eee;
+      transition: background 0.2s;
+    }
+    .selectable-list li:hover {
+      background: #f1f1f1;
+    }
+    .selected-exercise {
+      background-color: #00b300 !important;
+      color: #fff !important;
+    }
+    /* Fixed size scrollable container */
+    .scrollable-container {
+      max-height: 300px;
+      overflow-y: auto;
+      padding: 0.5rem;
+      border: 1px solid #ddd;
+      margin-top: 0.5rem;
+    }
+    /* Styling for chosen exercise items in Step 3 */
+    .chosen-ex-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 0.5rem;
+      font-size: 1.3rem;
+      padding: 0.3rem 0;
+    }
+    .chosen-ex-item input[type="number"] {
+      width: 60px;
+      margin-left: 0.5rem;
+      margin-right: 0.5rem;
+    }
+    /* Back button style */
+    .back-btn {
+      background-color: #ccc;
+      color: #333;
+      border: none;
+      padding: 0.3rem 0.6rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: background-color 0.2s ease;
+    }
+    .back-btn:hover {
+      background-color: #bbb;
+    }
+    /* Next/Save button style */
+    .next-btn {
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      padding: 0.3rem 0.6rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: background-color 0.2s ease;
+    }
+    .next-btn:hover {
+      background-color: #0056b3;
+    }
+  </style>
+
+  <script>
+    // Global variables to hold selected values
+    let selectedDay = null;
+    let oldIndices = []; // Array of indices for exercises to remove
+    let newExercises = []; // Array of objects { name: "...", sets: 3 }
+    let currentDayExercises = []; // List of current day's exercise names (pure names)
+
+    // Global variable for full exercise library from server
+    const allExercises = {{ exercises|tojson }};
+    
+    // Function to populate the library list, filtering out exercises already in the current day
+    function populateLibraryList() {
+      const libraryList = document.getElementById('libraryList');
+      libraryList.innerHTML = "";
+      allExercises.forEach(exercise => {
+        // Only include exercises not already in the day's workout
+        if (!currentDayExercises.includes(exercise.name)) {
+          const li = document.createElement('li');
+          li.className = "library-item";
+          li.setAttribute('data-exercise', exercise.name);
+          li.textContent = exercise.name;
+          // Toggle selection on click
+          li.addEventListener('click', function() {
+            const exName = this.getAttribute('data-exercise');
+            const existingIndex = newExercises.findIndex(e => e.name === exName);
+            if (existingIndex !== -1) {
+              newExercises.splice(existingIndex, 1);
+              li.classList.remove('selected-exercise');
+            } else {
+              newExercises.push({ name: exName, sets: 3 });
+              li.classList.add('selected-exercise');
+            }
+          });
+          libraryList.appendChild(li);
+        }
+      });
+    }
+
+    // Function to reset search and repopulate library list
+    function resetSearchAndList() {
+      document.getElementById('exerciseSearch').value = "";
+      populateLibraryList();
+    }
+
+    // Step 1: Open modal and show current day's exercises (Step 1)
+    function openDayEditModal(day, currentExercises) {
+      selectedDay = day;
+      oldIndices = [];
+      newExercises = [];
+      // Extract pure exercise names (split on " - ")
+      currentDayExercises = currentExercises.map(item => item.split(" - ")[0].trim());
+      
+      // Populate Step 1 list inside a scrollable container
+      const oldList = document.getElementById('oldExercisesList');
+      oldList.innerHTML = "";
+      currentExercises.forEach((ex, idx) => {
+        const li = document.createElement('li');
+        // Display only the exercise name (split off the sets info)
+        li.textContent = ex.split(" - ")[0].trim();
+        li.setAttribute('data-index', idx);
+        li.addEventListener('click', function() {
+          const i = parseInt(this.getAttribute('data-index'));
+          if (oldIndices.includes(i)) {
+            oldIndices = oldIndices.filter(x => x !== i);
+            li.classList.remove('selected-exercise');
+          } else {
+            oldIndices.push(i);
+            li.classList.add('selected-exercise');
+          }
+        });
+        oldList.appendChild(li);
+      });
+
+      // Show Step 1; hide Steps 2 and 3; open modal
+      document.getElementById('modalStep1').style.display = 'block';
+      document.getElementById('modalStep2').style.display = 'none';
+      document.getElementById('modalStep3').style.display = 'none';
+      document.getElementById('dayEditModal').style.display = 'block';
+
+      resetSearchAndList();
+      document.getElementById('chosenExercisesContainer').innerHTML = "";
+    }
+
+    // Attach event listeners to each "Edit" button for a day
+    document.querySelectorAll('.edit-day-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const day = btn.getAttribute('data-day');
+        const dayBox = btn.closest('.day-box');
+        const items = dayBox.querySelectorAll('ul li');
+        let currentExercises = [];
+        items.forEach(li => {
+          // Extract only the exercise name (split by " - ")
+          let name = li.textContent.split(" - ")[0].trim();
+          currentExercises.push(name);
+        });
+        openDayEditModal(day, currentExercises);
+      });
+    });
+
+    // Step 1 -> Step 2: Proceed after selecting old exercises to remove
+    document.getElementById('goToStep2').addEventListener('click', function() {
+      if (oldIndices.length === 0) {
+        alert("Please select at least one exercise to remove.");
+        return;
+      }
+      document.getElementById('modalStep1').style.display = 'none';
+      document.getElementById('modalStep2').style.display = 'block';
+    });
+
+    // Back button in Step 2 to return to Step 1
+    document.getElementById('backToStep1').addEventListener('click', function() {
+      document.getElementById('modalStep2').style.display = 'none';
+      document.getElementById('modalStep1').style.display = 'block';
+    });
+
+    // Filter library list based on search input
+    document.getElementById('exerciseSearch').addEventListener('input', function() {
+      const filter = this.value.toLowerCase();
+      document.querySelectorAll('.library-item').forEach(li => {
+        const txt = li.textContent.toLowerCase();
+        li.style.display = txt.includes(filter) ? "list-item" : "none";
+      });
+    });
+
+    // Step 2 -> Step 3: Proceed after selecting new exercises
+    document.getElementById('goToStep3').addEventListener('click', function() {
+      if (newExercises.length === 0) {
+        alert("Please select at least one new exercise.");
+        return;
+      }
+      document.getElementById('modalStep2').style.display = 'none';
+      document.getElementById('modalStep3').style.display = 'block';
+      renderChosenExercises();
+    });
+
+    // Back button in Step 3 to return to Step 2
+    document.getElementById('backToStep2').addEventListener('click', function() {
+      document.getElementById('modalStep3').style.display = 'none';
+      document.getElementById('modalStep2').style.display = 'block';
+    });
+
+    // Render chosen new exercises with inputs for set counts in Step 3
+    function renderChosenExercises() {
+      const container = document.getElementById('chosenExercisesContainer');
+      container.innerHTML = "";
+      newExercises.forEach((obj) => {
+        const div = document.createElement('div');
+        div.className = "chosen-ex-item";
+        
+        const nameSpan = document.createElement('span');
+        nameSpan.className = "exercise-name";
+        nameSpan.textContent = obj.name;
+        
+        const setsSpan = document.createElement('span');
+        setsSpan.className = "exercise-sets";
+        const setsInput = document.createElement('input');
+        setsInput.type = "number";
+        setsInput.min = "1";
+        setsInput.value = obj.sets;
+        setsInput.addEventListener('change', function() {
+          obj.sets = parseInt(this.value) || 1;
+        });
+        setsSpan.appendChild(setsInput);
+        
+        div.appendChild(nameSpan);
+        div.appendChild(setsSpan);
+        container.appendChild(div);
+      });
+    }
+
+    // Final Save: Send data via AJAX
+    document.getElementById('saveEdit').addEventListener('click', function() {
+      if (newExercises.length === 0) {
+        alert("Please select at least one new exercise.");
+        return;
+      }
+      const postData = {
+        day: selectedDay,
+        oldIndices: oldIndices,
+        newExercises: newExercises
+      };
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", "{{ url_for('update_exercise') }}", true);
+      xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+          location.reload();
+        }
+      };
+      xhr.send(JSON.stringify(postData));
+    });
+
+    // Close modal on clicking the close icon
+    document.querySelector('#dayEditModal .close').addEventListener('click', function() {
+      document.getElementById('dayEditModal').style.display = 'none';
+    });
+
+    // Initially populate the library list
+    populateLibraryList();
+  </script>
 {% endblock %}

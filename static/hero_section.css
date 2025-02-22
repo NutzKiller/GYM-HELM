@@ -1,0 +1,181 @@
+/* profile.css */
+
+/* Overall Page Layout */
+.profile-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+/* Cover Photo */
+.cover-photo {
+  width: 100%;
+  height: 250px;
+  background: linear-gradient(135deg, #1c2a48, #33475b);
+}
+
+/* Profile Card */
+.profile-card {
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border-radius: 8px;
+  margin-top: -80px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Profile Header */
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  width: 100%;
+  justify-content: center;
+}
+
+.profile-photo-wrapper {
+  flex-shrink: 0;
+}
+
+.profile-photo {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid #1c2a48;
+}
+
+/* Basic Info */
+.profile-basic-info {
+  text-align: center;
+}
+
+.profile-basic-info h2 {
+  margin: 0.5rem 0 0.3rem;
+  font-size: 2rem;
+  color: #1c2a48;
+}
+
+.profile-basic-info .username {
+  font-size: 1.2rem;
+  color: #777;
+  margin-bottom: 1rem;
+}
+
+.edit-profile-btn {
+  background: #ff4d4d;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  text-decoration: none;
+  transition: background 0.3s ease;
+}
+
+.edit-profile-btn:hover {
+  background: #e60000;
+}
+
+/* Profile Details */
+.profile-details {
+  width: 100%;
+  max-width: 600px;
+  margin: 1.5rem auto 0;
+  text-align: left;
+  font-size: 1rem;
+  color: #333;
+}
+
+.profile-details p {
+  margin: 0.5rem 0;
+}
+
+/* Workout Program Section */
+.workout-program-section {
+  margin-top: 2rem;
+}
+
+.workout-program-section h3 {
+  text-align: center;
+  color: #1c2a48;
+  margin-bottom: 1rem;
+}
+
+/* Plan Wrapper & Day Box */
+.plan-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.day-box {
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 1rem;
+  width: 280px;
+}
+
+.day-box h4 {
+  margin-bottom: 0.5rem;
+  color: #1c2a48;
+}
+
+.day-box ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.day-box li {
+  padding: 0.3rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.day-box li a {
+  color: #1c2a48;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.day-box li a:hover {
+  text-decoration: underline;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .profile-card {
+    margin-top: -60px;
+    padding: 1rem;
+  }
+  .profile-photo {
+    width: 120px;
+    height: 120px;
+  }
+  .profile-basic-info h2 {
+    font-size: 1.8rem;
+  }
+  .day-box {
+    width: 90%;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-card {
+    margin-top: -50px;
+    padding: 0.75rem;
+  }
+  .profile-photo {
+    width: 100px;
+    height: 100px;
+  }
+  .profile-basic-info h2 {
+    font-size: 1.6rem;
+  }
+  .profile-details {
+    font-size: 0.9rem;
+  }
+}

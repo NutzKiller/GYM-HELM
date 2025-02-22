@@ -1,0 +1,121 @@
+:root {
+  --primary-color: #66b3ff; /* Lighter blue */
+  --bg-white: #ffffff;
+  --transition-speed: 0.3s;
+}
+
+/* ==========================================================================
+       BUTTON STYLES
+   ========================================================================== */
+.btn, a.btn {
+  background: var(--bg-white);
+  color: var(--primary-color);
+  border: 2px solid var(--primary-color);
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  font-weight: 500;
+  transition: background var(--transition-speed), color var(--transition-speed);
+  display: inline-block;
+  text-align: center;
+  text-decoration: none;
+}
+
+.btn:visited, a.btn:visited {
+  background: var(--bg-white);
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.btn:hover, a.btn:hover {
+  background: var(--primary-color);
+  color: var(--bg-white);
+  text-decoration: none;
+}
+
+.btn:active, a.btn:active,
+.btn:focus, a.btn:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+/* ==========================================================================
+         SPECIFIC SITE BUTTONS
+     ========================================================================== */
+.reroll-button,
+.choose-plan-btn,
+.edit-profile-btn,
+.cart-clear-btn,
+.checkout-btn,
+.return-button,
+.shop-btn {
+  background: var(--bg-white);
+  color: var(--primary-color);
+  border: 2px solid var(--primary-color);
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  font-weight: 500;
+  transition: background var(--transition-speed), color var(--transition-speed);
+  display: inline-block;
+  text-align: center;
+  text-decoration: none;
+}
+
+.reroll-button:visited,
+.choose-plan-btn:visited,
+.edit-profile-btn:visited,
+.cart-clear-btn:visited,
+.checkout-btn:visited,
+.return-button:visited,
+.shop-btn:visited {
+  background: var(--bg-white);
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.reroll-button:hover,
+.choose-plan-btn:hover,
+.edit-profile-btn:hover,
+.cart-clear-btn:hover,
+.checkout-btn:hover,
+.return-button:hover,
+.shop-btn:hover {
+  background: var(--primary-color);
+  color: var(--bg-white);
+  text-decoration: none;
+}
+
+.reroll-button:active,
+.choose-plan-btn:active,
+.edit-profile-btn:active,
+.cart-clear-btn:active,
+.checkout-btn:active,
+.return-button:active,
+.shop-btn:active,
+.reroll-button:focus,
+.choose-plan-btn:focus,
+.edit-profile-btn:focus,
+.cart-clear-btn:focus,
+.checkout-btn:focus,
+:return-button:focus,
+.shop-btn:focus {
+  outline: none;
+  box-shadow: none;
+}
+/* In button_styles.css */
+.edit-day-btn {
+  /* Copy or extend the .btn styling */
+  background: var(--bg-white);
+  color: var(--primary-color);
+  border: 2px solid var(--primary-color);
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  font-weight: 500;
+  transition: background var(--transition-speed), color var(--transition-speed);
+  text-align: center;
+  cursor: pointer;
+  /* etc. */
+}
+.edit-day-btn:hover {
+  background: var(--primary-color);
+  color: var(--bg-white);
+}
