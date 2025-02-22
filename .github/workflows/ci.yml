@@ -26,7 +26,7 @@ jobs:
       - name: Build and Tag Docker Image
         run: |
           VERSION=v1.0.${{ github.run_number }}
-          docker build -t nutzkiller/gym:$VERSION .
+          docker build --no-cache -t nutzkiller/gym:$VERSION .
           docker tag nutzkiller/gym:$VERSION nutzkiller/gym:latest
 
       - name: Push Docker Image to Docker Hub
@@ -35,4 +35,41 @@ jobs:
           docker push nutzkiller/gym:$VERSION
           docker push nutzkiller/gym:latest
 
+      # --- New steps to package and publish the Helm chart ---
+      - name: Install Helm
+        run: |
+          curl -L https://get.helm.sh/helm-v3.9.0-linux-amd64.tar.gz -o helm.tar.gz
+          tar -xzvf helm.tar.gz
+          sudo mv linux-amd64/helm /usr/local/bin/helm
+          helm version
 
+      - name: Package Helm Chart
+        run: |
+          mkdir -p helm-repo
+          helm package gym-chart --destination helm-repo
+          ls -la helm-repo
+
+      - name: Update Helm Repository Index
+        run: |
+          helm repo index helm-repo --url https://NutzKiller.github.io/helm
+
+      - name: Publish Helm Chart to GitHub Pages Repository
+        env:
+          MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+        run: |
+          # Configure Git with your identity
+          git config --global user.email "yuvalshmuely8@gmail.com"
+          git config --global user.name "NutzKiller"
+          
+          # Clone the helm repository using MY_GITHUB_TOKEN
+          git clone https://x-access-token:${{ secrets.MY_GITHUB_TOKEN }}@github.com/NutzKiller/helm.git helm-temp
+          
+          # Copy packaged charts and update the index
+          cp -R helm-repo/* helm-temp/
+          cd helm-temp
+          helm repo index . --url https://NutzKiller.github.io/helm
+          
+          # Commit and push the changes
+          git add .
+          git commit -m "Update Helm charts for build ${{ github.run_number }}" || echo "No changes to commit"
+          git push origin main
