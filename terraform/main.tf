@@ -76,7 +76,18 @@ resource "kubernetes_namespace" "gym" {
 resource "helm_release" "gym" {
   name      = "gym"
   namespace = kubernetes_namespace.gym.metadata[0].name
-  chart     = "../gym-chart"  # Adjust the path if needed
+  chart     = "../gym-chart"  # Adjust if needed
+
+  # Increase timeout and wait for pods to become Ready
+  timeout = 600  # 10 minutes
+  wait    = true
+
+  # Ensure we only install after the cluster, node pool, and namespace are ready
+  depends_on = [
+    google_container_cluster.primary,
+    google_container_node_pool.primary_nodes,
+    kubernetes_namespace.gym
+  ]
 
   # Override values defined in your chart’s values.yaml
   set {
@@ -111,11 +122,8 @@ resource "helm_release" "gym" {
     name  = "secret.stringData.SECRET_KEY"
     value = var.SECRET_KEY
   }
-
-  depends_on = [kubernetes_namespace.gym]
 }
 
-# Existing resources to push the Terraform state file to GitHub after apply/destroy remain unchanged
 resource "null_resource" "push_to_github_after_apply" {
   provisioner "local-exec" {
     command = <<EOT
