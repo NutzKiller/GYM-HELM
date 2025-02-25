@@ -94,13 +94,14 @@ resource "helm_release" "gym" {
     name  = "replicaCount"
     value = "1"
   }
+  # Override the image as a flat string rather than using nested keys.
   set {
-    name  = "image.repository"
-    value = "nutzkiller/gym"
+    name  = "image"
+    value = "nutzkiller/gym:latest"
   }
   set {
-    name  = "image.tag"
-    value = "latest"
+    name  = "imagePullPolicy"
+    value = "IfNotPresent"
   }
   set {
     name  = "containerPort"
