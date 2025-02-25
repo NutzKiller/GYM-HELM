@@ -1,11 +1,51 @@
+terraform {
+  backend "gcs" {
+    bucket = "tfstate_gymproject"
+    prefix = "terraform/state"
+  }
+
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 4.0"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
+    tls = {
+      source  = "hashicorp/tls"
+      version = "~> 4.0"
+    }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.0"
+    }
+    helm = {
+      source  = "hashicorp/helm"
+      version = "~> 2.0"
+    }
+    time = {
+      source  = "hashicorp/time"
+      version = "~> 0.7"
+    }
+  }
+
+  required_version = ">= 1.0.0"
+}
+
+# Data source to get a current timestamp offset (always updated)
+data "time_offset" "now" {
+  offset_seconds = 0
+}
+
 resource "google_container_cluster" "primary" {
   name               = "gym-cluster"
   location           = var.GCP_REGION
-  initial_node_count = 1  # Increased for better scheduling
+  initial_node_count = 1
 
   remove_default_node_pool = true
 
-  # Use the existing default VPC network and subnetwork
   network    = "default"
   subnetwork = "default"
 
@@ -23,6 +63,7 @@ resource "google_container_cluster" "primary" {
     }
   }
 }
+
 resource "google_container_node_pool" "primary_nodes" {
   cluster  = google_container_cluster.primary.name
   location = var.GCP_REGION
@@ -41,7 +82,7 @@ resource "google_container_node_pool" "primary_nodes" {
     ]
     image_type = "COS_CONTAINERD"
     resource_labels = {
-      dummy = "update-1"  # Change this value manually to force an update
+      dummy = data.time_offset.now.rfc3339
     }
   }
 
