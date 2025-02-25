@@ -14,7 +14,7 @@ spec:
       labels:
         app: {{ include "gym.name" . }}
       annotations:
-        redeploy-timestamp: "{{ now | quote }}"
+        redeploy-timestamp: "{{ now | date \"2006-01-02T15_04_05\" }}"
     spec:
       containers:
         - name: gym-container
