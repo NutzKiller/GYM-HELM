@@ -36,7 +36,7 @@ variable "MY_GITHUB_TOKEN" {
 variable "max_surge" {
   description = "Max surge for node pool upgrade settings. Change this value to force an in-place update."
   type        = number
-  default     = 1
+  default     = 2
 }
 
 variable "max_unavailable" {
