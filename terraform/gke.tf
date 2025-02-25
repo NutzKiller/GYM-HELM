@@ -1,48 +1,7 @@
-terraform {
-  backend "gcs" {
-    bucket = "tfstate_gymproject"
-    prefix = "terraform/state"
-  }
-
-  required_providers {
-    google = {
-      source  = "hashicorp/google"
-      version = "~> 4.0"
-    }
-    random = {
-      source  = "hashicorp/random"
-      version = "~> 3.0"
-    }
-    tls = {
-      source  = "hashicorp/tls"
-      version = "~> 4.0"
-    }
-    kubernetes = {
-      source  = "hashicorp/kubernetes"
-      version = "~> 2.0"
-    }
-    helm = {
-      source  = "hashicorp/helm"
-      version = "~> 2.0"
-    }
-    time = {
-      source  = "hashicorp/time"
-      version = "~> 0.7"
-    }
-  }
-
-  required_version = ">= 1.0.0"
-}
-
-# Data source to get a current timestamp offset (always updated)
-data "time_offset" "now" {
-  offset_seconds = 0
-}
-
 resource "google_container_cluster" "primary" {
   name               = "gym-cluster"
   location           = var.GCP_REGION
-  initial_node_count = 1
+  initial_node_count = 1  # Increased for better scheduling
 
   remove_default_node_pool = true
 
@@ -74,13 +33,13 @@ resource "google_container_node_pool" "primary_nodes" {
   }
 
   node_config {
-    machine_type = "e2-medium"
-    disk_size_gb = 15
+    machine_type = "e2-medium"  # Upgraded from e2-micro to e2-medium (4GB RAM)
+    disk_size_gb = 15           # Increased disk space for better performance
     disk_type    = "pd-standard"
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform",
     ]
-    image_type = "COS_CONTAINERD"
+    image_type = "COS_CONTAINERD"  # Specify the node image type
     resource_labels = {
       dummy = data.time_offset.now.rfc3339
     }
@@ -95,4 +54,9 @@ resource "google_container_node_pool" "primary_nodes" {
     auto_upgrade = true
     auto_repair  = true
   }
+}
+
+# Data source for current timestamp to force updates (if needed)
+data "time_offset" "now" {
+  offset_seconds = 0
 }
