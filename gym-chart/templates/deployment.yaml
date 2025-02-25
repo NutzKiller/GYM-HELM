@@ -22,15 +22,9 @@ spec:
             - containerPort: {{ .Values.containerPort }}
           env:
             - name: DATABASE_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: {{ include "gym.fullname" . }}-config
-                  key: DATABASE_URL
+              value: {{ .Values.databaseUrl | quote }}
             - name: SECRET_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "gym.fullname" . }}-secret
-                  key: SECRET_KEY
+              value: {{ .Values.secretKey | quote }}
           resources:
             requests:
               memory: "{{ .Values.memoryRequest }}"
