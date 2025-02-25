@@ -36,16 +36,16 @@ resource "google_container_node_pool" "primary_nodes" {
   node_config {
     machine_type = "e2-medium"  # Upgraded from e2-micro to e2-medium (4GB RAM)
     disk_size_gb = 15           # Increased disk space for better performance
-    disk_type    = "pd-standard"
+    disk_type    = "pd-standard"  
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform",
     ]
-    image_type = "COS_CONTAINERD"  # Specify the node image type
-    // No dummy update is used here.
+    // Use the variable for image_type so that changing it forces an update.
+    image_type = var.node_image_type
   }
 
   upgrade_settings {
-    max_surge       = var.max_surge       // Change this value manually to force an in-place update.
+    max_surge       = var.max_surge
     max_unavailable = var.max_unavailable
   }
 

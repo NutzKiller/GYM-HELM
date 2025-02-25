@@ -33,10 +33,16 @@ variable "MY_GITHUB_TOKEN" {
   description = "GitHub token with permissions to push to the TF repository"
   type        = string
 }
+variable "node_image_type" {
+  description = "The OS image type for the node pool. Change this value (e.g., from COS_CONTAINERD to UBUNTU_CONTAINERD) to force an in-place update."
+  type        = string
+  default     = "COS_CONTAINERD"
+}
+
 variable "max_surge" {
   description = "Max surge for node pool upgrade settings. Change this value to force an in-place update."
   type        = number
-  default     = 2
+  default     = 1
 }
 
 variable "max_unavailable" {
