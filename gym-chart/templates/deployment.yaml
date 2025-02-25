@@ -14,7 +14,6 @@ spec:
       labels:
         app: {{ include "gym.name" . }}
       annotations:
-        # This annotation forces a new rollout on each upgrade.
         redeploy-timestamp: "{{ now | quote }}"
     spec:
       containers:
