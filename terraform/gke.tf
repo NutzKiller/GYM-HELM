@@ -42,10 +42,6 @@ resource "google_container_node_pool" "primary_nodes" {
     ]
     image_type = "COS_CONTAINERD"  # Specify the node image type
   }
-  
-  # Specify node_version; if omitted, it defaults to the cluster version.
-  # Setting it explicitly ensures the update includes an updatable field.
-  node_version = "latest"
 
   upgrade_settings {
     max_surge       = 1
