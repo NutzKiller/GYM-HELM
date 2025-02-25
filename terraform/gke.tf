@@ -36,11 +36,20 @@ resource "google_container_node_pool" "primary_nodes" {
   node_config {
     machine_type = "e2-medium"  # Upgraded from e2-micro to e2-medium (4GB RAM)
     disk_size_gb = 15           # Increased disk space for better performance
-    disk_type    = "pd-standard"  
+    disk_type    = "pd-standard"
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform",
     ]
     image_type = "COS_CONTAINERD"  # Specify the node image type
+  }
+  
+  # Specify node_version; if omitted, it defaults to the cluster version.
+  # Setting it explicitly ensures the update includes an updatable field.
+  node_version = "latest"
+
+  upgrade_settings {
+    max_surge       = 1
+    max_unavailable = 0
   }
 
   management {
