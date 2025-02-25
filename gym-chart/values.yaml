@@ -2,7 +2,7 @@ replicaCount: 1
 
 # Combine image repository, tag, and pullPolicy into one value
 image: "nutzkiller/gym:latest"
-imagePullPolicy: IfNotPresent
+imagePullPolicy: Always
 
 containerPort: 5000
 
