@@ -40,8 +40,10 @@ resource "google_container_node_pool" "primary_nodes" {
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform",
     ]
-    // Use the variable for image_type so that changing it forces an update.
-    image_type = var.node_image_type
+    image_type = "COS_CONTAINERD"  # Specify the node image type
+    resource_labels = {
+      dummy = var.dummy_update  # This dummy value forces an update only when you manually change it
+    }
   }
 
   upgrade_settings {
@@ -52,5 +54,14 @@ resource "google_container_node_pool" "primary_nodes" {
   management {
     auto_upgrade = true
     auto_repair  = true
+  }
+
+  // Prevent Terraform from attempting an update if no configuration change exists.
+  lifecycle {
+    ignore_changes = [
+      node_config,
+      upgrade_settings,
+      management,
+    ]
   }
 }
