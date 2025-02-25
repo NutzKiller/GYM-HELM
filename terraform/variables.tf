@@ -33,3 +33,8 @@ variable "MY_GITHUB_TOKEN" {
   description = "GitHub token with permissions to push to the TF repository"
   type        = string
 }
+variable "dummy_update" {
+  description = "A dummy value that, when changed, forces an in-place update of the node pool."
+  type        = string
+  default     = "update3"
+}

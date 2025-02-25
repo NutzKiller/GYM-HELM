@@ -1,11 +1,3 @@
-resource "random_id" "dummy" {
-  byte_length = 2
-}
-
-locals {
-  update_trigger = random_id.dummy.hex
-}
-
 resource "google_container_cluster" "primary" {
   name               = "gym-cluster"
   location           = var.GCP_REGION
@@ -44,14 +36,13 @@ resource "google_container_node_pool" "primary_nodes" {
   node_config {
     machine_type = "e2-medium"  # Upgraded from e2-micro to e2-medium (4GB RAM)
     disk_size_gb = 15           # Increased disk space for better performance
-    disk_type    = "pd-standard"
+    disk_type    = "pd-standard"  
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform",
     ]
     image_type = "COS_CONTAINERD"  # Specify the node image type
     resource_labels = {
-      # This dummy label changes on every apply, forcing an update.
-      dummy = local.update_trigger
+      dummy = var.dummy_update  # Changing this value will force an in-place update
     }
   }
 
