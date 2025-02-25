@@ -36,5 +36,5 @@ variable "MY_GITHUB_TOKEN" {
 variable "dummy_update" {
   description = "A dummy value that, when changed, forces an in-place update of the node pool."
   type        = string
-  default     = "update3"
+  default     = "update30"
 }
