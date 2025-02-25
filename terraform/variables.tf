@@ -33,8 +33,14 @@ variable "MY_GITHUB_TOKEN" {
   description = "GitHub token with permissions to push to the TF repository"
   type        = string
 }
-variable "dummy_update" {
-  description = "A dummy value that, when changed, forces an in-place update of the node pool."
-  type        = string
-  default     = "update31"
+variable "max_surge" {
+  description = "Max surge for node pool upgrade settings. Change this value to force an in-place update."
+  type        = number
+  default     = 1
+}
+
+variable "max_unavailable" {
+  description = "Max unavailable for node pool upgrade settings."
+  type        = number
+  default     = 0
 }
