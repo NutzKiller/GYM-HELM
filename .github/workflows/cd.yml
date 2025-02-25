@@ -16,44 +16,26 @@ jobs:
       - name: Check out main repository
         uses: actions/checkout@v3
 
-      # Step 2: Clone Terraform State Repository
-      - name: Clone Terraform State Repository
-        env:
-          MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
-        run: |
-          git clone https://x-access-token:${{ secrets.MY_GITHUB_TOKEN }}@github.com/NutzKiller/TF.git
-          echo "Cloned NutzKiller/TF repository."
-
-      # Step 3: Set up Terraform
+      # Step 2: Set up Terraform
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: latest
 
-      # Step 4: Create GCP credentials file
+      # Step 3: Create GCP credentials file
       - name: Create GCP credentials file
         run: |
           mkdir -p terraform
           echo "${{ secrets.GCP_CREDENTIALS_FILE_B64 }}" | base64 --decode > terraform/gcp_credentials.json
+          echo "✅ GCP credentials file created."
 
-      # Step 5: Validate GCP Authentication
+      # Step 4: Validate GCP Authentication
       - name: Verify GCP Authentication
         run: |
           gcloud auth list
           gcloud config list
 
-      # Step 6: Sync Terraform State from NutzKiller/TF Repository
-      - name: Sync Terraform State from NutzKiller/TF Repository
-        run: |
-          mkdir -p terraform/terraform_state
-          if [ -f TF/terraform_state/terraform.tfstate ]; then
-            cp TF/terraform_state/terraform.tfstate terraform/terraform_state/terraform.tfstate
-            echo "Terraform state pulled from NutzKiller/TF repository."
-          else
-            echo "No existing Terraform state found in NutzKiller/TF repository. Proceeding with empty state."
-          fi
-
-      # Step 7: Set up Google Cloud SDK
+      # Step 5: Set up Cloud SDK
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
         with:
@@ -61,7 +43,7 @@ jobs:
           service_account_key_file: terraform/gcp_credentials.json
           export_default_credentials: true
 
-      # Step 8: Apply Terraform Configuration (Deploys the Helm Release)
+      # Step 6: Apply Terraform Configuration (Deploys the Helm Release)
       - name: Apply Terraform Configuration
         working-directory: terraform
         env:
@@ -76,7 +58,7 @@ jobs:
           terraform init -input=false
           terraform apply -auto-approve -input=false
 
-      # Step 9: Configure kubectl to connect to GKE
+      # Step 7: Configure kubectl to connect to GKE
       - name: Get GKE Credentials
         uses: google-github-actions/get-gke-credentials@v1
         with:
@@ -86,13 +68,13 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: terraform/gcp_credentials.json
 
-      # Step 10: Validate Kubernetes Connection
+      # Step 8: Validate Kubernetes Connection
       - name: Verify Kubernetes Connection
         run: |
           kubectl cluster-info
           kubectl get nodes
 
-      # Step 11: Ensure Firewall Rule for GKE (if not already set)
+      # Step 9: Ensure Firewall Rule for GKE (if not already set)
       - name: Ensure Firewall Rule for GKE
         run: |
           gcloud compute firewall-rules create allow-gke-5000 \
@@ -100,20 +82,17 @@ jobs:
             --target-tags=gke-gym-cluster \
             --source-ranges=0.0.0.0/0 || echo "Firewall rule already exists."
 
-      # Optional: Create Namespace (Terraform creates it, but safe-check is harmless)
+      # Step 10: Create Namespace (safe-check)
       - name: Create Namespace
         run: |
           kubectl create namespace gym-namespace || true
 
-      # The following steps that manually inject secrets and apply raw k8s manifests have been removed.
-      
-      # Step 12: Retrieve External IP of the Helm-Managed Service
+      # Step 11: Retrieve External IP of the Helm-Managed Service
       - name: Retrieve External IP of Helm Release Service
         id: get_ip
         run: |
           echo "Waiting for LoadBalancer IP..."
           for i in {1..30}; do
-            # Update this service name to match your Helm chart's generated service name.
             EXTERNAL_IP=$(kubectl get svc gym-gym-chart-service -n gym-namespace -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
             if [ -n "$EXTERNAL_IP" ]; then
               echo "EXTERNAL_IP=$EXTERNAL_IP" >> $GITHUB_ENV
@@ -129,12 +108,12 @@ jobs:
             exit 1
           fi
 
-      # Step 13: Output the External IP
+      # Step 12: Output the External IP
       - name: Output External IP
         run: |
           echo "The application is accessible at http://${{ env.EXTERNAL_IP }}"
 
-      # Step 14: Debug Kubernetes Setup (if needed)
+      # Step 13: Debug Kubernetes Setup (if needed)
       - name: Debug Kubernetes Setup
         run: |
           echo "Debugging Kubernetes Configuration..."
@@ -142,67 +121,3 @@ jobs:
           kubectl get pods -n gym-namespace
           kubectl describe svc gym-gym-chart-service -n gym-namespace
           kubectl describe deployment gym-gym-chart-deployment -n gym-namespace
-
-      # Step 15: Push Updated Terraform State to NutzKiller/TF Repository
-      - name: Push Updated Terraform State to NutzKiller/TF Repository
-        env:
-          MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
-        run: |
-          if [ -f terraform/terraform_state/terraform.tfstate ]; then
-            cp terraform/terraform_state/terraform.tfstate TF/terraform_state/terraform.tfstate
-            cd TF
-
-            git config --global user.email "yuvalshmuely8@gmail.com"
-            git config --global user.name "NutzKiller"
-
-            git pull origin main --rebase || echo "Pull failed. Continuing with local changes."
-
-            git add terraform_state/terraform.tfstate
-            git commit -m "Update Terraform state file" || git commit --allow-empty -m "Dummy commit to ensure sync"
-            git push origin main --force
-          else
-            echo "No Terraform state file found to push. Skipping this step."
-          fi
-
-
-      # # Step 16: Destroy Terraform Configuration
-      # - name: Destroy Terraform Configuration
-      #   working-directory: terraform
-      #   env:
-      #     GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
-      #     TF_VAR_GCP_CREDENTIALS_FILE: "gcp_credentials.json"
-      #     TF_VAR_GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
-      #     TF_VAR_GCP_REGION: ${{ secrets.GCP_REGION }}
-      #     TF_VAR_DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      #     TF_VAR_SECRET_KEY: ${{ secrets.SECRET_KEY }}
-      #     TF_VAR_MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
-      #   run: |
-      #     terraform destroy -auto-approve -input=false
-
-      # # Step 17: Push Updated Terraform State to NutzKiller/TF Repository
-      # - name: Push Updated Terraform State to NutzKiller/TF Repository
-      #   env:
-      #     MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
-      #   run: |
-      #     if [ -f terraform/terraform_state/terraform.tfstate ]; then
-      #       cp terraform/terraform_state/terraform.tfstate TF/terraform_state/terraform.tfstate
-      #       cd TF
-
-      #       git config --global user.email "yuvalshmuely8@gmail.com"
-      #       git config --global user.name "NutzKiller"
-
-      #       # Pull the latest changes to avoid unnecessary conflicts
-      #       git pull origin main --rebase || echo "Pull failed. Continuing."
-
-      #       # Stage the Terraform state file
-      #       git add terraform_state/terraform.tfstate
-
-      #       # Commit changes if any, or create an empty commit if no changes
-      #       git commit -m "Update Terraform state file" || git commit --allow-empty -m "Empty commit to ensure push"
-
-      #       # Force push to the remote repository to overwrite any conflicts
-      #       git push origin main --force
-      #     else
-      #       echo "No Terraform state file found to push. Skipping this step."
-      #     fi
-  
