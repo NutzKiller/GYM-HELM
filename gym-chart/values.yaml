@@ -1,38 +1,26 @@
 replicaCount: 1
 
-image:
-  repository: nutzkiller/gym
-  tag: latest
-  pullPolicy: IfNotPresent
+# Combine image repository, tag, and pullPolicy into one value
+image: "nutzkiller/gym:latest"
+imagePullPolicy: IfNotPresent
 
 containerPort: 5000
 
-configMap:
-  data: {}  # Populate via CI/CD if needed
+# Instead of nested configMap and secret objects, define keys directly
+databaseUrl: ""
+secretKey: ""
 
-secret:
-  stringData: {}  # Populate securely via Terraform or environment variables
+# Resources and probes can be hardcoded in the template if they rarely change,
+# or you can flatten them here:
+memoryRequest: "512Mi"
+cpuRequest: "250m"
+memoryLimit: "1Gi"
+cpuLimit: "500m"
 
-resources:
-  requests:
-    memory: "512Mi"
-    cpu: "250m"
-  limits:
-    memory: "1Gi"
-    cpu: "500m"
+readinessInitialDelay: 5
+readinessPeriod: 10
+livenessInitialDelay: 15
+livenessPeriod: 20
 
-readinessProbe:
-  initialDelaySeconds: 5
-  periodSeconds: 10
-
-livenessProbe:
-  initialDelaySeconds: 15
-  periodSeconds: 20
-
-service:
-  type: LoadBalancer
-  port: 5000
-
-# Optional overrides for naming if needed
-nameOverride: ""
-fullnameOverride: ""
+serviceType: LoadBalancer
+servicePort: 5000

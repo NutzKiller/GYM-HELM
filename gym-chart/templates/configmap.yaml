@@ -5,4 +5,4 @@ metadata:
   labels:
     app: {{ include "gym.name" . }}
 data:
-{{- toYaml .Values.configMap.data | nindent 2 }}
+  DATABASE_URL: {{ .Values.databaseUrl | quote }}

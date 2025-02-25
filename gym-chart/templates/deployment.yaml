@@ -16,8 +16,8 @@ spec:
     spec:
       containers:
         - name: gym-container
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          image: "{{ .Values.image }}"
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
           ports:
             - containerPort: {{ .Values.containerPort }}
           env:
@@ -33,20 +33,20 @@ spec:
                   key: SECRET_KEY
           resources:
             requests:
-              memory: "{{ .Values.resources.requests.memory }}"
-              cpu: "{{ .Values.resources.requests.cpu }}"
+              memory: "{{ .Values.memoryRequest }}"
+              cpu: "{{ .Values.cpuRequest }}"
             limits:
-              memory: "{{ .Values.resources.limits.memory }}"
-              cpu: "{{ .Values.resources.limits.cpu }}"
+              memory: "{{ .Values.memoryLimit }}"
+              cpu: "{{ .Values.cpuLimit }}"
           readinessProbe:
             httpGet:
               path: /health
               port: {{ .Values.containerPort }}
-            initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+            initialDelaySeconds: {{ .Values.readinessInitialDelay }}
+            periodSeconds: {{ .Values.readinessPeriod }}
           livenessProbe:
             httpGet:
               path: /health
               port: {{ .Values.containerPort }}
-            initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+            initialDelaySeconds: {{ .Values.livenessInitialDelay }}
+            periodSeconds: {{ .Values.livenessPeriod }}

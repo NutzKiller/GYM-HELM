@@ -5,11 +5,11 @@ metadata:
   labels:
     app: {{ include "gym.name" . }}
 spec:
-  type: {{ .Values.service.type }}
+  type: {{ .Values.serviceType }}
   selector:
     app: {{ include "gym.name" . }}
   ports:
     - name: http
       protocol: TCP
-      port: {{ .Values.service.port }}
+      port: {{ .Values.servicePort }}
       targetPort: {{ .Values.containerPort }}
