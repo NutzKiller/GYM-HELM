@@ -43,7 +43,28 @@ jobs:
           service_account_key_file: terraform/gcp_credentials.json
           export_default_credentials: true
 
-      # Step 6: Apply Terraform Configuration (Deploys the Helm Release)
+      # Step 6: Import existing GKE cluster if present
+      - name: Import existing cluster if present
+        working-directory: terraform
+        env:
+          GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
+          GCP_REGION: ${{ secrets.GCP_REGION }}
+        run: |
+          echo "Checking if cluster 'gym-cluster' exists..."
+          if gcloud container clusters list --project=${GCP_PROJECT} --region=${GCP_REGION} | grep -q "gym-cluster"; then
+            echo "Cluster gym-cluster exists."
+            # Check if the cluster is already in Terraform state
+            if terraform state list | grep -q "google_container_cluster.primary"; then
+              echo "Cluster already imported into state."
+            else
+              echo "Importing gym-cluster into Terraform state..."
+              terraform import google_container_cluster.primary projects/${GCP_PROJECT}/locations/${GCP_REGION}/clusters/gym-cluster
+            fi
+          else
+            echo "Cluster gym-cluster does not exist. Terraform will create it."
+          fi
+
+      # Step 7: Apply Terraform Configuration (Deploys the Helm Release)
       - name: Apply Terraform Configuration
         working-directory: terraform
         env:
@@ -58,7 +79,7 @@ jobs:
           terraform init -input=false
           terraform apply -auto-approve -input=false
 
-      # Step 7: Configure kubectl to connect to GKE
+      # Step 8: Configure kubectl to connect to GKE
       - name: Get GKE Credentials
         uses: google-github-actions/get-gke-credentials@v1
         with:
@@ -68,13 +89,13 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: terraform/gcp_credentials.json
 
-      # Step 8: Validate Kubernetes Connection
+      # Step 9: Validate Kubernetes Connection
       - name: Verify Kubernetes Connection
         run: |
           kubectl cluster-info
           kubectl get nodes
 
-      # Step 9: Ensure Firewall Rule for GKE (if not already set)
+      # Step 10: Ensure Firewall Rule for GKE (if not already set)
       - name: Ensure Firewall Rule for GKE
         run: |
           gcloud compute firewall-rules create allow-gke-5000 \
@@ -82,12 +103,12 @@ jobs:
             --target-tags=gke-gym-cluster \
             --source-ranges=0.0.0.0/0 || echo "Firewall rule already exists."
 
-      # Step 10: Create Namespace (safe-check)
+      # Step 11: Create Namespace (safe-check)
       - name: Create Namespace
         run: |
           kubectl create namespace gym-namespace || true
 
-      # Step 11: Retrieve External IP of the Helm-Managed Service
+      # Step 12: Retrieve External IP of Helm Release Service
       - name: Retrieve External IP of Helm Release Service
         id: get_ip
         run: |
@@ -108,12 +129,12 @@ jobs:
             exit 1
           fi
 
-      # Step 12: Output the External IP
+      # Step 13: Output the External IP
       - name: Output External IP
         run: |
           echo "The application is accessible at http://${{ env.EXTERNAL_IP }}"
 
-      # Step 13: Debug Kubernetes Setup (if needed)
+      # Step 14: Debug Kubernetes Setup (if needed)
       - name: Debug Kubernetes Setup
         run: |
           echo "Debugging Kubernetes Configuration..."
