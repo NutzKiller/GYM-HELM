@@ -45,3 +45,8 @@ variable "max_unavailable" {
   type        = number
   default     = 0
 }
+variable "image_tag" {
+  description = "The tag to use for the container image."
+  type        = string
+  default     = "latest"
+}

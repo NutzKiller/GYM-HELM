@@ -75,6 +75,7 @@ jobs:
           TF_VAR_DATABASE_URL: ${{ secrets.DATABASE_URL }}
           TF_VAR_SECRET_KEY: ${{ secrets.SECRET_KEY }}
           TF_VAR_MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+          TF_VAR_image_tag: "v1.0.${{ github.run_number }}"
         run: |
           terraform init -input=false
           terraform apply -auto-approve -input=false

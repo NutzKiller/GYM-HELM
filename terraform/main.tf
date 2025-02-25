@@ -102,7 +102,7 @@ resource "helm_release" "gym" {
   # Override the image as a flat string rather than using nested keys.
   set {
     name  = "image"
-    value = "nutzkiller/gym:latest"
+    value = "nutzkiller/gym:${var.image_tag}"
   }
   set {
     name  = "imagePullPolicy"
