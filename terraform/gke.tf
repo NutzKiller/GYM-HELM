@@ -1,5 +1,6 @@
 locals {
-  update_trigger = timestamp()
+  # Convert timestamp to lowercase and replace "T", ":" and "Z" with underscores
+  update_trigger = regex_replace(lower(timestamp()), "[:TZ]", "_")
 }
 
 resource "google_container_cluster" "primary" {
@@ -46,7 +47,7 @@ resource "google_container_node_pool" "primary_nodes" {
     ]
     image_type = "COS_CONTAINERD"  # Specify the node image type
     resource_labels = {
-      dummy = local.update_trigger  # This value changes each plan, forcing an update.
+      dummy = local.update_trigger  # Dummy label with a compliant value
     }
   }
 
