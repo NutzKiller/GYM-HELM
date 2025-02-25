@@ -114,7 +114,7 @@ jobs:
         run: |
           echo "Waiting for LoadBalancer IP..."
           for i in {1..30}; do
-            EXTERNAL_IP=$(kubectl get svc gym-gym-chart-service -n gym-namespace -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+            EXTERNAL_IP=$(kubectl get svc gym-gym-service -n gym-namespace -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
             if [ -n "$EXTERNAL_IP" ]; then
               echo "EXTERNAL_IP=$EXTERNAL_IP" >> $GITHUB_ENV
               echo "External IP: $EXTERNAL_IP"
@@ -140,5 +140,5 @@ jobs:
           echo "Debugging Kubernetes Configuration..."
           kubectl get svc -n gym-namespace
           kubectl get pods -n gym-namespace
-          kubectl describe svc gym-gym-chart-service -n gym-namespace
-          kubectl describe deployment gym-gym-chart-deployment -n gym-namespace
+          kubectl describe svc gym-gym-service -n gym-namespace
+          kubectl describe deployment gym-gym-deployment -n gym-namespace
