@@ -1,14 +1,9 @@
-locals {
-  # We don't use timestamp() directly in locals because it might not force a change.
-  # Instead, we will use a random_id resource with a keepers block.
-}
-
 resource "random_id" "dummy" {
   byte_length = 2
-  keepers = {
-    # Use the current timestamp, converted to lowercase and with disallowed characters replaced.
-    update = replace(replace(replace(lower(timestamp()), "T", "_"), ":", "_"), "Z", "")
-  }
+}
+
+locals {
+  update_trigger = random_id.dummy.hex
 }
 
 resource "google_container_cluster" "primary" {
@@ -55,7 +50,8 @@ resource "google_container_node_pool" "primary_nodes" {
     ]
     image_type = "COS_CONTAINERD"  # Specify the node image type
     resource_labels = {
-      dummy = random_id.dummy.hex  # This dummy label will change every plan, forcing an update.
+      # This dummy label changes on every apply, forcing an update.
+      dummy = local.update_trigger
     }
   }
 
