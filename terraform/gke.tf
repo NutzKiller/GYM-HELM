@@ -34,13 +34,16 @@ resource "google_container_node_pool" "primary_nodes" {
   }
 
   node_config {
-    machine_type = "e2-medium"  # Upgraded from e2-micro to e2-medium (4GB RAM)
-    disk_size_gb = 15           # Increased disk space for better performance
-    disk_type    = "pd-standard"
+    machine_type = "e2-medium"   # Upgraded from e2-micro to e2-medium (4GB RAM)
+    disk_size_gb = 15            # Increased disk space for better performance
+    disk_type    = "pd-standard"  
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform",
     ]
     image_type = "COS_CONTAINERD"  # Specify the node image type
+    resource_labels = {            # Adding a dummy mutable field
+      dummy = "value"
+    }
   }
 
   upgrade_settings {
