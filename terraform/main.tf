@@ -115,12 +115,13 @@ resource "helm_release" "gym" {
     name  = "service.port"
     value = "5000"
   }
+  # Override flat keys for database URL and secret key
   set {
-    name  = "configMap.data.DATABASE_URL"
+    name  = "databaseUrl"
     value = var.DATABASE_URL
   }
   set {
-    name  = "secret.stringData.SECRET_KEY"
+    name  = "secretKey"
     value = var.SECRET_KEY
   }
 }
