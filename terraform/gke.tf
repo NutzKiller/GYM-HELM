@@ -47,7 +47,7 @@ resource "google_container_node_pool" "primary_nodes" {
   }
 
   upgrade_settings {
-    max_surge       = 1
+    max_surge       = 2
     max_unavailable = 0
   }
 
