@@ -1,5 +1,14 @@
 locals {
-  update_trigger = replace(replace(replace(lower(timestamp()), "T", "_"), ":", "_"), "Z", "")
+  # We don't use timestamp() directly in locals because it might not force a change.
+  # Instead, we will use a random_id resource with a keepers block.
+}
+
+resource "random_id" "dummy" {
+  byte_length = 2
+  keepers = {
+    # Use the current timestamp, converted to lowercase and with disallowed characters replaced.
+    update = replace(replace(replace(lower(timestamp()), "T", "_"), ":", "_"), "Z", "")
+  }
 }
 
 resource "google_container_cluster" "primary" {
@@ -40,13 +49,13 @@ resource "google_container_node_pool" "primary_nodes" {
   node_config {
     machine_type = "e2-medium"  # Upgraded from e2-micro to e2-medium (4GB RAM)
     disk_size_gb = 15           # Increased disk space for better performance
-    disk_type    = "pd-standard"  
+    disk_type    = "pd-standard"
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform",
     ]
     image_type = "COS_CONTAINERD"  # Specify the node image type
     resource_labels = {
-      dummy = local.update_trigger  # This dummy label will always change, forcing an update.
+      dummy = random_id.dummy.hex  # This dummy label will change every plan, forcing an update.
     }
   }
 
