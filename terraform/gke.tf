@@ -1,3 +1,7 @@
+locals {
+  update_trigger = timestamp()
+}
+
 resource "google_container_cluster" "primary" {
   name               = "gym-cluster"
   location           = var.GCP_REGION
@@ -5,6 +9,7 @@ resource "google_container_cluster" "primary" {
 
   remove_default_node_pool = true
 
+  # Use the existing default VPC network and subnetwork
   network    = "default"
   subnetwork = "default"
 
@@ -33,15 +38,15 @@ resource "google_container_node_pool" "primary_nodes" {
   }
 
   node_config {
-    machine_type = "e2-medium"  # Upgraded from e2-micro to e2-medium (4GB RAM)
-    disk_size_gb = 15           # Increased disk space for better performance
+    machine_type = "e2-medium"   # Upgraded from e2-micro to e2-medium (4GB RAM)
+    disk_size_gb = 15            # Increased disk space for better performance
     disk_type    = "pd-standard"
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform",
     ]
     image_type = "COS_CONTAINERD"  # Specify the node image type
     resource_labels = {
-      dummy = data.time_offset.now.rfc3339
+      dummy = local.update_trigger  # This value changes each plan, forcing an update.
     }
   }
 
@@ -54,9 +59,4 @@ resource "google_container_node_pool" "primary_nodes" {
     auto_upgrade = true
     auto_repair  = true
   }
-}
-
-# Data source for current timestamp to force updates (if needed)
-data "time_offset" "now" {
-  offset_seconds = 0
 }
