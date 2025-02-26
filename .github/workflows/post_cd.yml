@@ -46,13 +46,25 @@ jobs:
           echo "Deleting Kubernetes Service 'gym-gym-service' in namespace 'gym-namespace'..."
           kubectl delete svc gym-gym-service -n gym-namespace || echo "Service not found, skipping"
 
-      # Step 6: Delete the Backend Service created by the LoadBalancer
+      # Step 6: Detach Instance Groups from Backend Service
+      - name: Detach Instance Groups from Backend Service
+        run: |
+          echo "Detaching instance group in zone us-central1-b..."
+          gcloud compute backend-services remove-backend gym-backend-service --global --instance-group=gke-gym-cluster-terraform-20250226081-3cfee0a6-grp --instance-group-zone=us-central1-b --quiet || echo "Not attached in us-central1-b, skipping"
+          
+          echo "Detaching instance group in zone us-central1-c..."
+          gcloud compute backend-services remove-backend gym-backend-service --global --instance-group=gke-gym-cluster-terraform-20250226081-01d295b6-grp --instance-group-zone=us-central1-c --quiet || echo "Not attached in us-central1-c, skipping"
+          
+          echo "Detaching instance group in zone us-central1-f..."
+          gcloud compute backend-services remove-backend gym-backend-service --global --instance-group=gke-gym-cluster-terraform-20250226081-5be5cdfb-grp --instance-group-zone=us-central1-f --quiet || echo "Not attached in us-central1-f, skipping"
+
+      # Step 7: Delete the Backend Service
       - name: Delete Backend Service
         run: |
           echo "Deleting backend service 'gym-backend-service'..."
           gcloud compute backend-services delete gym-backend-service --global --quiet || echo "Backend service not found, skipping"
 
-      # Step 7: Wait until backend service is fully deleted
+      # Step 8: Wait for Backend Service Deletion
       - name: Wait for Backend Service Deletion
         run: |
           echo "Waiting for backend service 'gym-backend-service' to be deleted..."
@@ -67,14 +79,13 @@ jobs:
           echo "Timed out waiting for backend service deletion."
           exit 1
 
-      # Step 8: (Optional) Wait a few additional seconds for propagation
-      - name: Extra wait for cleanup
+      # Step 9: Extra wait for propagation (optional)
+      - name: Extra wait for propagation
         run: |
           echo "Sleeping an extra 30 seconds for propagation..."
           sleep 30
 
-
-      # Step 8: Destroy Infrastructure with Terraform
+      # Step 10: Destroy Infrastructure with Terraform
       - name: Destroy Infrastructure
         working-directory: terraform
         env:
