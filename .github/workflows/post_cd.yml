@@ -54,7 +54,8 @@ jobs:
           gcloud compute backend-services remove-backend gym-backend-service --global --instance-group=gke-gym-cluster-terraform-20250226081-3cfee0a6-grp --instance-group-zone=us-central1-b --quiet || echo "Not attached in us-central1-b, skipping"
           gcloud compute backend-services remove-backend gym-backend-service --global --instance-group=gke-gym-cluster-terraform-20250226081-01d295b6-grp --instance-group-zone=us-central1-c --quiet || echo "Not attached in us-central1-c, skipping"
           gcloud compute backend-services remove-backend gym-backend-service --global --instance-group=gke-gym-cluster-terraform-20250226081-5be5cdfb-grp --instance-group-zone=us-central1-f --quiet || echo "Not attached in us-central1-f, skipping"
-      # Step 6.5: Wait for Backend Service Backends to Clear (with repeated update)
+
+        # Step 6.5: Wait for Backend Service Backends to Clear (with repeated update)
       - name: Wait for Backend Service Backends to Clear
         run: |
           echo "Waiting for backend service 'gym-backend-service' backends to clear..."
@@ -62,7 +63,7 @@ jobs:
           gcloud auth activate-service-account --key-file=terraform/gcp_credentials.json
           for i in {1..60}; do
             echo "Updating backend service to clear backends (attempt $i)..."
-            gcloud compute backend-services update gym-backend-service --global --set-backends="[]" || echo "Update attempt failed"
+            gcloud compute backend-services update gym-backend-service --global --set-backends "[]" || echo "Update attempt failed"
             BACKENDS=$(gcloud compute backend-services describe gym-backend-service --global --format="value(backends)" 2>/dev/null)
             if [ -z "$BACKENDS" ]; then
               echo "Backend service backends cleared."
