@@ -63,7 +63,7 @@ jobs:
           gcloud auth activate-service-account --key-file=terraform/gcp_credentials.json
           for i in {1..60}; do
             echo "Updating backend service to clear backends (attempt $i)..."
-            gcloud compute backend-services update gym-backend-service --global --clear-backends || echo "Update attempt failed"
+            gcloud compute backend-services update gym-backend-service --global --set-backends="" || echo "Update attempt failed"
             BACKENDS=$(gcloud compute backend-services describe gym-backend-service --global --format="value(backends)" 2>/dev/null)
             if [ -z "$BACKENDS" ]; then
               echo "Backend service backends cleared."
