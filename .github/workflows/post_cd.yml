@@ -60,11 +60,11 @@ jobs:
           echo "Deleting backend service 'gym-backend-service'..."
           gcloud compute backend-services delete gym-backend-service --global --quiet || echo "Backend service not found, skipping"
 
-      # Step 8: Wait until the backend service is fully deleted
+      # Step 8: Wait until the backend service is fully deleted (increased wait time)
       - name: Wait for Backend Service Deletion
         run: |
           echo "Waiting for backend service 'gym-backend-service' to be deleted..."
-          for i in {1..30}; do
+          for i in {1..60}; do
             if ! gcloud compute backend-services list --global | grep -q gym-backend-service; then
               echo "Backend service deleted."
               exit 0
@@ -98,6 +98,15 @@ jobs:
           for NP in $NODE_POOLS; do
             echo "Force deleting node pool '$NP' from cluster 'gym-cluster'..."
             gcloud container node-pools delete "$NP" --cluster gym-cluster --region ${GCP_REGION} --project ${GCP_PROJECT} --quiet
+            echo "Waiting for node pool '$NP' deletion..."
+            for i in {1..30}; do
+              if ! gcloud container node-pools list --cluster gym-cluster --region ${GCP_REGION} --project ${GCP_PROJECT} | grep -q "$NP"; then
+                echo "Node pool '$NP' deleted."
+                break
+              fi
+              echo "Node pool '$NP' still exists. Waiting 10 seconds..."
+              sleep 10
+            done
           done
 
       # Step 11: Remove Node Pool from Terraform State
