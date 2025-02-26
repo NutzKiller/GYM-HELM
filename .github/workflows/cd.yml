@@ -64,6 +64,23 @@ jobs:
             echo "Cluster gym-cluster does not exist. Terraform will create it."
           fi
 
+      - name: Check and Import Namespace
+        working-directory: terraform
+        run: |
+            echo "Checking if namespace gym-namespace exists..."
+            if kubectl get namespace gym-namespace >/dev/null 2>&1; then
+              echo "Namespace gym-namespace exists."
+              # Check if it's already in the Terraform state
+              if terraform state list | grep -q "kubernetes_namespace.gym"; then
+                echo "Namespace is already imported into Terraform state."
+              else
+                echo "Importing gym-namespace into Terraform state..."
+                terraform import kubernetes_namespace.gym gym-namespace
+              fi
+            else
+              echo "Namespace gym-namespace does not exist. Terraform will create it."
+            fi
+        
       # Step 7: Apply Terraform Configuration (Deploys the Helm Release)
       - name: Apply Terraform Configuration
         working-directory: terraform
