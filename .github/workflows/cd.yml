@@ -114,7 +114,7 @@ jobs:
             echo "Namespace gym-namespace does not exist. Terraform will create it."
           fi
 
-      # Step 10A: Phase 1 – Create Cluster (if needed)
+      # Step 10A: Phase 1 – Create Cluster (and Node Pool) Only
       - name: Apply Cluster Only
         working-directory: terraform
         env:
@@ -124,7 +124,7 @@ jobs:
           GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
         run: |
           echo "Applying Terraform for cluster (and node pool) creation only..."
-          terraform apply -auto-approve -input=false -target=google_container_cluster.primary -target=google_container_node_pool.primary_nodes
+          terraform apply -auto-approve -input=false -target=google_container_cluster.primary -target=google_container_node_pool.primary_nodes -var="DATABASE_URL=${{ secrets.DATABASE_URL }}" -var="SECRET_KEY=${{ secrets.SECRET_KEY }}" -var="MY_GITHUB_TOKEN=${{ secrets.MY_GITHUB_TOKEN }}"
 
       # Step 10B: Wait for Cluster Readiness
       - name: Wait for Cluster Readiness
@@ -143,7 +143,7 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: terraform/gcp_credentials.json
 
-      # Step 10C: Phase 2 – Apply Full Configuration
+      # Step 10C: Phase 2 – Apply Full Terraform Configuration
       - name: Apply Full Terraform Configuration
         working-directory: terraform
         env:
