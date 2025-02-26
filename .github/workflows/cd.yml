@@ -47,17 +47,19 @@ jobs:
       - name: Import existing cluster if present
         working-directory: terraform
         env:
-          GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
-          GCP_REGION: ${{ secrets.GCP_REGION }}
+          TF_VAR_GCP_CREDENTIALS_FILE: "gcp_credentials.json"
+          TF_VAR_GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
+          TF_VAR_GCP_REGION: ${{ secrets.GCP_REGION }}
+          GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
         run: |
           echo "Checking if cluster 'gym-cluster' exists..."
-          if gcloud container clusters list --project=${GCP_PROJECT} --region=${GCP_REGION} | grep -q "gym-cluster"; then
+          if gcloud container clusters list --project=${TF_VAR_GCP_PROJECT} --region=${TF_VAR_GCP_REGION} | grep -q "gym-cluster"; then
             echo "Cluster gym-cluster exists."
             if terraform state list | grep -q "google_container_cluster.primary"; then
               echo "Cluster already imported into state."
             else
               echo "Importing gym-cluster into Terraform state..."
-              terraform import google_container_cluster.primary projects/${GCP_PROJECT}/locations/${GCP_REGION}/clusters/gym-cluster
+              terraform import google_container_cluster.primary projects/${TF_VAR_GCP_PROJECT}/locations/${TF_VAR_GCP_REGION}/clusters/gym-cluster
             fi
           else
             echo "Cluster gym-cluster does not exist. Terraform will create it."
@@ -73,15 +75,25 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: terraform/gcp_credentials.json
 
-      # Step 8: Initialize Terraform (so that backend is configured)
+      # Step 8: Initialize Terraform (ensure backend is configured)
       - name: Initialize Terraform
         working-directory: terraform
+        env:
+          TF_VAR_GCP_CREDENTIALS_FILE: "gcp_credentials.json"
+          TF_VAR_GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
+          TF_VAR_GCP_REGION: ${{ secrets.GCP_REGION }}
+          GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
         run: |
           terraform init -input=false -reconfigure
 
       # Step 9: Check and Import Namespace
       - name: Check and Import Namespace
         working-directory: terraform
+        env:
+          TF_VAR_GCP_CREDENTIALS_FILE: "gcp_credentials.json"
+          TF_VAR_GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
+          TF_VAR_GCP_REGION: ${{ secrets.GCP_REGION }}
+          GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
         run: |
           echo "Checking if namespace gym-namespace exists..."
           if kubectl get namespace gym-namespace >/dev/null 2>&1; then
@@ -100,7 +112,6 @@ jobs:
       - name: Apply Terraform Configuration
         working-directory: terraform
         env:
-          GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
           TF_VAR_GCP_CREDENTIALS_FILE: "gcp_credentials.json"
           TF_VAR_GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
           TF_VAR_GCP_REGION: ${{ secrets.GCP_REGION }}
@@ -108,6 +119,7 @@ jobs:
           TF_VAR_SECRET_KEY: ${{ secrets.SECRET_KEY }}
           TF_VAR_MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
           TF_VAR_image_tag: "v1.0.${{ github.run_number }}"
+          GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
         run: |
           terraform apply -auto-approve -input=false
 
