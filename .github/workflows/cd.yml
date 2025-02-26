@@ -12,30 +12,30 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Check out the repository code
+      # Step 1: Check out repository
       - name: Check out repository
         uses: actions/checkout@v3
 
-      # 2. Set up Terraform
+      # Step 2: Set up Terraform
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: latest
 
-      # 3. Create GCP credentials file
+      # Step 3: Create GCP credentials file
       - name: Create GCP credentials file
         run: |
           mkdir -p terraform
           echo "${{ secrets.GCP_CREDENTIALS_FILE_B64 }}" | base64 --decode > terraform/gcp_credentials.json
           echo "✅ GCP credentials file created."
 
-      # 4. Validate GCP Authentication
+      # Step 4: Validate GCP Authentication
       - name: Verify GCP Authentication
         run: |
           gcloud auth list
           gcloud config list
 
-      # 5. Set up Cloud SDK
+      # Step 5: Set up Cloud SDK
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
         with:
@@ -43,8 +43,9 @@ jobs:
           service_account_key_file: terraform/gcp_credentials.json
           export_default_credentials: true
 
-      # 6. Import existing GKE cluster if present
+      # Step 6: Import existing GKE cluster if present
       - name: Import existing cluster if present
+        id: import_cluster
         working-directory: terraform
         env:
           TF_VAR_GCP_CREDENTIALS_FILE: "gcp_credentials.json"
@@ -55,6 +56,8 @@ jobs:
           echo "Checking if cluster 'gym-cluster' exists..."
           if gcloud container clusters list --project=${TF_VAR_GCP_PROJECT} --region=${TF_VAR_GCP_REGION} | grep -q "gym-cluster"; then
             echo "Cluster gym-cluster exists."
+            # Export an output value for later steps if needed
+            echo "cluster_exists=true" >> $GITHUB_OUTPUT
             if terraform state list | grep -q "google_container_cluster.primary"; then
               echo "Cluster already imported into state."
             else
@@ -63,19 +66,22 @@ jobs:
             fi
           else
             echo "Cluster gym-cluster does not exist. Terraform will create it."
+            echo "cluster_exists=false" >> $GITHUB_OUTPUT
           fi
 
-      # 7. Configure kubectl to connect to GKE
-      - name: Get GKE Credentials
-        uses: google-github-actions/get-gke-credentials@v1
-        with:
-          cluster_name: gym-cluster
-          location: ${{ secrets.GCP_REGION }}
-          project_id: ${{ secrets.GCP_PROJECT }}
+      # Step 7: Retrieve GKE Credentials Conditionally
+      - name: Retrieve GKE Credentials if Cluster Exists
+        run: |
+          if gcloud container clusters list --project=${{ secrets.GCP_PROJECT }} --region=${{ secrets.GCP_REGION }} | grep -q "gym-cluster"; then
+            echo "Cluster gym-cluster exists. Retrieving credentials..."
+            gcloud container clusters get-credentials gym-cluster --region=${{ secrets.GCP_REGION }} --project=${{ secrets.GCP_PROJECT }}
+          else
+            echo "Cluster gym-cluster does not exist. Skipping credential retrieval."
+          fi
         env:
           GOOGLE_APPLICATION_CREDENTIALS: terraform/gcp_credentials.json
 
-      # 8. Initialize Terraform (ensure backend is configured)
+      # Step 8: Initialize Terraform (ensure backend is configured)
       - name: Initialize Terraform
         working-directory: terraform
         env:
@@ -85,7 +91,7 @@ jobs:
           GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
         run: terraform init -input=false -reconfigure
 
-      # 9. Check and Import Namespace
+      # Step 9: Check and Import Namespace
       - name: Check and Import Namespace
         working-directory: terraform
         env:
@@ -111,7 +117,7 @@ jobs:
             echo "Namespace gym-namespace does not exist. Terraform will create it."
           fi
 
-      # 10. Apply Terraform Configuration (Deploys the Helm Release)
+      # Step 10: Apply Terraform Configuration (Deploys the Helm Release)
       - name: Apply Terraform Configuration
         working-directory: terraform
         env:
@@ -125,13 +131,13 @@ jobs:
           GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
         run: terraform apply -auto-approve -input=false
 
-      # 11. Validate Kubernetes Connection
+      # Step 11: Validate Kubernetes Connection
       - name: Validate Kubernetes Connection
         run: |
           kubectl cluster-info
           kubectl get nodes
 
-      # 12. Ensure Firewall Rule for GKE (if not already set)
+      # Step 12: Ensure Firewall Rule for GKE (if not already set)
       - name: Ensure Firewall Rule for GKE
         run: |
           gcloud compute firewall-rules create allow-gke-5000 \
@@ -139,7 +145,7 @@ jobs:
             --target-tags=gke-gym-cluster \
             --source-ranges=0.0.0.0/0 || echo "Firewall rule already exists."
 
-      # 13. Retrieve External IP of Helm Release Service
+      # Step 13: Retrieve External IP of Helm Release Service
       - name: Retrieve External IP of Helm Release Service
         id: get_ip
         run: |
@@ -159,12 +165,12 @@ jobs:
             exit 1
           fi
 
-      # 14. Output External IP
+      # Step 14: Output External IP
       - name: Output External IP
         run: |
           echo "The application is accessible at http://${{ env.EXTERNAL_IP }}"
 
-      # 15. Debug Kubernetes Setup (if needed)
+      # Step 15: Debug Kubernetes Setup (if needed)
       - name: Debug Kubernetes Setup
         run: |
           echo "Debugging Kubernetes Configuration..."
