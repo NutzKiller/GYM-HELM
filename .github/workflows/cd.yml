@@ -73,7 +73,13 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: terraform/gcp_credentials.json
 
-      # Step 8: Check and Import Namespace
+      # Step 8: Initialize Terraform (so that backend is configured)
+      - name: Initialize Terraform
+        working-directory: terraform
+        run: |
+          terraform init -input=false -reconfigure
+
+      # Step 9: Check and Import Namespace
       - name: Check and Import Namespace
         working-directory: terraform
         run: |
@@ -90,7 +96,7 @@ jobs:
             echo "Namespace gym-namespace does not exist. Terraform will create it."
           fi
 
-      # Step 9: Apply Terraform Configuration (Deploys the Helm Release)
+      # Step 10: Apply Terraform Configuration (Deploys the Helm Release)
       - name: Apply Terraform Configuration
         working-directory: terraform
         env:
@@ -103,16 +109,15 @@ jobs:
           TF_VAR_MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
           TF_VAR_image_tag: "v1.0.${{ github.run_number }}"
         run: |
-          terraform init -input=false
           terraform apply -auto-approve -input=false
 
-      # Step 10: Validate Kubernetes Connection
+      # Step 11: Validate Kubernetes Connection
       - name: Validate Kubernetes Connection
         run: |
           kubectl cluster-info
           kubectl get nodes
 
-      # Step 11: Ensure Firewall Rule for GKE (if not already set)
+      # Step 12: Ensure Firewall Rule for GKE (if not already set)
       - name: Ensure Firewall Rule for GKE
         run: |
           gcloud compute firewall-rules create allow-gke-5000 \
@@ -120,7 +125,7 @@ jobs:
             --target-tags=gke-gym-cluster \
             --source-ranges=0.0.0.0/0 || echo "Firewall rule already exists."
 
-      # Step 12: Retrieve External IP of Helm Release Service
+      # Step 13: Retrieve External IP of Helm Release Service
       - name: Retrieve External IP of Helm Release Service
         id: get_ip
         run: |
@@ -141,12 +146,12 @@ jobs:
             exit 1
           fi
 
-      # Step 13: Output the External IP
+      # Step 14: Output External IP
       - name: Output External IP
         run: |
           echo "The application is accessible at http://${{ env.EXTERNAL_IP }}"
 
-      # Step 14: Debug Kubernetes Setup (if needed)
+      # Step 15: Debug Kubernetes Setup (if needed)
       - name: Debug Kubernetes Setup
         run: |
           echo "Debugging Kubernetes Configuration..."
