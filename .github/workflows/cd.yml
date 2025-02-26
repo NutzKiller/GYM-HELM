@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Check out repository
+      # Step 1: Check out the main repository code
       - name: Check out repository
         uses: actions/checkout@v3
 
@@ -43,9 +43,8 @@ jobs:
           service_account_key_file: terraform/gcp_credentials.json
           export_default_credentials: true
 
-      # Step 6: Import existing GKE cluster if present
-      - name: Import existing cluster if present
-        id: import_cluster
+      # Step 6: Ensure Cluster State Matches Reality
+      - name: Ensure Cluster State
         working-directory: terraform
         env:
           TF_VAR_GCP_CREDENTIALS_FILE: "gcp_credentials.json"
@@ -53,20 +52,18 @@ jobs:
           TF_VAR_GCP_REGION: ${{ secrets.GCP_REGION }}
           GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
         run: |
-          echo "Checking if cluster 'gym-cluster' exists..."
+          echo "Checking if cluster 'gym-cluster' exists in GCP..."
           if gcloud container clusters list --project=${TF_VAR_GCP_PROJECT} --region=${TF_VAR_GCP_REGION} | grep -q "gym-cluster"; then
-            echo "Cluster gym-cluster exists."
-            # Export an output value for later steps if needed
-            echo "cluster_exists=true" >> $GITHUB_OUTPUT
+            echo "Cluster gym-cluster exists in GCP."
             if terraform state list | grep -q "google_container_cluster.primary"; then
-              echo "Cluster already imported into state."
+              echo "Cluster is already in Terraform state."
             else
               echo "Importing gym-cluster into Terraform state..."
               terraform import google_container_cluster.primary projects/${TF_VAR_GCP_PROJECT}/locations/${TF_VAR_GCP_REGION}/clusters/gym-cluster
             fi
           else
-            echo "Cluster gym-cluster does not exist. Terraform will create it."
-            echo "cluster_exists=false" >> $GITHUB_OUTPUT
+            echo "Cluster gym-cluster does not exist in GCP. Removing stale reference from state (if any)..."
+            terraform state rm google_container_cluster.primary || echo "Cluster not in state."
           fi
 
       # Step 7: Retrieve GKE Credentials Conditionally
