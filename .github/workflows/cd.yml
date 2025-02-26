@@ -106,7 +106,7 @@ jobs:
               echo "Namespace is already imported into Terraform state."
             else
               echo "Importing gym-namespace into Terraform state..."
-              terraform import -input=false kubernetes_namespace.gym gym-namespace
+              terraform import -input=false -lock=false kubernetes_namespace.gym gym-namespace
             fi
           else
             echo "Namespace gym-namespace does not exist. Terraform will create it."
