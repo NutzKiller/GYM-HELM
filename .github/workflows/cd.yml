@@ -12,30 +12,30 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Check out the main repository code
-      - name: Check out main repository
+      # 1. Check out the repository code
+      - name: Check out repository
         uses: actions/checkout@v3
 
-      # Step 2: Set up Terraform
+      # 2. Set up Terraform
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: latest
 
-      # Step 3: Create GCP credentials file
+      # 3. Create GCP credentials file
       - name: Create GCP credentials file
         run: |
           mkdir -p terraform
           echo "${{ secrets.GCP_CREDENTIALS_FILE_B64 }}" | base64 --decode > terraform/gcp_credentials.json
           echo "✅ GCP credentials file created."
 
-      # Step 4: Validate GCP Authentication
+      # 4. Validate GCP Authentication
       - name: Verify GCP Authentication
         run: |
           gcloud auth list
           gcloud config list
 
-      # Step 5: Set up Cloud SDK
+      # 5. Set up Cloud SDK
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
         with:
@@ -43,7 +43,7 @@ jobs:
           service_account_key_file: terraform/gcp_credentials.json
           export_default_credentials: true
 
-      # Step 6: Import existing GKE cluster if present
+      # 6. Import existing GKE cluster if present
       - name: Import existing cluster if present
         working-directory: terraform
         env:
@@ -65,7 +65,7 @@ jobs:
             echo "Cluster gym-cluster does not exist. Terraform will create it."
           fi
 
-      # Step 7: Configure kubectl to connect to GKE
+      # 7. Configure kubectl to connect to GKE
       - name: Get GKE Credentials
         uses: google-github-actions/get-gke-credentials@v1
         with:
@@ -75,7 +75,7 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: terraform/gcp_credentials.json
 
-      # Step 8: Initialize Terraform (ensure backend is configured)
+      # 8. Initialize Terraform (ensure backend is configured)
       - name: Initialize Terraform
         working-directory: terraform
         env:
@@ -83,10 +83,9 @@ jobs:
           TF_VAR_GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
           TF_VAR_GCP_REGION: ${{ secrets.GCP_REGION }}
           GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
-        run: |
-          terraform init -input=false -reconfigure
+        run: terraform init -input=false -reconfigure
 
-      # Step 9: Check and Import Namespace
+      # 9. Check and Import Namespace
       - name: Check and Import Namespace
         working-directory: terraform
         env:
@@ -112,7 +111,7 @@ jobs:
             echo "Namespace gym-namespace does not exist. Terraform will create it."
           fi
 
-      # Step 10: Apply Terraform Configuration (Deploys the Helm Release)
+      # 10. Apply Terraform Configuration (Deploys the Helm Release)
       - name: Apply Terraform Configuration
         working-directory: terraform
         env:
@@ -124,16 +123,15 @@ jobs:
           TF_VAR_MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
           TF_VAR_image_tag: "v1.0.${{ github.run_number }}"
           GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
-        run: |
-          terraform apply -auto-approve -input=false
+        run: terraform apply -auto-approve -input=false
 
-      # Step 11: Validate Kubernetes Connection
+      # 11. Validate Kubernetes Connection
       - name: Validate Kubernetes Connection
         run: |
           kubectl cluster-info
           kubectl get nodes
 
-      # Step 12: Ensure Firewall Rule for GKE (if not already set)
+      # 12. Ensure Firewall Rule for GKE (if not already set)
       - name: Ensure Firewall Rule for GKE
         run: |
           gcloud compute firewall-rules create allow-gke-5000 \
@@ -141,7 +139,7 @@ jobs:
             --target-tags=gke-gym-cluster \
             --source-ranges=0.0.0.0/0 || echo "Firewall rule already exists."
 
-      # Step 13: Retrieve External IP of Helm Release Service
+      # 13. Retrieve External IP of Helm Release Service
       - name: Retrieve External IP of Helm Release Service
         id: get_ip
         run: |
@@ -156,18 +154,17 @@ jobs:
             echo "Attempt $i: External IP not assigned yet. Retrying in 10 seconds..."
             sleep 10
           done
-
           if [ -z "$EXTERNAL_IP" ]; then
             echo "Failed to retrieve External IP."
             exit 1
           fi
 
-      # Step 14: Output External IP
+      # 14. Output External IP
       - name: Output External IP
         run: |
           echo "The application is accessible at http://${{ env.EXTERNAL_IP }}"
 
-      # Step 15: Debug Kubernetes Setup (if needed)
+      # 15. Debug Kubernetes Setup (if needed)
       - name: Debug Kubernetes Setup
         run: |
           echo "Debugging Kubernetes Configuration..."
