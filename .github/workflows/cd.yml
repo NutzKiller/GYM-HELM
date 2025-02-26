@@ -53,7 +53,6 @@ jobs:
           echo "Checking if cluster 'gym-cluster' exists..."
           if gcloud container clusters list --project=${GCP_PROJECT} --region=${GCP_REGION} | grep -q "gym-cluster"; then
             echo "Cluster gym-cluster exists."
-            # Check if the cluster is already in Terraform state
             if terraform state list | grep -q "google_container_cluster.primary"; then
               echo "Cluster already imported into state."
             else
@@ -64,24 +63,34 @@ jobs:
             echo "Cluster gym-cluster does not exist. Terraform will create it."
           fi
 
+      # Step 7: Configure kubectl to connect to GKE
+      - name: Get GKE Credentials
+        uses: google-github-actions/get-gke-credentials@v1
+        with:
+          cluster_name: gym-cluster
+          location: ${{ secrets.GCP_REGION }}
+          project_id: ${{ secrets.GCP_PROJECT }}
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: terraform/gcp_credentials.json
+
+      # Step 8: Check and Import Namespace
       - name: Check and Import Namespace
         working-directory: terraform
         run: |
-            echo "Checking if namespace gym-namespace exists..."
-            if kubectl get namespace gym-namespace >/dev/null 2>&1; then
-              echo "Namespace gym-namespace exists."
-              # Check if it's already in the Terraform state
-              if terraform state list | grep -q "kubernetes_namespace.gym"; then
-                echo "Namespace is already imported into Terraform state."
-              else
-                echo "Importing gym-namespace into Terraform state..."
-                terraform import kubernetes_namespace.gym gym-namespace
-              fi
+          echo "Checking if namespace gym-namespace exists..."
+          if kubectl get namespace gym-namespace >/dev/null 2>&1; then
+            echo "Namespace gym-namespace exists."
+            if terraform state list | grep -q "kubernetes_namespace.gym"; then
+              echo "Namespace is already imported into Terraform state."
             else
-              echo "Namespace gym-namespace does not exist. Terraform will create it."
+              echo "Importing gym-namespace into Terraform state..."
+              terraform import kubernetes_namespace.gym gym-namespace
             fi
-        
-      # Step 7: Apply Terraform Configuration (Deploys the Helm Release)
+          else
+            echo "Namespace gym-namespace does not exist. Terraform will create it."
+          fi
+
+      # Step 9: Apply Terraform Configuration (Deploys the Helm Release)
       - name: Apply Terraform Configuration
         working-directory: terraform
         env:
@@ -97,34 +106,19 @@ jobs:
           terraform init -input=false
           terraform apply -auto-approve -input=false
 
-      # Step 8: Configure kubectl to connect to GKE
-      - name: Get GKE Credentials
-        uses: google-github-actions/get-gke-credentials@v1
-        with:
-          cluster_name: gym-cluster
-          location: ${{ secrets.GCP_REGION }}
-          project_id: ${{ secrets.GCP_PROJECT }}
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: terraform/gcp_credentials.json
-
-      # Step 9: Validate Kubernetes Connection
-      - name: Verify Kubernetes Connection
+      # Step 10: Validate Kubernetes Connection
+      - name: Validate Kubernetes Connection
         run: |
           kubectl cluster-info
           kubectl get nodes
 
-      # Step 10: Ensure Firewall Rule for GKE (if not already set)
+      # Step 11: Ensure Firewall Rule for GKE (if not already set)
       - name: Ensure Firewall Rule for GKE
         run: |
           gcloud compute firewall-rules create allow-gke-5000 \
             --allow=tcp:5000 \
             --target-tags=gke-gym-cluster \
             --source-ranges=0.0.0.0/0 || echo "Firewall rule already exists."
-
-      # Step 11: Create Namespace (safe-check)
-      - name: Create Namespace
-        run: |
-          kubectl create namespace gym-namespace || true
 
       # Step 12: Retrieve External IP of Helm Release Service
       - name: Retrieve External IP of Helm Release Service
