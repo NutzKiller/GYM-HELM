@@ -13,7 +13,7 @@ jobs:
     environment: production
 
     steps:
-      # Step 1: Check out the repository code
+      # Step 1: Check out repository
       - name: Check out repository
         uses: actions/checkout@v3
 
@@ -30,7 +30,7 @@ jobs:
           echo "${{ secrets.GCP_CREDENTIALS_FILE_B64 }}" | base64 --decode > terraform/gcp_credentials.json
           echo "✅ GCP credentials file created."
 
-      # Step 4: Initialize Terraform (configure backend, etc.)
+      # Step 4: Initialize Terraform
       - name: Initialize Terraform
         working-directory: terraform
         env:
@@ -40,13 +40,13 @@ jobs:
           GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
         run: terraform init -input=false -reconfigure
 
-      # Step 5: Delete the LoadBalancer Service (Kubernetes Service)
+      # Step 5: Delete the LoadBalancer Service
       - name: Delete LoadBalancer Service
         run: |
           echo "Deleting Kubernetes Service 'gym-gym-service' in namespace 'gym-namespace'..."
           kubectl delete svc gym-gym-service -n gym-namespace || echo "Service not found, skipping"
 
-      # Step 6: Detach instance groups from Backend Service
+      # Step 6: Detach Instance Groups from Backend Service
       - name: Detach Instance Groups from Backend Service
         run: |
           echo "Detaching instance groups from backend service 'gym-backend-service'..."
@@ -54,13 +54,29 @@ jobs:
           gcloud compute backend-services remove-backend gym-backend-service --global --instance-group=gke-gym-cluster-terraform-20250226081-01d295b6-grp --instance-group-zone=us-central1-c --quiet || echo "Not attached in us-central1-c, skipping"
           gcloud compute backend-services remove-backend gym-backend-service --global --instance-group=gke-gym-cluster-terraform-20250226081-5be5cdfb-grp --instance-group-zone=us-central1-f --quiet || echo "Not attached in us-central1-f, skipping"
 
+      # New Step 6.5: Wait for Backend Service Backends to Clear
+      - name: Wait for Backend Service Backends to Clear
+        run: |
+          echo "Waiting for backend service 'gym-backend-service' backends to clear..."
+          for i in {1..60}; do
+            BACKENDS=$(gcloud compute backend-services describe gym-backend-service --global --format="value(backends)")
+            if [ -z "$BACKENDS" ]; then
+              echo "Backend service backends cleared."
+              exit 0
+            fi
+            echo "Backend service still has backends. Waiting 10 seconds..."
+            sleep 10
+          done
+          echo "Timed out waiting for backend service backends to clear."
+          exit 1
+
       # Step 7: Delete the Backend Service
       - name: Delete Backend Service
         run: |
           echo "Deleting backend service 'gym-backend-service'..."
           gcloud compute backend-services delete gym-backend-service --global --quiet || echo "Backend service not found, skipping"
 
-      # Step 8: Wait until the backend service is fully deleted (increased wait time)
+      # Step 8: Wait until the backend service is fully deleted
       - name: Wait for Backend Service Deletion
         run: |
           echo "Waiting for backend service 'gym-backend-service' to be deleted..."
@@ -75,19 +91,19 @@ jobs:
           echo "Timed out waiting for backend service deletion."
           exit 1
 
-      # Step 9: Extra wait for propagation (optional)
+      # Step 9: Extra Wait for Propagation
       - name: Extra Wait for Propagation
         run: |
           echo "Sleeping an extra 30 seconds for propagation..."
           sleep 30
 
-      # NEW STEP: Activate GCP Service Account
+      # Step 10: Activate GCP Service Account
       - name: Activate GCP Service Account
         run: |
           echo "Activating GCP service account..."
           gcloud auth activate-service-account --key-file=terraform/gcp_credentials.json
 
-      # Step 10: Force Delete All Node Pools in the Cluster
+      # Step 11: Force Delete All Node Pools
       - name: Force Delete All Node Pools
         env:
           GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
@@ -109,14 +125,14 @@ jobs:
             done
           done
 
-      # Step 11: Remove Node Pool from Terraform State
+      # Step 12: Remove Node Pool from Terraform State
       - name: Remove Node Pool from Terraform State
         working-directory: terraform
         run: |
           echo "Removing google_container_node_pool.primary_nodes from state..."
           terraform state rm google_container_node_pool.primary_nodes || echo "Node pool not in state, skipping"
 
-      # Step 12: Destroy Remaining Infrastructure with Terraform
+      # Step 13: Destroy Remaining Infrastructure with Terraform
       - name: Destroy Remaining Infrastructure
         working-directory: terraform
         env:
