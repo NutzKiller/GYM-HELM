@@ -81,6 +81,12 @@ jobs:
           echo "Sleeping an extra 30 seconds for propagation..."
           sleep 30
 
+      # NEW STEP: Activate GCP Service Account
+      - name: Activate GCP Service Account
+        run: |
+          echo "Activating GCP service account..."
+          gcloud auth activate-service-account --key-file=terraform/gcp_credentials.json
+
       # Step 10: Force Delete the Node Pool using gcloud
       - name: Force Delete Node Pool
         env:
