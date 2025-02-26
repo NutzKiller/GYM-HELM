@@ -51,12 +51,28 @@ jobs:
         run: |
           echo "Deleting backend service 'gym-backend-service'..."
           gcloud compute backend-services delete gym-backend-service --global --quiet || echo "Backend service not found, skipping"
-          
-      # Optional Step 7: Wait a short period for cleanup to propagate
-      - name: Wait for backend cleanup
+
+      # Step 7: Wait until backend service is fully deleted
+      - name: Wait for Backend Service Deletion
         run: |
-          echo "Waiting for backend service deletion to propagate..."
-          sleep 60
+          echo "Waiting for backend service 'gym-backend-service' to be deleted..."
+          for i in {1..30}; do
+            if ! gcloud compute backend-services list --global | grep -q gym-backend-service; then
+              echo "Backend service deleted."
+              exit 0
+            fi
+            echo "Backend service still exists. Waiting 10 seconds..."
+            sleep 10
+          done
+          echo "Timed out waiting for backend service deletion."
+          exit 1
+
+      # Step 8: (Optional) Wait a few additional seconds for propagation
+      - name: Extra wait for cleanup
+        run: |
+          echo "Sleeping an extra 30 seconds for propagation..."
+          sleep 30
+
 
       # Step 8: Destroy Infrastructure with Terraform
       - name: Destroy Infrastructure
