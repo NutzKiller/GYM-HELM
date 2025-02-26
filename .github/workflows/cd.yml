@@ -126,22 +126,12 @@ jobs:
           echo "Applying Terraform for cluster (and node pool) creation only..."
           terraform apply -auto-approve -input=false -target=google_container_cluster.primary -target=google_container_node_pool.primary_nodes -var="DATABASE_URL=${{ secrets.DATABASE_URL }}" -var="SECRET_KEY=${{ secrets.SECRET_KEY }}" -var="MY_GITHUB_TOKEN=${{ secrets.MY_GITHUB_TOKEN }}"
 
-      # Step 10B: Wait for Cluster Readiness (using kubectl)
+      # Step 10B: Wait for Cluster Readiness (Fixed Wait)
       - name: Wait for Cluster Readiness
         run: |
-          echo "Waiting for cluster gym-cluster to be fully ready (checking for Ready nodes)..."
-          for i in {1..30}; do
-            if kubectl get nodes 2>/dev/null | grep -E "Ready" > /dev/null; then
-              echo "Cluster is ready (nodes are in Ready state)."
-              exit 0
-            fi
-            echo "Nodes not Ready yet. Waiting 10 seconds..."
-            sleep 10
-          done
-          echo "Timed out waiting for cluster readiness."
-          exit 1
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: terraform/gcp_credentials.json
+          echo "Sleeping for 5 minutes to allow the cluster to be fully ready..."
+          sleep 300
+
 
 
       # Step 10C: Phase 2 – Apply Full Terraform Configuration
