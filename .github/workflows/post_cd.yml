@@ -30,7 +30,7 @@ jobs:
           echo "${{ secrets.GCP_CREDENTIALS_FILE_B64 }}" | base64 --decode > terraform/gcp_credentials.json
           echo "✅ GCP credentials file created."
 
-      # Step 4: Initialize Terraform
+      # Step 4: Initialize Terraform (configure backend, etc.)
       - name: Initialize Terraform
         working-directory: terraform
         env:
@@ -40,7 +40,7 @@ jobs:
           GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
         run: terraform init -input=false -reconfigure
 
-      # Step 5: Delete the LoadBalancer Service
+      # Step 5: Delete the LoadBalancer Service (Kubernetes Service)
       - name: Delete LoadBalancer Service
         run: |
           echo "Deleting Kubernetes Service 'gym-gym-service' in namespace 'gym-namespace'..."
@@ -54,12 +54,14 @@ jobs:
           gcloud compute backend-services remove-backend gym-backend-service --global --instance-group=gke-gym-cluster-terraform-20250226081-01d295b6-grp --instance-group-zone=us-central1-c --quiet || echo "Not attached in us-central1-c, skipping"
           gcloud compute backend-services remove-backend gym-backend-service --global --instance-group=gke-gym-cluster-terraform-20250226081-5be5cdfb-grp --instance-group-zone=us-central1-f --quiet || echo "Not attached in us-central1-f, skipping"
 
-      # New Step 6.5: Wait for Backend Service Backends to Clear
+      # Step 6.5: Wait for Backend Service Backends to Clear
       - name: Wait for Backend Service Backends to Clear
         run: |
           echo "Waiting for backend service 'gym-backend-service' backends to clear..."
+          # Activate service account to ensure gcloud is authenticated
+          gcloud auth activate-service-account --key-file=terraform/gcp_credentials.json
           for i in {1..60}; do
-            BACKENDS=$(gcloud compute backend-services describe gym-backend-service --global --format="value(backends)")
+            BACKENDS=$(gcloud compute backend-services describe gym-backend-service --global --format="value(backends)" 2>/dev/null)
             if [ -z "$BACKENDS" ]; then
               echo "Backend service backends cleared."
               exit 0
@@ -97,7 +99,7 @@ jobs:
           echo "Sleeping an extra 30 seconds for propagation..."
           sleep 30
 
-      # Step 10: Activate GCP Service Account
+      # Step 10: Activate GCP Service Account (again to ensure authentication)
       - name: Activate GCP Service Account
         run: |
           echo "Activating GCP service account..."
