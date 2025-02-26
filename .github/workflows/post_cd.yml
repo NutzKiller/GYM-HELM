@@ -30,7 +30,7 @@ jobs:
           echo "${{ secrets.GCP_CREDENTIALS_FILE_B64 }}" | base64 --decode > terraform/gcp_credentials.json
           echo "✅ GCP credentials file created."
 
-      # Step 4: Initialize Terraform
+      # Step 4: Initialize Terraform (configure backend, etc.)
       - name: Initialize Terraform
         working-directory: terraform
         env:
@@ -40,8 +40,14 @@ jobs:
           GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
         run: terraform init -input=false -reconfigure
 
-      # Step 5: Run Terraform Destroy
-      - name: Terraform Destroy
+      # Step 5: Delete Load Balancer Service to remove backend dependency
+      - name: Delete Load Balancer Service
+        run: |
+          echo "Deleting the LoadBalancer Service to clean up backend dependencies..."
+          kubectl delete svc gym-gym-service -n gym-namespace || echo "Service not found, skipping"
+
+      # Step 6: Destroy Infrastructure with Terraform
+      - name: Destroy Infrastructure
         working-directory: terraform
         env:
           TF_VAR_GCP_CREDENTIALS_FILE: "gcp_credentials.json"
