@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Check out the main repository code
+      # Step 1: Check out repository
       - name: Check out repository
         uses: actions/checkout@v3
 
@@ -114,8 +114,37 @@ jobs:
             echo "Namespace gym-namespace does not exist. Terraform will create it."
           fi
 
-      # Step 10: Apply Terraform Configuration (Deploys the Helm Release)
-      - name: Apply Terraform Configuration
+      # Step 10A: Phase 1 – Create Cluster (if needed)
+      - name: Apply Cluster Only
+        working-directory: terraform
+        env:
+          TF_VAR_GCP_CREDENTIALS_FILE: "gcp_credentials.json"
+          TF_VAR_GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
+          TF_VAR_GCP_REGION: ${{ secrets.GCP_REGION }}
+          GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
+        run: |
+          echo "Applying Terraform for cluster (and node pool) creation only..."
+          terraform apply -auto-approve -input=false -target=google_container_cluster.primary -target=google_container_node_pool.primary_nodes
+
+      # Step 10B: Wait for Cluster Readiness
+      - name: Wait for Cluster Readiness
+        run: |
+          echo "Waiting for cluster gym-cluster to be fully ready..."
+          for i in {1..30}; do
+            if kubectl cluster-info >/dev/null 2>&1; then
+              echo "Cluster is ready."
+              exit 0
+            fi
+            echo "Cluster not ready yet. Waiting 10 seconds..."
+            sleep 10
+          done
+          echo "Timed out waiting for cluster readiness."
+          exit 1
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: terraform/gcp_credentials.json
+
+      # Step 10C: Phase 2 – Apply Full Configuration
+      - name: Apply Full Terraform Configuration
         working-directory: terraform
         env:
           TF_VAR_GCP_CREDENTIALS_FILE: "gcp_credentials.json"
@@ -126,7 +155,9 @@ jobs:
           TF_VAR_MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
           TF_VAR_image_tag: "v1.0.${{ github.run_number }}"
           GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
-        run: terraform apply -auto-approve -input=false
+        run: |
+          echo "Applying full Terraform configuration..."
+          terraform apply -auto-approve -input=false
 
       # Step 11: Validate Kubernetes Connection
       - name: Validate Kubernetes Connection
