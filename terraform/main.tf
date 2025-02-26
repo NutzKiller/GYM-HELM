@@ -106,7 +106,7 @@ resource "helm_release" "gym" {
   }
   set {
     name  = "imagePullPolicy"
-    value = "IfNotPresent"
+    value = "Always"
   }
   set {
     name  = "containerPort"
