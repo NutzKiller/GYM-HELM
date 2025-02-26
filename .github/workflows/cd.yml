@@ -93,6 +93,10 @@ jobs:
           TF_VAR_GCP_CREDENTIALS_FILE: "gcp_credentials.json"
           TF_VAR_GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
           TF_VAR_GCP_REGION: ${{ secrets.GCP_REGION }}
+          TF_VAR_DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          TF_VAR_SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          TF_VAR_MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+          TF_VAR_image_tag: "v1.0.${{ github.run_number }}"
           GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
         run: |
           echo "Checking if namespace gym-namespace exists..."
@@ -102,7 +106,7 @@ jobs:
               echo "Namespace is already imported into Terraform state."
             else
               echo "Importing gym-namespace into Terraform state..."
-              terraform import kubernetes_namespace.gym gym-namespace
+              terraform import -input=false kubernetes_namespace.gym gym-namespace
             fi
           else
             echo "Namespace gym-namespace does not exist. Terraform will create it."
