@@ -46,16 +46,12 @@ jobs:
           echo "Deleting Kubernetes Service 'gym-gym-service' in namespace 'gym-namespace'..."
           kubectl delete svc gym-gym-service -n gym-namespace || echo "Service not found, skipping"
 
-      # Step 6: Detach Instance Groups from Backend Service
+      # Step 6: Detach instance groups (optional step if needed)
       - name: Detach Instance Groups from Backend Service
         run: |
-          echo "Detaching instance group in zone us-central1-b..."
+          echo "Detaching instance groups from backend service 'gym-backend-service'..."
           gcloud compute backend-services remove-backend gym-backend-service --global --instance-group=gke-gym-cluster-terraform-20250226081-3cfee0a6-grp --instance-group-zone=us-central1-b --quiet || echo "Not attached in us-central1-b, skipping"
-          
-          echo "Detaching instance group in zone us-central1-c..."
           gcloud compute backend-services remove-backend gym-backend-service --global --instance-group=gke-gym-cluster-terraform-20250226081-01d295b6-grp --instance-group-zone=us-central1-c --quiet || echo "Not attached in us-central1-c, skipping"
-          
-          echo "Detaching instance group in zone us-central1-f..."
           gcloud compute backend-services remove-backend gym-backend-service --global --instance-group=gke-gym-cluster-terraform-20250226081-5be5cdfb-grp --instance-group-zone=us-central1-f --quiet || echo "Not attached in us-central1-f, skipping"
 
       # Step 7: Delete the Backend Service
@@ -64,7 +60,7 @@ jobs:
           echo "Deleting backend service 'gym-backend-service'..."
           gcloud compute backend-services delete gym-backend-service --global --quiet || echo "Backend service not found, skipping"
 
-      # Step 8: Wait for Backend Service Deletion
+      # Step 8: Wait until the backend service is fully deleted
       - name: Wait for Backend Service Deletion
         run: |
           echo "Waiting for backend service 'gym-backend-service' to be deleted..."
@@ -80,13 +76,29 @@ jobs:
           exit 1
 
       # Step 9: Extra wait for propagation (optional)
-      - name: Extra wait for propagation
+      - name: Extra Wait for Propagation
         run: |
           echo "Sleeping an extra 30 seconds for propagation..."
           sleep 30
 
-      # Step 10: Destroy Infrastructure with Terraform
-      - name: Destroy Infrastructure
+      # Step 10: Force Delete the Node Pool using gcloud
+      - name: Force Delete Node Pool
+        env:
+          GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
+          GCP_REGION: ${{ secrets.GCP_REGION }}
+        run: |
+          echo "Force deleting node pool 'primary_nodes' from cluster 'gym-cluster'..."
+          gcloud container node-pools delete primary_nodes --cluster gym-cluster --region ${GCP_REGION} --quiet
+
+      # Step 11: Remove the Node Pool from Terraform state
+      - name: Remove Node Pool from Terraform State
+        working-directory: terraform
+        run: |
+          echo "Removing google_container_node_pool.primary_nodes from state..."
+          terraform state rm google_container_node_pool.primary_nodes
+
+      # Step 12: Destroy Remaining Infrastructure with Terraform
+      - name: Destroy Remaining Infrastructure
         working-directory: terraform
         env:
           TF_VAR_GCP_CREDENTIALS_FILE: "gcp_credentials.json"
