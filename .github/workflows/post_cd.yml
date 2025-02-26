@@ -94,7 +94,8 @@ jobs:
           GCP_REGION: ${{ secrets.GCP_REGION }}
         run: |
           echo "Force deleting node pool 'primary_nodes' from cluster 'gym-cluster'..."
-          gcloud container node-pools delete primary_nodes --cluster gym-cluster --region ${GCP_REGION} --quiet
+          gcloud container node-pools delete primary_nodes --cluster gym-cluster --region ${GCP_REGION} --project ${GCP_PROJECT} --quiet
+
 
       # Step 11: Remove the Node Pool from Terraform state
       - name: Remove Node Pool from Terraform State
