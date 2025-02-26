@@ -1,0 +1,55 @@
+name: Post-CD Terraform Destroy
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "yes" to confirm destruction'
+        required: true
+
+jobs:
+  destroy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      # Step 1: Check out the repository code
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Terraform
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: latest
+
+      # Step 3: Create GCP credentials file
+      - name: Create GCP credentials file
+        run: |
+          mkdir -p terraform
+          echo "${{ secrets.GCP_CREDENTIALS_FILE_B64 }}" | base64 --decode > terraform/gcp_credentials.json
+          echo "✅ GCP credentials file created."
+
+      # Step 4: Initialize Terraform
+      - name: Initialize Terraform
+        working-directory: terraform
+        env:
+          TF_VAR_GCP_CREDENTIALS_FILE: "gcp_credentials.json"
+          TF_VAR_GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
+          TF_VAR_GCP_REGION: ${{ secrets.GCP_REGION }}
+          GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
+        run: terraform init -input=false -reconfigure
+
+      # Step 5: Run Terraform Destroy
+      - name: Terraform Destroy
+        working-directory: terraform
+        env:
+          TF_VAR_GCP_CREDENTIALS_FILE: "gcp_credentials.json"
+          TF_VAR_GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
+          TF_VAR_GCP_REGION: ${{ secrets.GCP_REGION }}
+          TF_VAR_DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          TF_VAR_SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          TF_VAR_MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+          TF_VAR_image_tag: "v1.0.${{ github.run_number }}"
+          GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
+        run: terraform destroy -auto-approve -input=false
