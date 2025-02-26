@@ -40,13 +40,25 @@ jobs:
           GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
         run: terraform init -input=false -reconfigure
 
-      # Step 5: Delete Load Balancer Service to remove backend dependency
-      - name: Delete Load Balancer Service
+      # Step 5: Delete the LoadBalancer Service (Kubernetes Service)
+      - name: Delete LoadBalancer Service
         run: |
-          echo "Deleting the LoadBalancer Service to clean up backend dependencies..."
+          echo "Deleting Kubernetes Service 'gym-gym-service' in namespace 'gym-namespace'..."
           kubectl delete svc gym-gym-service -n gym-namespace || echo "Service not found, skipping"
 
-      # Step 6: Destroy Infrastructure with Terraform
+      # Step 6: Delete the Backend Service created by the LoadBalancer
+      - name: Delete Backend Service
+        run: |
+          echo "Deleting backend service 'gym-backend-service'..."
+          gcloud compute backend-services delete gym-backend-service --global --quiet || echo "Backend service not found, skipping"
+          
+      # Optional Step 7: Wait a short period for cleanup to propagate
+      - name: Wait for backend cleanup
+        run: |
+          echo "Waiting for backend service deletion to propagate..."
+          sleep 60
+
+      # Step 8: Destroy Infrastructure with Terraform
       - name: Destroy Infrastructure
         working-directory: terraform
         env:
