@@ -143,6 +143,23 @@ jobs:
         run: |
           echo "Removing google_container_node_pool.primary_nodes from state..."
           terraform state rm google_container_node_pool.primary_nodes || echo "Node pool not in state, skipping"
+          # Patch namespace if it exists and is terminating
+
+          
+      - name: Patch Terminating Namespace (if needed)
+        run: |
+          echo "Checking if namespace gym-namespace exists..."
+          if kubectl get namespace gym-namespace >/dev/null 2>&1; then
+            NS_PHASE=$(kubectl get namespace gym-namespace -o jsonpath='{.status.phase}')
+            if [ "$NS_PHASE" = "Terminating" ]; then
+              echo "Namespace gym-namespace is terminating. Removing finalizers..."
+              kubectl patch namespace gym-namespace -p '{"metadata":{"finalizers":[]}}' --type=merge || echo "Failed to patch finalizers."
+            else
+              echo "Namespace gym-namespace exists and is not terminating."
+            fi
+          else
+            echo "Namespace gym-namespace does not exist. Skipping patch."
+          fi
 
       # 13. Destroy Remaining Infrastructure with Terraform
       - name: Terraform Destroy
