@@ -111,33 +111,38 @@ jobs:
             echo "Namespace gym-namespace does not exist. Terraform will create it."
           fi
 
-      # NEW Step 9.5: Patch or Delete Namespace if Terminating
-      - name: Patch or Delete Terminating Namespace
+      # Step 9.5: Patch Terminating Namespace (if needed)
+      - name: Patch Terminating Namespace (if needed)
         working-directory: terraform
         env:
           GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
         run: |
-          echo "Checking namespace gym-namespace status..."
+          echo "Checking if namespace gym-namespace exists..."
           if kubectl get namespace gym-namespace >/dev/null 2>&1; then
             NS_PHASE=$(kubectl get namespace gym-namespace -o jsonpath='{.status.phase}')
-            echo "Namespace gym-namespace is in phase: $NS_PHASE"
             if [ "$NS_PHASE" = "Terminating" ]; then
-              echo "Namespace gym-namespace is terminating. Forcing deletion..."
-              # Force delete the namespace (this will remove finalizers and force deletion)
-              kubectl delete namespace gym-namespace --grace-period=0 --force || echo "Failed to force delete namespace gym-namespace."
-              # Wait until deletion completes
-              for i in {1..30}; do
+              echo "Namespace gym-namespace is terminating. Forcing deletion by removing finalizers..."
+              kubectl patch namespace gym-namespace -p '{"metadata":{"finalizers":[]}}' --type=merge || echo "Failed to patch finalizers."
+              echo "Waiting up to 60 seconds for gym-namespace to be removed..."
+              for i in {1..6}; do
                 if ! kubectl get namespace gym-namespace >/dev/null 2>&1; then
-                  echo "Namespace gym-namespace deleted."
+                  echo "Namespace gym-namespace no longer exists."
                   break
                 fi
-                echo "Namespace gym-namespace still exists. Waiting 10 seconds..."
+                echo "Namespace still exists; waiting 10 seconds..."
                 sleep 10
               done
+              # If it’s still present, warn and continue
+              if kubectl get namespace gym-namespace >/dev/null 2>&1; then
+                echo "Warning: gym-namespace still exists after waiting. Proceeding anyway."
+              fi
+            else
+              echo "Namespace gym-namespace is in phase: $NS_PHASE. No patch required."
             fi
           else
             echo "Namespace gym-namespace not found; skipping patch."
           fi
+
 
       # Step 10: Apply Terraform Configuration (Deploys the Helm Release)
       - name: Apply Terraform Configuration
