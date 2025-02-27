@@ -28,72 +28,11 @@ jobs:
         run: |
           mkdir -p terraform
           echo "${{ secrets.GCP_CREDENTIALS_FILE_B64 }}" | base64 --decode > terraform/gcp_credentials.json
+          # Optionally verify valid JSON:
           jq . terraform/gcp_credentials.json
           echo "✅ GCP credentials file created."
 
-      # 4. Set gcloud project and activate service account (moved earlier for kubectl)
-      - name: Set gcloud Project and Activate Service Account
-        working-directory: terraform
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
-        run: |
-          echo "Setting gcloud project..."
-          gcloud config set project ${{ secrets.GCP_PROJECT }}
-          echo "Activating GCP service account..."
-          gcloud auth activate-service-account --key-file=gcp_credentials.json
-
-      # 5. Configure kubectl to access the cluster
-      - name: Configure kubectl
-        working-directory: terraform
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
-        run: |
-          echo "Configuring kubectl for cluster 'gym-cluster'..."
-          gcloud container clusters get-credentials gym-cluster --region ${{ secrets.GCP_REGION }} --project ${{ secrets.GCP_PROJECT }}
-
-      # 6. Enhanced Namespace Cleanup
-      - name: Enhanced Namespace Cleanup
-        working-directory: terraform
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
-        run: |
-          echo "Starting enhanced namespace cleanup for 'gym-namespace'..."
-          if kubectl get namespace gym-namespace >/dev/null 2>&1; then
-            echo "Namespace 'gym-namespace' exists. Checking phase..."
-            NS_PHASE=$(kubectl get namespace gym-namespace -o jsonpath='{.status.phase}')
-            echo "Namespace phase: $NS_PHASE"
-            
-            # Delete all resources in the namespace first
-            echo "Deleting all resources in 'gym-namespace'..."
-            kubectl delete all --all -n gym-namespace --force --grace-period=0 || echo "Some resources already deleted or not found."
-            kubectl delete pvc --all -n gym-namespace --force --grace-period=0 || echo "No PVCs found."
-            kubectl delete configmap --all -n gym-namespace --force --grace-period=0 || echo "No ConfigMaps found."
-            kubectl delete secret --all -n gym-namespace --force --grace-period=0 || echo "No Secrets found."
-            
-            # Remove finalizers and force delete namespace
-            echo "Removing finalizers from 'gym-namespace'..."
-            kubectl get namespace gym-namespace -o json | jq 'del(.spec.finalizers)' | kubectl replace --raw "/api/v1/namespaces/gym-namespace/finalize" -f -
-            echo "Force deleting namespace 'gym-namespace'..."
-            kubectl delete namespace gym-namespace --force --grace-period=0
-            
-            # Wait for namespace to be fully gone (max 120s)
-            for i in {1..24}; do
-              if ! kubectl get namespace gym-namespace >/dev/null 2>&1; then
-                echo "✅ Namespace 'gym-namespace' successfully deleted."
-                break
-              fi
-              echo "Namespace still exists. Waiting 5 seconds..."
-              sleep 5
-            done
-            
-            if kubectl get namespace gym-namespace >/dev/null 2>&1; then
-              echo "❌ Namespace 'gym-namespace' still exists after timeout. This may cause Terraform destroy to fail."
-            fi
-          else
-            echo "Namespace 'gym-namespace' not found. Skipping cleanup."
-          fi
-
-      # 7. Initialize Terraform
+      # 4. Initialize Terraform (configure backend, etc.)
       - name: Terraform Init
         working-directory: terraform
         env:
@@ -103,16 +42,16 @@ jobs:
           GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
         run: terraform init -input=false -reconfigure
 
-      # 8. Delete the LoadBalancer Service
+      # 5. Delete the LoadBalancer Service (if it exists)
       - name: Delete LoadBalancer Service
         working-directory: terraform
         env:
           GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
         run: |
           echo "Deleting Kubernetes Service 'gym-gym-service' in namespace 'gym-namespace'..."
-          kubectl delete svc gym-gym-service -n gym-namespace --force --grace-period=0 || echo "Service not found, skipping"
+          kubectl delete svc gym-gym-service -n gym-namespace || echo "Service not found, skipping"
 
-      # 9. Detach instance groups from the backend service
+      # 6. Detach instance groups from the backend service
       - name: Detach Instance Groups from Backend Service
         working-directory: terraform
         env:
@@ -123,7 +62,7 @@ jobs:
           gcloud compute backend-services remove-backend gym-backend-service --global --instance-group=gke-gym-cluster-terraform-20250226081-01d295b6-grp --instance-group-zone=us-central1-c --quiet || echo "Not attached in us-central1-c, skipping"
           gcloud compute backend-services remove-backend gym-backend-service --global --instance-group=gke-gym-cluster-terraform-20250226081-5be5cdfb-grp --instance-group-zone=us-central1-f --quiet || echo "Not attached in us-central1-f, skipping"
 
-      # 10. Delete the backend service
+      # 7. Delete the backend service
       - name: Delete Backend Service
         working-directory: terraform
         env:
@@ -132,7 +71,7 @@ jobs:
           echo "Deleting backend service 'gym-backend-service'..."
           gcloud compute backend-services delete gym-backend-service --global --quiet || echo "Backend service not found, skipping"
 
-      # 11. Wait for Backend Service Deletion
+      # 8. Wait until the backend service is fully deleted
       - name: Wait for Backend Service Deletion
         working-directory: terraform
         env:
@@ -142,13 +81,33 @@ jobs:
           for i in {1..30}; do
             if ! gcloud compute backend-services list --global | grep -q gym-backend-service; then
               echo "Backend service deleted."
-              break
+              exit 0
             fi
             echo "Backend service still exists. Waiting 10 seconds..."
             sleep 10
           done
+          echo "Timed out waiting for backend service deletion."
+          exit 1
 
-      # 12. Force Delete All Node Pools using gcloud
+      # 9. Extra wait for propagation
+      - name: Extra Wait for Propagation
+        working-directory: terraform
+        run: |
+          echo "Sleeping an extra 30 seconds for propagation..."
+          sleep 30
+
+      # 10. Set gcloud project and activate service account
+      - name: Set gcloud Project and Activate Service Account
+        working-directory: terraform
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
+        run: |
+          echo "Setting gcloud project..."
+          gcloud config set project ${{ secrets.GCP_PROJECT }}
+          echo "Activating GCP service account..."
+          gcloud auth activate-service-account --key-file=gcp_credentials.json
+
+      # 11. Force Delete All Node Pools using gcloud
       - name: Force Delete All Node Pools
         working-directory: terraform
         env:
@@ -164,10 +123,19 @@ jobs:
             for NP in $NP_LIST; do
               echo "Force deleting node pool '$NP' from cluster 'gym-cluster'..."
               gcloud container node-pools delete "$NP" --cluster gym-cluster --region ${GCP_REGION} --project ${GCP_PROJECT} --quiet
+              echo "Waiting for node pool '$NP' to be deleted..."
+              for i in {1..30}; do
+                if ! gcloud container node-pools list --cluster gym-cluster --region ${GCP_REGION} --project ${GCP_PROJECT} | grep -q "$NP"; then
+                  echo "Node pool '$NP' deleted."
+                  break
+                fi
+                echo "Node pool '$NP' still exists. Waiting 10 seconds..."
+                sleep 10
+              done
             done
           fi
 
-      # 13. Remove Node Pool from Terraform State
+      # 12. Remove the Node Pool from Terraform state
       - name: Remove Node Pool from Terraform State
         working-directory: terraform
         env:
@@ -176,7 +144,42 @@ jobs:
           echo "Removing google_container_node_pool.primary_nodes from state..."
           terraform state rm google_container_node_pool.primary_nodes || echo "Node pool not in state, skipping"
 
-      # 14. Destroy Remaining Infrastructure with Terraform
+      # 13. Patch and Force Delete Namespace
+      - name: Patch and Force Delete Namespace
+        working-directory: terraform
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
+        run: |
+          echo "Attempting to force-delete namespace 'gym-namespace'..."
+          if kubectl get namespace gym-namespace >/dev/null 2>&1; then
+            # Remove finalizers
+            kubectl patch namespace gym-namespace -p '{"metadata":{"finalizers":[]}}' --type=merge || echo "Failed to patch finalizers."
+            # Force delete the namespace with zero grace period and without waiting
+            kubectl delete namespace gym-namespace --grace-period=0 --force || echo "Force delete issued."
+            echo "Waiting up to 60 seconds for gym-namespace to vanish..."
+            for i in {1..6}; do
+              if ! kubectl get namespace gym-namespace >/dev/null 2>&1; then
+                echo "Namespace gym-namespace successfully deleted."
+                break
+              fi
+              echo "Namespace still exists; waiting 10 seconds..."
+              sleep 10
+            done
+            echo "Proceeding regardless of namespace deletion."
+          else
+            echo "Namespace gym-namespace not found; skipping patch."
+          fi
+
+      # 14. (Optional) Remove the Namespace from Terraform state
+      - name: Remove Namespace from Terraform State
+        working-directory: terraform
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
+        run: |
+          echo "Removing kubernetes_namespace.gym from state..."
+          terraform state rm kubernetes_namespace.gym || echo "Namespace not in state, skipping"
+
+      # 15. Destroy Remaining Infrastructure with Terraform
       - name: Terraform Destroy
         working-directory: terraform
         env:
