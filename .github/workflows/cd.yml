@@ -6,87 +6,150 @@ on:
       - CI Workflow
     types:
       - completed
-    branches:
-      - main
 
 jobs:
   deploy:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     steps:
+      # Step 1: Check out the main repository code
       - name: Check out main repository
         uses: actions/checkout@v3
 
+      # Step 2: Set up Terraform
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: latest
 
+      # Step 3: Create GCP credentials file
       - name: Create GCP credentials file
         run: |
           mkdir -p terraform
           echo "${{ secrets.GCP_CREDENTIALS_FILE_B64 }}" | base64 --decode > terraform/gcp_credentials.json
-          jq . terraform/gcp_credentials.json >/dev/null 2>&1 || (echo "Error: Invalid GCP credentials JSON"; exit 1)
           echo "✅ GCP credentials file created."
 
+      # Step 4: Validate GCP Authentication
+      - name: Verify GCP Authentication
+        run: |
+          gcloud auth list
+          gcloud config list
+
+      # Step 5: Set up Cloud SDK
       - name: Set up Cloud SDK
-        uses: google-github-actions/auth@v1
-        with:
-          credentials_json: ${{ secrets.GCP_CREDENTIALS_FILE_B64 }}
-      - name: Install gcloud CLI
         uses: google-github-actions/setup-gcloud@v1
         with:
           project_id: ${{ secrets.GCP_PROJECT }}
+          service_account_key_file: terraform/gcp_credentials.json
+          export_default_credentials: true
 
-      - name: Verify or Recreate GKE Cluster
+      # (Optional) -- If you experience authentication plugin errors, you can add:
+      # - name: Install gke-gcloud-auth-plugin
+      #   run: gcloud components install gke-gcloud-auth-plugin --quiet
+
+      # Step 6: Import existing GKE cluster if present
+      - name: Import existing cluster if present
+        working-directory: terraform
         env:
+          TF_VAR_GCP_CREDENTIALS_FILE: "gcp_credentials.json"
           TF_VAR_GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
           TF_VAR_GCP_REGION: ${{ secrets.GCP_REGION }}
+          GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
         run: |
           echo "Checking if cluster 'gym-cluster' exists..."
           if gcloud container clusters list --project=${TF_VAR_GCP_PROJECT} --region=${TF_VAR_GCP_REGION} | grep -q "gym-cluster"; then
-            echo "Cluster gym-cluster exists. Configuring kubectl..."
-            gcloud container clusters get-credentials gym-cluster --region=${TF_VAR_GCP_REGION} --project=${TF_VAR_GCP_PROJECT}
-            kubectl cluster-info || (echo "Cluster exists but is unhealthy"; exit 1)
+            echo "Cluster gym-cluster exists."
+            if terraform state list | grep -q "google_container_cluster.primary"; then
+              echo "Cluster already imported into state."
+            else
+              echo "Importing gym-cluster into Terraform state..."
+              terraform import google_container_cluster.primary projects/${TF_VAR_GCP_PROJECT}/locations/${TF_VAR_GCP_REGION}/clusters/gym-cluster
+            fi
           else
             echo "Cluster gym-cluster does not exist. Terraform will create it."
           fi
 
-      - name: Clean Up Terminating Namespace
-        run: |
-          echo "Checking namespace gym-namespace status..."
-          if kubectl get namespace gym-namespace >/dev/null 2>&1; then
-            echo "Deleting all resources in gym-namespace..."
-            kubectl delete all --all -n gym-namespace --force --grace-period=0 || true
-            kubectl delete pvc --all -n gym-namespace --force --grace-period=0 || true
-            echo "Removing finalizers and force-deleting namespace..."
-            kubectl get namespace gym-namespace -o json | jq 'del(.spec.finalizers)' | kubectl replace --raw "/api/v1/namespaces/gym-namespace/finalize" -f - || true
-            kubectl delete namespace gym-namespace --force --grace-period=0 || true
-            for i in {1..12}; do
-              if ! kubectl get namespace gym-namespace >/dev/null 2>&1; then
-                echo "✅ Namespace gym-namespace successfully removed."
-                break
-              fi
-              echo "Namespace still exists; waiting 10 seconds..."
-              sleep 10
-            done
-            if kubectl get namespace gym-namespace >/dev/null 2>&1; then
-              echo "Error: Namespace gym-namespace could not be removed."
-              exit 1
-            fi
-          else
-            echo "Namespace gym-namespace does not exist yet. Proceeding."
-          fi
+      # Step 7: Configure kubectl to connect to GKE
+      - name: Get GKE Credentials
+        uses: google-github-actions/get-gke-credentials@v1
+        with:
+          cluster_name: gym-cluster
+          location: ${{ secrets.GCP_REGION }}
+          project_id: ${{ secrets.GCP_PROJECT }}
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: terraform/gcp_credentials.json
 
+      # Step 8: Initialize Terraform (ensure backend is configured)
       - name: Initialize Terraform
         working-directory: terraform
         env:
           TF_VAR_GCP_CREDENTIALS_FILE: "gcp_credentials.json"
           TF_VAR_GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
           TF_VAR_GCP_REGION: ${{ secrets.GCP_REGION }}
+          GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
         run: terraform init -input=false -reconfigure
 
+      # Step 9: Check and Import Namespace
+      - name: Check and Import Namespace
+        working-directory: terraform
+        env:
+          TF_VAR_GCP_CREDENTIALS_FILE: "gcp_credentials.json"
+          TF_VAR_GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
+          TF_VAR_GCP_REGION: ${{ secrets.GCP_REGION }}
+          TF_VAR_DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          TF_VAR_SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          TF_VAR_MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+          TF_VAR_image_tag: "v1.0.${{ github.run_number }}"
+          GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
+        run: |
+          echo "Checking if namespace gym-namespace exists..."
+          if kubectl get namespace gym-namespace >/dev/null 2>&1; then
+            echo "Namespace gym-namespace exists."
+            if terraform state list | grep -q "kubernetes_namespace.gym"; then
+              echo "Namespace already imported into Terraform state."
+            else
+              echo "Importing gym-namespace into Terraform state..."
+              terraform import -input=false -lock=false kubernetes_namespace.gym gym-namespace
+            fi
+          else
+            echo "Namespace gym-namespace does not exist. Terraform will create it."
+          fi
+
+      # Step 9.5: Patch and Force Delete Namespace if Terminating
+      - name: Patch and Force Delete Namespace (if needed)
+        working-directory: terraform
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
+        run: |
+          echo "Checking namespace gym-namespace status..."
+          if kubectl get namespace gym-namespace >/dev/null 2>&1; then
+            NS_PHASE=$(kubectl get namespace gym-namespace -o jsonpath='{.status.phase}')
+            echo "Namespace gym-namespace phase: $NS_PHASE"
+            if [ "$NS_PHASE" = "Terminating" ]; then
+              echo "Namespace gym-namespace is terminating. Removing finalizers..."
+              kubectl patch namespace gym-namespace -p '{"metadata":{"finalizers":[]}}' --type=merge || echo "Failed to patch finalizers."
+              echo "Force deleting namespace gym-namespace..."
+              kubectl delete namespace gym-namespace --grace-period=0 --force || echo "Force delete issued."
+              echo "Waiting up to 60 seconds for namespace gym-namespace to vanish..."
+              for i in {1..6}; do
+                if ! kubectl get namespace gym-namespace >/dev/null 2>&1; then
+                  echo "Namespace gym-namespace successfully deleted."
+                  break
+                fi
+                echo "Namespace still exists; waiting 10 seconds..."
+                sleep 10
+              done
+              if kubectl get namespace gym-namespace >/dev/null 2>&1; then
+                echo "Warning: gym-namespace still exists after waiting. Proceeding anyway."
+              fi
+            else
+              echo "Namespace gym-namespace is in phase: $NS_PHASE. No patch required."
+            fi
+          else
+            echo "Namespace gym-namespace not found; skipping patch."
+          fi
+
+      # Step 10: Apply Terraform Configuration (Deploys the Helm Release)
       - name: Apply Terraform Configuration
         working-directory: terraform
         env:
@@ -97,29 +160,16 @@ jobs:
           TF_VAR_SECRET_KEY: ${{ secrets.SECRET_KEY }}
           TF_VAR_MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
           TF_VAR_image_tag: "v1.0.${{ github.run_number }}"
-        run: |
-          echo "Applying Terraform configuration with retries..."
-          for attempt in {1..3}; do
-            if terraform apply -auto-approve -input=false 2>terraform-apply-error.log; then
-              echo "Terraform applied successfully."
-              break
-            else
-              echo "Attempt $attempt failed. Error details:"
-              cat terraform-apply-error.log
-              echo "Retrying in 10 seconds..."
-              sleep 10
-            fi
-            if [ "$attempt" -eq 3 ]; then
-              echo "Error: Terraform apply failed after 3 attempts."
-              exit 1
-            fi
-          done
+          GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
+        run: terraform apply -auto-approve -input=false
 
+      # Step 11: Validate Kubernetes Connection
       - name: Validate Kubernetes Connection
         run: |
           kubectl cluster-info
           kubectl get nodes
 
+      # Step 12: Ensure Firewall Rule for GKE (if not already set)
       - name: Ensure Firewall Rule for GKE
         run: |
           gcloud compute firewall-rules create allow-gke-5000 \
@@ -127,12 +177,13 @@ jobs:
             --target-tags=gke-gym-cluster \
             --source-ranges=0.0.0.0/0 || echo "Firewall rule already exists."
 
+      # Step 13: Retrieve External IP of Helm Release Service
       - name: Retrieve External IP of Helm Release Service
         id: get_ip
         run: |
-          echo "Waiting for LoadBalancer IP (up to 5 minutes)..."
+          echo "Waiting for LoadBalancer IP..."
           for i in {1..30}; do
-            EXTERNAL_IP=$(kubectl get svc gym-gym-service -n gym-namespace -o jsonpath='{.status.loadBalancer.ingress[0].ip}' || true)
+            EXTERNAL_IP=$(kubectl get svc gym-gym-service -n gym-namespace -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
             if [ -n "$EXTERNAL_IP" ]; then
               echo "EXTERNAL_IP=$EXTERNAL_IP" >> $GITHUB_ENV
               echo "External IP: $EXTERNAL_IP"
@@ -142,15 +193,16 @@ jobs:
             sleep 10
           done
           if [ -z "$EXTERNAL_IP" ]; then
-            echo "Failed to retrieve External IP after 5 minutes."
-            kubectl describe svc gym-gym-service -n gym-namespace
+            echo "Failed to retrieve External IP."
             exit 1
           fi
 
+      # Step 14: Output External IP
       - name: Output External IP
         run: |
           echo "The application is accessible at http://${{ env.EXTERNAL_IP }}"
 
+      # Step 15: Debug Kubernetes Setup (if needed)
       - name: Debug Kubernetes Setup
         run: |
           echo "Debugging Kubernetes Configuration..."
