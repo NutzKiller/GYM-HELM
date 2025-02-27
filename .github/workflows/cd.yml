@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Check out the main repository code
+      # Step 1: Check out main repository code
       - name: Check out main repository
         uses: actions/checkout@v3
 
@@ -111,16 +111,19 @@ jobs:
           else
             echo "Namespace gym-namespace does not exist. Terraform will create it."
           fi
-      # Patch namespace if it is terminating
+
+      # Step 9.5: Patch namespace if it exists and is terminating
       - name: Patch Terminating Namespace (if needed)
         run: |
           echo "Checking namespace gym-namespace status..."
-          NS_PHASE=$(kubectl get namespace gym-namespace -o jsonpath='{.status.phase}')
+          NS_PHASE=$(kubectl get namespace gym-namespace --ignore-not-found -o jsonpath='{.status.phase}' || echo "NotFound")
           if [ "$NS_PHASE" = "Terminating" ]; then
-            echo "Namespace is terminating. Removing finalizers..."
+            echo "Namespace gym-namespace is terminating. Removing finalizers..."
             kubectl patch namespace gym-namespace -p '{"metadata":{"finalizers":[]}}' --type=merge
+          elif [ "$NS_PHASE" = "NotFound" ]; then
+            echo "Namespace gym-namespace not found; skipping patch."
           else
-            echo "Namespace is not terminating. No patch required."
+            echo "Namespace gym-namespace is in phase: $NS_PHASE. No patch required."
           fi
 
       # Step 10: Apply Terraform Configuration (Deploys the Helm Release)
@@ -167,7 +170,6 @@ jobs:
             echo "Attempt $i: External IP not assigned yet. Retrying in 10 seconds..."
             sleep 10
           done
-
           if [ -z "$EXTERNAL_IP" ]; then
             echo "Failed to retrieve External IP."
             exit 1
