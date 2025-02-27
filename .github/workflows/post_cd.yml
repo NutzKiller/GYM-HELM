@@ -28,7 +28,7 @@ jobs:
         run: |
           mkdir -p terraform
           echo "${{ secrets.GCP_CREDENTIALS_FILE_B64 }}" | base64 --decode > terraform/gcp_credentials.json
-          # Verify valid JSON (this will fail if the file is not valid JSON)
+          # Verify valid JSON with jq (optional; remove the next line once verified)
           jq . terraform/gcp_credentials.json
           echo "✅ GCP credentials file created."
 
@@ -39,37 +39,43 @@ jobs:
           TF_VAR_GCP_CREDENTIALS_FILE: "gcp_credentials.json"
           TF_VAR_GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
           TF_VAR_GCP_REGION: ${{ secrets.GCP_REGION }}
-          GOOGLE_APPLICATION_CREDENTIALS: "terraform/gcp_credentials.json"
+          GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
         run: terraform init -input=false -reconfigure
 
       # 5. Delete the LoadBalancer Service (Kubernetes Service)
       - name: Delete LoadBalancer Service
+        working-directory: terraform
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
         run: |
           echo "Deleting Kubernetes Service 'gym-gym-service' in namespace 'gym-namespace'..."
           kubectl delete svc gym-gym-service -n gym-namespace || echo "Service not found, skipping"
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: "terraform/gcp_credentials.json"
 
       # 6. Detach instance groups from the backend service
       - name: Detach Instance Groups from Backend Service
+        working-directory: terraform
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
         run: |
           echo "Detaching instance groups from backend service 'gym-backend-service'..."
           gcloud compute backend-services remove-backend gym-backend-service --global --instance-group=gke-gym-cluster-terraform-20250226081-3cfee0a6-grp --instance-group-zone=us-central1-b --quiet || echo "Not attached in us-central1-b, skipping"
           gcloud compute backend-services remove-backend gym-backend-service --global --instance-group=gke-gym-cluster-terraform-20250226081-01d295b6-grp --instance-group-zone=us-central1-c --quiet || echo "Not attached in us-central1-c, skipping"
           gcloud compute backend-services remove-backend gym-backend-service --global --instance-group=gke-gym-cluster-terraform-20250226081-5be5cdfb-grp --instance-group-zone=us-central1-f --quiet || echo "Not attached in us-central1-f, skipping"
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: "terraform/gcp_credentials.json"
 
       # 7. Delete the backend service
       - name: Delete Backend Service
+        working-directory: terraform
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
         run: |
           echo "Deleting backend service 'gym-backend-service'..."
           gcloud compute backend-services delete gym-backend-service --global --quiet || echo "Backend service not found, skipping"
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: "terraform/gcp_credentials.json"
 
       # 8. Wait until the backend service is fully deleted
       - name: Wait for Backend Service Deletion
+        working-directory: terraform
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
         run: |
           echo "Waiting for backend service 'gym-backend-service' to be deleted..."
           for i in {1..30}; do
@@ -82,21 +88,21 @@ jobs:
           done
           echo "Timed out waiting for backend service deletion."
           exit 1
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: "terraform/gcp_credentials.json"
 
       # 9. Extra wait for propagation (optional)
       - name: Extra Wait for Propagation
+        working-directory: terraform
         run: |
           echo "Sleeping an extra 30 seconds for propagation..."
           sleep 30
 
       # 10. Force Delete Node Pool using gcloud
       - name: Force Delete Node Pool
+        working-directory: terraform
         env:
           GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
           GCP_REGION: ${{ secrets.GCP_REGION }}
-          GOOGLE_APPLICATION_CREDENTIALS: "terraform/gcp_credentials.json"
+          GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
         run: |
           echo "Force deleting node pool 'primary_nodes' from cluster 'gym-cluster'..."
           gcloud container node-pools delete primary_nodes --cluster gym-cluster --region ${GCP_REGION} --quiet
@@ -105,7 +111,7 @@ jobs:
       - name: Remove Node Pool from Terraform State
         working-directory: terraform
         env:
-          GOOGLE_APPLICATION_CREDENTIALS: "terraform/gcp_credentials.json"
+          GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
         run: |
           echo "Removing google_container_node_pool.primary_nodes from state..."
           terraform state rm google_container_node_pool.primary_nodes || echo "Node pool not in state, skipping"
@@ -121,5 +127,5 @@ jobs:
           TF_VAR_SECRET_KEY: ${{ secrets.SECRET_KEY }}
           TF_VAR_MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
           TF_VAR_image_tag: "v1.0.${{ github.run_number }}"
-          GOOGLE_APPLICATION_CREDENTIALS: "terraform/gcp_credentials.json"
+          GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
         run: terraform destroy -auto-approve -input=false
