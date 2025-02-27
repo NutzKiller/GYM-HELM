@@ -144,20 +144,21 @@ jobs:
           echo "Removing google_container_node_pool.primary_nodes from state..."
           terraform state rm google_container_node_pool.primary_nodes || echo "Node pool not in state, skipping"
 
-      # 13. Patch namespace if it exists and is terminating
+      # 13. Patch Terminating Namespace (if needed)
       - name: Patch Terminating Namespace (if needed)
         working-directory: terraform
         env:
           GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
         run: |
-          echo "Checking namespace gym-namespace status..."
+          echo "Checking if namespace gym-namespace exists..."
           if kubectl get namespace gym-namespace >/dev/null 2>&1; then
             NS_PHASE=$(kubectl get namespace gym-namespace -o jsonpath='{.status.phase}')
+            echo "Namespace gym-namespace phase: $NS_PHASE"
             if [ "$NS_PHASE" = "Terminating" ]; then
               echo "Namespace gym-namespace is terminating. Removing finalizers..."
               kubectl patch namespace gym-namespace -p '{"metadata":{"finalizers":[]}}' --type=merge || echo "Failed to patch finalizers."
             else
-              echo "Namespace gym-namespace is in phase: $NS_PHASE. No patch required."
+              echo "Namespace gym-namespace is not terminating. No patch required."
             fi
           else
             echo "Namespace gym-namespace not found; skipping patch."
