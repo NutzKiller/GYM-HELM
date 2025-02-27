@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Check out main repository code
+      # Step 1: Check out repository
       - name: Check out main repository
         uses: actions/checkout@v3
 
@@ -83,8 +83,7 @@ jobs:
           TF_VAR_GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
           TF_VAR_GCP_REGION: ${{ secrets.GCP_REGION }}
           GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
-        run: |
-          terraform init -input=false -reconfigure
+        run: terraform init -input=false -reconfigure
 
       # Step 9: Check and Import Namespace
       - name: Check and Import Namespace
@@ -112,18 +111,23 @@ jobs:
             echo "Namespace gym-namespace does not exist. Terraform will create it."
           fi
 
-      # Step 9.5: Patch namespace if it exists and is terminating
+      # Step 9.5: Patch namespace if it's terminating (to remove finalizers)
       - name: Patch Terminating Namespace (if needed)
+        working-directory: terraform
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
         run: |
-          echo "Checking namespace gym-namespace status..."
-          NS_PHASE=$(kubectl get namespace gym-namespace --ignore-not-found -o jsonpath='{.status.phase}' || echo "NotFound")
-          if [ "$NS_PHASE" = "Terminating" ]; then
-            echo "Namespace gym-namespace is terminating. Removing finalizers..."
-            kubectl patch namespace gym-namespace -p '{"metadata":{"finalizers":[]}}' --type=merge
-          elif [ "$NS_PHASE" = "NotFound" ]; then
-            echo "Namespace gym-namespace not found; skipping patch."
+          echo "Checking if namespace gym-namespace exists..."
+          if kubectl get namespace gym-namespace >/dev/null 2>&1; then
+            NS_PHASE=$(kubectl get namespace gym-namespace -o jsonpath='{.status.phase}')
+            if [ "$NS_PHASE" = "Terminating" ]; then
+              echo "Namespace gym-namespace is terminating. Removing finalizers..."
+              kubectl patch namespace gym-namespace -p '{"metadata":{"finalizers":[]}}' --type=merge || echo "Failed to patch finalizers."
+            else
+              echo "Namespace gym-namespace is in phase: $NS_PHASE. No patch required."
+            fi
           else
-            echo "Namespace gym-namespace is in phase: $NS_PHASE. No patch required."
+            echo "Namespace gym-namespace not found; skipping patch."
           fi
 
       # Step 10: Apply Terraform Configuration (Deploys the Helm Release)
@@ -138,8 +142,7 @@ jobs:
           TF_VAR_MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
           TF_VAR_image_tag: "v1.0.${{ github.run_number }}"
           GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
-        run: |
-          terraform apply -auto-approve -input=false
+        run: terraform apply -auto-approve -input=false
 
       # Step 11: Validate Kubernetes Connection
       - name: Validate Kubernetes Connection
