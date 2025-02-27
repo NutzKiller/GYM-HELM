@@ -43,12 +43,9 @@ jobs:
           service_account_key_file: terraform/gcp_credentials.json
           export_default_credentials: true
 
-      # (Optional) -- If you experience authentication plugin errors, you can add:
-      # - name: Install gke-gcloud-auth-plugin
-      #   run: gcloud components install gke-gcloud-auth-plugin --quiet
-
-      # Step 6: Import existing GKE cluster if present
-      - name: Import existing cluster if present
+      # Step 6: Check for existing GKE cluster and set output accordingly
+      - name: Check for existing cluster
+        id: cluster_check
         working-directory: terraform
         env:
           TF_VAR_GCP_CREDENTIALS_FILE: "gcp_credentials.json"
@@ -56,29 +53,28 @@ jobs:
           TF_VAR_GCP_REGION: ${{ secrets.GCP_REGION }}
           GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
         run: |
-          echo "Checking if cluster 'gym-cluster' exists..."
           if gcloud container clusters list --project=${TF_VAR_GCP_PROJECT} --region=${TF_VAR_GCP_REGION} | grep -q "gym-cluster"; then
+            echo "::set-output name=cluster_exists::true"
             echo "Cluster gym-cluster exists."
             if terraform state list | grep -q "google_container_cluster.primary"; then
-              echo "Cluster already imported into state."
+              echo "Cluster already imported into Terraform state."
             else
               echo "Importing gym-cluster into Terraform state..."
               terraform import google_container_cluster.primary projects/${TF_VAR_GCP_PROJECT}/locations/${TF_VAR_GCP_REGION}/clusters/gym-cluster
             fi
           else
+            echo "::set-output name=cluster_exists::false"
             echo "Cluster gym-cluster does not exist. Terraform will create it."
           fi
 
-      # Step 7: Conditionally get GKE credentials if the cluster exists
-      - name: Get GKE Credentials (if cluster exists)
-        run: |
-          echo "Checking if cluster 'gym-cluster' exists for credentials..."
-          if gcloud container clusters list --project=${{ secrets.GCP_PROJECT }} --region=${{ secrets.GCP_REGION }} | grep -q "gym-cluster"; then
-            echo "Cluster gym-cluster exists. Getting credentials..."
-            gcloud container clusters get-credentials gym-cluster --region=${{ secrets.GCP_REGION }} --project=${{ secrets.GCP_PROJECT }}
-          else
-            echo "Cluster gym-cluster does not exist. Skipping get-credentials."
-          fi
+      # Step 7: Get GKE Credentials if the cluster already exists
+      - name: Get GKE Credentials (if exists)
+        if: steps.cluster_check.outputs.cluster_exists == 'true'
+        uses: google-github-actions/get-gke-credentials@v1
+        with:
+          cluster_name: gym-cluster
+          location: ${{ secrets.GCP_REGION }}
+          project_id: ${{ secrets.GCP_PROJECT }}
         env:
           GOOGLE_APPLICATION_CREDENTIALS: terraform/gcp_credentials.json
 
@@ -105,48 +101,41 @@ jobs:
           TF_VAR_image_tag: "v1.0.${{ github.run_number }}"
           GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
         run: |
-          echo "Checking if namespace gym-namespace exists..."
           if kubectl get namespace gym-namespace >/dev/null 2>&1; then
             echo "Namespace gym-namespace exists."
             if terraform state list | grep -q "kubernetes_namespace.gym"; then
               echo "Namespace already imported into Terraform state."
             else
-              echo "Importing gym-namespace into Terraform state..."
               terraform import -input=false -lock=false kubernetes_namespace.gym gym-namespace
             fi
           else
             echo "Namespace gym-namespace does not exist. Terraform will create it."
           fi
 
-      # Step 9.5: Patch and Force Delete Namespace if Terminating
+      # Step 9.5: Patch and force delete namespace if it is terminating
       - name: Patch and Force Delete Namespace (if needed)
         working-directory: terraform
         env:
           GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
         run: |
-          echo "Checking namespace gym-namespace status..."
           if kubectl get namespace gym-namespace >/dev/null 2>&1; then
             NS_PHASE=$(kubectl get namespace gym-namespace -o jsonpath='{.status.phase}')
             echo "Namespace gym-namespace phase: $NS_PHASE"
             if [ "$NS_PHASE" = "Terminating" ]; then
-              echo "Namespace gym-namespace is terminating. Removing finalizers and forcing deletion..."
-              # Install jq if not present
-              if ! command -v jq >/dev/null 2>&1; then
-                sudo apt-get update && sudo apt-get install -y jq
-              fi
+              echo "Namespace is terminating. Removing finalizers..."
               kubectl get namespace gym-namespace -o json | jq '.spec.finalizers=[]' | kubectl replace --raw "/api/v1/namespaces/gym-namespace/finalize" -f -
               echo "Force deleting namespace gym-namespace..."
               kubectl delete namespace gym-namespace --grace-period=0 --force || echo "Force delete issued."
               echo "Waiting up to 60 seconds for namespace gym-namespace to vanish..."
-              kubectl wait --for=delete namespace/gym-namespace --timeout=60s || echo "Namespace gym-namespace still exists after timeout. Proceeding anyway."
+              kubectl wait --for=delete namespace/gym-namespace --timeout=60s || echo "Namespace still exists after timeout. Proceeding anyway."
             else
-              echo "Namespace gym-namespace is in phase: $NS_PHASE. No patch required."
+              echo "Namespace is in phase: $NS_PHASE. No patch required."
             fi
           else
             echo "Namespace gym-namespace not found; skipping patch."
           fi
 
-      # Step 10: Apply Terraform Configuration (Deploys the Helm Release)
+      # Step 10: Apply Terraform Configuration (Deploy Helm Release or update)
       - name: Apply Terraform Configuration
         working-directory: terraform
         env:
@@ -160,19 +149,26 @@ jobs:
           GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
         run: terraform apply -auto-approve -input=false
 
-      # Step 11: Validate Kubernetes Connection
-      #- name: Validate Kubernetes Connection
-        #run: |
-          #kubectl cluster-info
-          #kubectl get nodes
+      # Step 10.5: Refresh Kubeconfig after Terraform apply (to capture new cluster info)
+      - name: Refresh Kubeconfig After Terraform Apply
+        uses: google-github-actions/get-gke-credentials@v1
+        with:
+          cluster_name: gym-cluster
+          location: ${{ secrets.GCP_REGION }}
+          project_id: ${{ secrets.GCP_PROJECT }}
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: terraform/gcp_credentials.json
 
-      # Step 12: Ensure Firewall Rule for GKE (if not already set)
+      # Step 11: Validate Kubernetes Connection
+      - name: Validate Kubernetes Connection
+        run: |
+          kubectl cluster-info
+          kubectl get nodes
+
+      # Step 12: Ensure Firewall Rule for GKE
       - name: Ensure Firewall Rule for GKE
         run: |
-          gcloud compute firewall-rules create allow-gke-5000 \
-            --allow=tcp:5000 \
-            --target-tags=gke-gym-cluster \
-            --source-ranges=0.0.0.0/0 || echo "Firewall rule already exists."
+          gcloud compute firewall-rules create allow-gke-5000 --allow=tcp:5000 --target-tags=gke-gym-cluster --source-ranges=0.0.0.0/0 || echo "Firewall rule already exists."
 
       # Step 13: Retrieve External IP of Helm Release Service
       - name: Retrieve External IP of Helm Release Service
@@ -196,13 +192,11 @@ jobs:
 
       # Step 14: Output External IP
       - name: Output External IP
-        run: |
-          echo "The application is accessible at http://${{ env.EXTERNAL_IP }}"
+        run: echo "The application is accessible at http://${{ env.EXTERNAL_IP }}"
 
       # Step 15: Debug Kubernetes Setup (if needed)
       - name: Debug Kubernetes Setup
         run: |
-          echo "Debugging Kubernetes Configuration..."
           kubectl get svc -n gym-namespace
           kubectl get pods -n gym-namespace
           kubectl describe svc gym-gym-service -n gym-namespace
