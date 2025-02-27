@@ -28,7 +28,7 @@ jobs:
         run: |
           mkdir -p terraform
           echo "${{ secrets.GCP_CREDENTIALS_FILE_B64 }}" | base64 --decode > terraform/gcp_credentials.json
-          # Verify valid JSON with jq (optional; remove once verified)
+          # Verify valid JSON (remove the next line once verified)
           jq . terraform/gcp_credentials.json
           echo "✅ GCP credentials file created."
 
@@ -96,16 +96,18 @@ jobs:
           echo "Sleeping an extra 30 seconds for propagation..."
           sleep 30
 
-      # 10. Activate GCP Service Account (to ensure active credentials)
-      - name: Activate GCP Service Account
+      # 10. Set gcloud project and activate service account
+      - name: Set gcloud Project and Activate Service Account
         working-directory: terraform
         env:
           GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
         run: |
+          echo "Setting gcloud project..."
+          gcloud config set project ${{ secrets.GCP_PROJECT }}
           echo "Activating GCP service account..."
           gcloud auth activate-service-account --key-file=gcp_credentials.json
 
-      # Step 11: Force Delete All Node Pools using gcloud
+      # 11. Force Delete All Node Pools using gcloud
       - name: Force Delete All Node Pools
         working-directory: terraform
         env:
@@ -121,9 +123,17 @@ jobs:
             for NP in $NP_LIST; do
               echo "Force deleting node pool '$NP' from cluster 'gym-cluster'..."
               gcloud container node-pools delete "$NP" --cluster gym-cluster --region ${GCP_REGION} --project ${GCP_PROJECT} --quiet
+              echo "Waiting for node pool '$NP' to be deleted..."
+              for i in {1..30}; do
+                if ! gcloud container node-pools list --cluster gym-cluster --region ${GCP_REGION} --project ${GCP_PROJECT} | grep -q "$NP"; then
+                  echo "Node pool '$NP' deleted."
+                  break
+                fi
+                echo "Node pool '$NP' still exists. Waiting 10 seconds..."
+                sleep 10
+              done
             done
           fi
-
 
       # 12. Remove the Node Pool from Terraform state
       - name: Remove Node Pool from Terraform State
