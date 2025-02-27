@@ -23,18 +23,11 @@ jobs:
         with:
           terraform_version: latest
 
-      # 3. Decode and create GCP credentials file
-      - name: Create GCP Credentials File
-        run: |
-          mkdir -p terraform
-          echo "${{ secrets.GCP_CREDENTIALS_FILE_B64 }}" | base64 --decode > terraform/gcp_credentials.json
-          echo "✅ GCP credentials file created."
-
-      # 4. Authenticate to GCP
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v1
         with:
-          credentials_json: file://terraform/gcp_credentials.json
+            credentials_json: '${{ secrets.GCP_CREDENTIALS_JSON }}'
+        
 
       # 5. Initialize Terraform (configure backend, etc.)
       - name: Terraform Init
