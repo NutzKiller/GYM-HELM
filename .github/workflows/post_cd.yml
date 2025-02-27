@@ -28,7 +28,7 @@ jobs:
         run: |
           mkdir -p terraform
           echo "${{ secrets.GCP_CREDENTIALS_FILE_B64 }}" | base64 --decode > terraform/gcp_credentials.json
-          # Verify valid JSON (remove the next line once verified)
+          # (Optional) Verify valid JSON – remove this line after confirming your credentials work:
           jq . terraform/gcp_credentials.json
           echo "✅ GCP credentials file created."
 
@@ -143,25 +143,27 @@ jobs:
         run: |
           echo "Removing google_container_node_pool.primary_nodes from state..."
           terraform state rm google_container_node_pool.primary_nodes || echo "Node pool not in state, skipping"
-          # Patch namespace if it exists and is terminating
 
-          
+      # 13. Patch namespace if it exists and is terminating
       - name: Patch Terminating Namespace (if needed)
+        working-directory: terraform
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
         run: |
-          echo "Checking if namespace gym-namespace exists..."
+          echo "Checking namespace gym-namespace status..."
           if kubectl get namespace gym-namespace >/dev/null 2>&1; then
             NS_PHASE=$(kubectl get namespace gym-namespace -o jsonpath='{.status.phase}')
             if [ "$NS_PHASE" = "Terminating" ]; then
               echo "Namespace gym-namespace is terminating. Removing finalizers..."
               kubectl patch namespace gym-namespace -p '{"metadata":{"finalizers":[]}}' --type=merge || echo "Failed to patch finalizers."
             else
-              echo "Namespace gym-namespace exists and is not terminating."
+              echo "Namespace gym-namespace is in phase: $NS_PHASE. No patch required."
             fi
           else
-            echo "Namespace gym-namespace does not exist. Skipping patch."
+            echo "Namespace gym-namespace not found; skipping patch."
           fi
 
-      # 13. Destroy Remaining Infrastructure with Terraform
+      # 14. Destroy Remaining Infrastructure with Terraform
       - name: Terraform Destroy
         working-directory: terraform
         env:
