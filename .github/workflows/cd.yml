@@ -69,13 +69,16 @@ jobs:
             echo "Cluster gym-cluster does not exist. Terraform will create it."
           fi
 
-      # Step 7: Configure kubectl to connect to GKE
-      - name: Get GKE Credentials
-        uses: google-github-actions/get-gke-credentials@v1
-        with:
-          cluster_name: gym-cluster
-          location: ${{ secrets.GCP_REGION }}
-          project_id: ${{ secrets.GCP_PROJECT }}
+      # Step 7: Conditionally get GKE credentials if the cluster exists
+      - name: Get GKE Credentials (if cluster exists)
+        run: |
+          echo "Checking if cluster 'gym-cluster' exists for credentials..."
+          if gcloud container clusters list --project=${{ secrets.GCP_PROJECT }} --region=${{ secrets.GCP_REGION }} | grep -q "gym-cluster"; then
+            echo "Cluster gym-cluster exists. Getting credentials..."
+            gcloud container clusters get-credentials gym-cluster --region=${{ secrets.GCP_REGION }} --project=${{ secrets.GCP_PROJECT }}
+          else
+            echo "Cluster gym-cluster does not exist. Skipping get-credentials."
+          fi
         env:
           GOOGLE_APPLICATION_CREDENTIALS: terraform/gcp_credentials.json
 
@@ -126,7 +129,7 @@ jobs:
             NS_PHASE=$(kubectl get namespace gym-namespace -o jsonpath='{.status.phase}')
             echo "Namespace gym-namespace phase: $NS_PHASE"
             if [ "$NS_PHASE" = "Terminating" ]; then
-              echo "Namespace gym-namespace is terminating. Removing finalizers..."
+              echo "Namespace gym-namespace is terminating. Removing finalizers and forcing deletion..."
               # Install jq if not present
               if ! command -v jq >/dev/null 2>&1; then
                 sudo apt-get update && sudo apt-get install -y jq
