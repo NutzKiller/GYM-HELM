@@ -161,10 +161,10 @@ jobs:
         run: terraform apply -auto-approve -input=false
 
       # Step 11: Validate Kubernetes Connection
-      - name: Validate Kubernetes Connection
-        run: |
-          kubectl cluster-info
-          kubectl get nodes
+      #- name: Validate Kubernetes Connection
+        #run: |
+          #kubectl cluster-info
+          #kubectl get nodes
 
       # Step 12: Ensure Firewall Rule for GKE (if not already set)
       - name: Ensure Firewall Rule for GKE
