@@ -28,7 +28,7 @@ jobs:
         run: |
           mkdir -p terraform
           echo "${{ secrets.GCP_CREDENTIALS_FILE_B64 }}" | base64 --decode > terraform/gcp_credentials.json
-          # Verify valid JSON with jq (optional; remove the next line once verified)
+          # Verify valid JSON with jq (optional; remove once verified)
           jq . terraform/gcp_credentials.json
           echo "✅ GCP credentials file created."
 
@@ -96,7 +96,6 @@ jobs:
           echo "Sleeping an extra 30 seconds for propagation..."
           sleep 30
 
-
       # 10. Activate GCP Service Account (to ensure active credentials)
       - name: Activate GCP Service Account
         working-directory: terraform
@@ -106,7 +105,7 @@ jobs:
           echo "Activating GCP service account..."
           gcloud auth activate-service-account --key-file=gcp_credentials.json
 
-      # 11. Force Delete Node Pool using gcloud
+      # 11. Force Delete Node Pool using gcloud (with --project flag)
       - name: Force Delete Node Pool
         working-directory: terraform
         env:
@@ -115,11 +114,9 @@ jobs:
           GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
         run: |
           echo "Force deleting node pool 'primary_nodes' from cluster 'gym-cluster'..."
-          gcloud container node-pools delete primary_nodes --cluster gym-cluster --region ${GCP_REGION} --quiet
+          gcloud container node-pools delete primary_nodes --cluster gym-cluster --region ${GCP_REGION} --project ${GCP_PROJECT} --quiet
 
-
-
-      # 11. Remove the Node Pool from Terraform state
+      # 12. Remove the Node Pool from Terraform state
       - name: Remove Node Pool from Terraform State
         working-directory: terraform
         env:
@@ -128,7 +125,7 @@ jobs:
           echo "Removing google_container_node_pool.primary_nodes from state..."
           terraform state rm google_container_node_pool.primary_nodes || echo "Node pool not in state, skipping"
 
-      # 12. Destroy Remaining Infrastructure with Terraform
+      # 13. Destroy Remaining Infrastructure with Terraform
       - name: Terraform Destroy
         working-directory: terraform
         env:
