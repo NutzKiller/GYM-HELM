@@ -23,13 +23,16 @@ jobs:
         with:
           terraform_version: latest
 
-      - name: Authenticate to GCP
-        uses: google-github-actions/auth@v1
-        with:
-            credentials_json: '${{ secrets.GCP_CREDENTIALS_JSON }}'
-        
+      # 3. Decode and create GCP credentials file
+      - name: Create GCP Credentials File
+        run: |
+          mkdir -p terraform
+          echo "${{ secrets.GCP_CREDENTIALS_FILE_B64 }}" | base64 --decode > terraform/gcp_credentials.json
+          # Verify valid JSON (this will fail if the file is not valid JSON)
+          jq . terraform/gcp_credentials.json
+          echo "✅ GCP credentials file created."
 
-      # 5. Initialize Terraform (configure backend, etc.)
+      # 4. Initialize Terraform (configure backend, etc.)
       - name: Terraform Init
         working-directory: terraform
         env:
@@ -39,7 +42,7 @@ jobs:
           GOOGLE_APPLICATION_CREDENTIALS: "terraform/gcp_credentials.json"
         run: terraform init -input=false -reconfigure
 
-      # 6. Delete the LoadBalancer Service (Kubernetes Service)
+      # 5. Delete the LoadBalancer Service (Kubernetes Service)
       - name: Delete LoadBalancer Service
         run: |
           echo "Deleting Kubernetes Service 'gym-gym-service' in namespace 'gym-namespace'..."
@@ -47,7 +50,7 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: "terraform/gcp_credentials.json"
 
-      # 7. Detach instance groups from the backend service
+      # 6. Detach instance groups from the backend service
       - name: Detach Instance Groups from Backend Service
         run: |
           echo "Detaching instance groups from backend service 'gym-backend-service'..."
@@ -57,7 +60,7 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: "terraform/gcp_credentials.json"
 
-      # 8. Delete the backend service
+      # 7. Delete the backend service
       - name: Delete Backend Service
         run: |
           echo "Deleting backend service 'gym-backend-service'..."
@@ -65,7 +68,7 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: "terraform/gcp_credentials.json"
 
-      # 9. Wait until the backend service is fully deleted
+      # 8. Wait until the backend service is fully deleted
       - name: Wait for Backend Service Deletion
         run: |
           echo "Waiting for backend service 'gym-backend-service' to be deleted..."
@@ -82,13 +85,13 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: "terraform/gcp_credentials.json"
 
-      # 10. Extra wait for propagation (optional)
+      # 9. Extra wait for propagation (optional)
       - name: Extra Wait for Propagation
         run: |
           echo "Sleeping an extra 30 seconds for propagation..."
           sleep 30
 
-      # 11. Force Delete Node Pool using gcloud
+      # 10. Force Delete Node Pool using gcloud
       - name: Force Delete Node Pool
         env:
           GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
@@ -98,7 +101,7 @@ jobs:
           echo "Force deleting node pool 'primary_nodes' from cluster 'gym-cluster'..."
           gcloud container node-pools delete primary_nodes --cluster gym-cluster --region ${GCP_REGION} --quiet
 
-      # 12. Remove the Node Pool from Terraform state
+      # 11. Remove the Node Pool from Terraform state
       - name: Remove Node Pool from Terraform State
         working-directory: terraform
         env:
@@ -107,7 +110,7 @@ jobs:
           echo "Removing google_container_node_pool.primary_nodes from state..."
           terraform state rm google_container_node_pool.primary_nodes || echo "Node pool not in state, skipping"
 
-      # 13. Destroy Remaining Infrastructure with Terraform
+      # 12. Destroy Remaining Infrastructure with Terraform
       - name: Terraform Destroy
         working-directory: terraform
         env:
