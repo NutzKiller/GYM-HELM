@@ -3,6 +3,8 @@ resource "google_container_cluster" "primary" {
   location           = var.GCP_REGION
   initial_node_count = 1  # Increased for better scheduling
 
+  deletion_protection = false
+
   remove_default_node_pool = true
 
   # Use the existing default VPC network and subnetwork
