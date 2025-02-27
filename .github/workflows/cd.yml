@@ -111,6 +111,17 @@ jobs:
           else
             echo "Namespace gym-namespace does not exist. Terraform will create it."
           fi
+      # Patch namespace if it is terminating
+      - name: Patch Terminating Namespace (if needed)
+        run: |
+          echo "Checking namespace gym-namespace status..."
+          NS_PHASE=$(kubectl get namespace gym-namespace -o jsonpath='{.status.phase}')
+          if [ "$NS_PHASE" = "Terminating" ]; then
+            echo "Namespace is terminating. Removing finalizers..."
+            kubectl patch namespace gym-namespace -p '{"metadata":{"finalizers":[]}}' --type=merge
+          else
+            echo "Namespace is not terminating. No patch required."
+          fi
 
       # Step 10: Apply Terraform Configuration (Deploys the Helm Release)
       - name: Apply Terraform Configuration
