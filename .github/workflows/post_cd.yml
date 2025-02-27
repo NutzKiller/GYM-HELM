@@ -150,22 +150,23 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
         run: |
-          echo "Attempting to force-delete namespace 'gym-namespace'..."
+          echo "Checking namespace gym-namespace status..."
           if kubectl get namespace gym-namespace >/dev/null 2>&1; then
-            # Remove finalizers
-            kubectl patch namespace gym-namespace -p '{"metadata":{"finalizers":[]}}' --type=merge || echo "Failed to patch finalizers."
-            # Force delete the namespace with zero grace period and without waiting
-            kubectl delete namespace gym-namespace --grace-period=0 --force || echo "Force delete issued."
-            echo "Waiting up to 60 seconds for gym-namespace to vanish..."
-            for i in {1..6}; do
-              if ! kubectl get namespace gym-namespace >/dev/null 2>&1; then
-                echo "Namespace gym-namespace successfully deleted."
-                break
+            NS_PHASE=$(kubectl get namespace gym-namespace -o jsonpath='{.status.phase}')
+            echo "Namespace gym-namespace phase: $NS_PHASE"
+            if [ "$NS_PHASE" = "Terminating" ]; then
+              echo "Namespace gym-namespace is terminating. Removing finalizers..."
+              if ! command -v jq >/dev/null 2>&1; then
+                sudo apt-get update && sudo apt-get install -y jq
               fi
-              echo "Namespace still exists; waiting 10 seconds..."
-              sleep 10
-            done
-            echo "Proceeding regardless of namespace deletion."
+              kubectl get namespace gym-namespace -o json | jq '.spec.finalizers=[]' | kubectl replace --raw "/api/v1/namespaces/gym-namespace/finalize" -f -
+            else
+              echo "Namespace gym-namespace is in phase: $NS_PHASE. Forcing deletion regardless..."
+            fi
+            echo "Force deleting namespace gym-namespace..."
+            kubectl delete namespace gym-namespace --grace-period=0 --force || echo "Force delete issued."
+            echo "Waiting up to 60 seconds for namespace gym-namespace to vanish..."
+            kubectl wait --for=delete namespace/gym-namespace --timeout=60s || echo "Namespace gym-namespace still exists after timeout. Proceeding anyway."
           else
             echo "Namespace gym-namespace not found; skipping patch."
           fi

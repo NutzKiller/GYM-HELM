@@ -127,21 +127,15 @@ jobs:
             echo "Namespace gym-namespace phase: $NS_PHASE"
             if [ "$NS_PHASE" = "Terminating" ]; then
               echo "Namespace gym-namespace is terminating. Removing finalizers..."
-              kubectl patch namespace gym-namespace -p '{"metadata":{"finalizers":[]}}' --type=merge || echo "Failed to patch finalizers."
+              # Install jq if not present
+              if ! command -v jq >/dev/null 2>&1; then
+                sudo apt-get update && sudo apt-get install -y jq
+              fi
+              kubectl get namespace gym-namespace -o json | jq '.spec.finalizers=[]' | kubectl replace --raw "/api/v1/namespaces/gym-namespace/finalize" -f -
               echo "Force deleting namespace gym-namespace..."
               kubectl delete namespace gym-namespace --grace-period=0 --force || echo "Force delete issued."
               echo "Waiting up to 60 seconds for namespace gym-namespace to vanish..."
-              for i in {1..6}; do
-                if ! kubectl get namespace gym-namespace >/dev/null 2>&1; then
-                  echo "Namespace gym-namespace successfully deleted."
-                  break
-                fi
-                echo "Namespace still exists; waiting 10 seconds..."
-                sleep 10
-              done
-              if kubectl get namespace gym-namespace >/dev/null 2>&1; then
-                echo "Warning: gym-namespace still exists after waiting. Proceeding anyway."
-              fi
+              kubectl wait --for=delete namespace/gym-namespace --timeout=60s || echo "Namespace gym-namespace still exists after timeout. Proceeding anyway."
             else
               echo "Namespace gym-namespace is in phase: $NS_PHASE. No patch required."
             fi
