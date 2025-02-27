@@ -96,7 +96,17 @@ jobs:
           echo "Sleeping an extra 30 seconds for propagation..."
           sleep 30
 
-      # 10. Force Delete Node Pool using gcloud
+
+      # 10. Activate GCP Service Account (to ensure active credentials)
+      - name: Activate GCP Service Account
+        working-directory: terraform
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
+        run: |
+          echo "Activating GCP service account..."
+          gcloud auth activate-service-account --key-file=gcp_credentials.json
+
+      # 11. Force Delete Node Pool using gcloud
       - name: Force Delete Node Pool
         working-directory: terraform
         env:
@@ -106,6 +116,8 @@ jobs:
         run: |
           echo "Force deleting node pool 'primary_nodes' from cluster 'gym-cluster'..."
           gcloud container node-pools delete primary_nodes --cluster gym-cluster --region ${GCP_REGION} --quiet
+
+
 
       # 11. Remove the Node Pool from Terraform state
       - name: Remove Node Pool from Terraform State
