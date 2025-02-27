@@ -105,16 +105,25 @@ jobs:
           echo "Activating GCP service account..."
           gcloud auth activate-service-account --key-file=gcp_credentials.json
 
-      # 11. Force Delete Node Pool using gcloud (with --project flag)
-      - name: Force Delete Node Pool
+      # Step 11: Force Delete All Node Pools using gcloud
+      - name: Force Delete All Node Pools
         working-directory: terraform
         env:
           GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
           GCP_REGION: ${{ secrets.GCP_REGION }}
           GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
         run: |
-          echo "Force deleting node pool 'primary_nodes' from cluster 'gym-cluster'..."
-          gcloud container node-pools delete primary_nodes --cluster gym-cluster --region ${GCP_REGION} --project ${GCP_PROJECT} --quiet
+          echo "Listing node pools in cluster 'gym-cluster'..."
+          NP_LIST=$(gcloud container node-pools list --cluster gym-cluster --region ${GCP_REGION} --project ${GCP_PROJECT} --format="value(name)")
+          if [ -z "$NP_LIST" ]; then
+            echo "No node pools found."
+          else
+            for NP in $NP_LIST; do
+              echo "Force deleting node pool '$NP' from cluster 'gym-cluster'..."
+              gcloud container node-pools delete "$NP" --cluster gym-cluster --region ${GCP_REGION} --project ${GCP_PROJECT} --quiet
+            done
+          fi
+
 
       # 12. Remove the Node Pool from Terraform state
       - name: Remove Node Pool from Terraform State
