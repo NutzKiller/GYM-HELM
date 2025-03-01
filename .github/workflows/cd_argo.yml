@@ -36,31 +36,29 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: argocd/gcp_credentials.json
 
-      - name: Create ArgoCD Namespace
-        run: |
-          kubectl create namespace argocd || echo "Namespace 'argocd' already exists."
-
-      # Install ArgoCD (this manifest now includes the CRDs)
+      # Install ArgoCD (using the full install manifest which includes CRDs)
       - name: Install ArgoCD
         run: |
-          echo "Installing ArgoCD..."
+          kubectl create namespace argocd || echo "Namespace argocd already exists."
           kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml --validate=false
 
       - name: Wait for ArgoCD Server to be Ready
         run: |
           kubectl wait --for=condition=Available deployment/argocd-server -n argocd --timeout=300s
 
+      # Create the Monitoring namespace for Prometheus, Grafana, and Loki
       - name: Create Monitoring Namespace
         run: |
-          kubectl create namespace monitoring || echo "Namespace 'monitoring' already exists."
+          kubectl create namespace monitoring || echo "Namespace monitoring already exists."
 
-      - name: Deploy Monitoring Applications via ArgoCD
+      # Deploy Monitoring Applications via ArgoCD (without overriding namespace)
+      - name: Deploy Monitoring Apps via ArgoCD
         run: |
           echo "Deploying Monitoring Apps via ArgoCD..."
-          # These files should be your ArgoCD Application manifests that point to your Git repo/helm charts for Prometheus, Grafana, and Loki.
-          kubectl apply -n argocd -f argocd/apps/prometheus.yaml --validate=false
-          kubectl apply -n argocd -f argocd/apps/grafana.yaml --validate=false
-          kubectl apply -n argocd -f argocd/apps/loki.yaml --validate=false
+          # These Application manifests should have metadata.namespace set to "monitoring"
+          kubectl apply -f argocd/apps/prometheus.yaml --validate=false
+          kubectl apply -f argocd/apps/grafana.yaml --validate=false
+          kubectl apply -f argocd/apps/loki.yaml --validate=false
 
       - name: Wait for Monitoring Deployments Rollout
         run: |
