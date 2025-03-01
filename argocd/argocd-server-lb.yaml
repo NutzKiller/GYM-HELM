@@ -6,10 +6,13 @@ metadata:
   labels:
     app.kubernetes.io/name: argocd-server
 spec:
-  type: LoadBalancer
+  type: LoadBalancer            # Expose externally
   ports:
     - name: http
       port: 80
+      targetPort: 8080
+    - name: https
+      port: 443
       targetPort: 8080
   selector:
     app.kubernetes.io/name: argocd-server
