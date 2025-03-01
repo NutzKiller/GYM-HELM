@@ -14,7 +14,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Create GCP credentials file for ArgoCD
+      - name: Create GCP Credentials File for ArgoCD
         run: |
           mkdir -p argocd
           echo "${{ secrets.GCP_CREDENTIALS_FILE_B64 }}" | base64 --decode > argocd/gcp_credentials.json
@@ -36,36 +36,31 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: argocd/gcp_credentials.json
 
-      # NEW STEP: Install ArgoCD CRDs
-      - name: Install ArgoCD CRDs
-        run: |
-          echo "Installing ArgoCD CRDs..."
-          kubectl apply -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/crds.yaml --validate=false
-
       - name: Create ArgoCD Namespace
         run: |
-          kubectl create namespace argocd || echo "Namespace argocd already exists."
+          kubectl create namespace argocd || echo "Namespace 'argocd' already exists."
 
-      # NEW STEP: Create Monitoring Namespace
-      - name: Create Monitoring Namespace
-        run: |
-          kubectl create namespace monitoring || echo "Namespace monitoring already exists."
-
+      # Install ArgoCD (this manifest now includes the CRDs)
       - name: Install ArgoCD
         run: |
           echo "Installing ArgoCD..."
-          kubectl apply -f argocd/install-argocd.yaml --validate=false
+          kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml --validate=false
 
       - name: Wait for ArgoCD Server to be Ready
         run: |
           kubectl wait --for=condition=Available deployment/argocd-server -n argocd --timeout=300s
 
+      - name: Create Monitoring Namespace
+        run: |
+          kubectl create namespace monitoring || echo "Namespace 'monitoring' already exists."
+
       - name: Deploy Monitoring Applications via ArgoCD
         run: |
-          echo "Deploying Monitoring Apps..."
-          kubectl apply -f argocd/apps/prometheus.yaml --validate=false
-          kubectl apply -f argocd/apps/grafana.yaml --validate=false
-          kubectl apply -f argocd/apps/loki.yaml --validate=false
+          echo "Deploying Monitoring Apps via ArgoCD..."
+          # These files should be your ArgoCD Application manifests that point to your Git repo/helm charts for Prometheus, Grafana, and Loki.
+          kubectl apply -n argocd -f argocd/apps/prometheus.yaml --validate=false
+          kubectl apply -n argocd -f argocd/apps/grafana.yaml --validate=false
+          kubectl apply -n argocd -f argocd/apps/loki.yaml --validate=false
 
       - name: Wait for Monitoring Deployments Rollout
         run: |
