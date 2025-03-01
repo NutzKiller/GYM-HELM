@@ -36,34 +36,30 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: argocd/gcp_credentials.json
 
-      # -- NEW STEP: Install ArgoCD CRDs --
-      - name: Install ArgoCD CRDs
-        run: |
-          echo "Installing ArgoCD CRDs..."
-          kubectl apply -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/crds.yaml --validate=false
-
-      - name: Create ArgoCD Namespace
-        run: |
-          kubectl create namespace argocd || echo "Namespace argocd already exists."
-
+      # Install ArgoCD (this installs CRDs and all components)
       - name: Install ArgoCD
         run: |
+          echo "Creating namespace 'argocd' if it does not exist..."
+          kubectl create namespace argocd || echo "Namespace 'argocd' already exists."
           echo "Installing ArgoCD..."
-          kubectl apply -f argocd/install-argocd.yaml --validate=false
+          kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml --validate=false
 
       - name: Wait for ArgoCD Server to be Ready
         run: |
-          kubectl wait --for=condition=Available deployment/argocd-server -n argocd --timeout=300s
+          echo "Waiting for ArgoCD server deployment to be available..."
+          kubectl rollout status deployment/argocd-server -n argocd --timeout=300s
 
+      # Deploy monitoring apps via ArgoCD using your app YAMLs (they must be defined as ArgoCD Applications)
       - name: Deploy Monitoring Applications via ArgoCD
         run: |
-          echo "Deploying Monitoring Apps..."
+          echo "Deploying Monitoring Applications..."
           kubectl apply -f argocd/apps/prometheus.yaml --validate=false
           kubectl apply -f argocd/apps/grafana.yaml --validate=false
           kubectl apply -f argocd/apps/loki.yaml --validate=false
 
       - name: Wait for Monitoring Deployments Rollout
         run: |
+          echo "Waiting for Grafana, Prometheus, and Loki deployments to roll out..."
           kubectl rollout status deployment/grafana -n monitoring --timeout=300s || echo "Grafana deployment timeout"
           kubectl rollout status deployment/prometheus-kube-prometheus-stack-prometheus -n monitoring --timeout=300s || echo "Prometheus deployment timeout"
           kubectl rollout status deployment/loki -n monitoring --timeout=300s || echo "Loki deployment timeout"
@@ -71,4 +67,8 @@ jobs:
       - name: Output ArgoCD Server URL
         run: |
           ARGOCD_IP=$(kubectl get svc argocd-server -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          if [ -z "$ARGOCD_IP" ]; then
+            echo "LoadBalancer IP not found; using cluster IP."
+            ARGOCD_IP=$(kubectl get svc argocd-server -n argocd -o jsonpath='{.spec.clusterIP}')
+          fi
           echo "ArgoCD is available at: http://${ARGOCD_IP}:80"
