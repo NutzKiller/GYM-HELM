@@ -11,15 +11,18 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
+      # Step 1: Checkout Repository
+      - name: Check out Repository
         uses: actions/checkout@v3
 
+      # Step 2: Create GCP Credentials File for ArgoCD
       - name: Create GCP Credentials File for ArgoCD
         run: |
           mkdir -p argocd
           echo "${{ secrets.GCP_CREDENTIALS_FILE_B64 }}" | base64 --decode > argocd/gcp_credentials.json
           echo "✅ GCP credentials file created in argocd/"
 
+      # Step 3: Set up Cloud SDK for ArgoCD
       - name: Set up Cloud SDK for ArgoCD
         uses: google-github-actions/setup-gcloud@v1
         with:
@@ -27,6 +30,7 @@ jobs:
           service_account_key_file: argocd/gcp_credentials.json
           export_default_credentials: true
 
+      # Step 4: Get GKE Credentials for ArgoCD
       - name: Get GKE Credentials for ArgoCD
         uses: google-github-actions/get-gke-credentials@v1
         with:
@@ -36,13 +40,13 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: argocd/gcp_credentials.json
 
-      # Install ArgoCD using the full install manifest (which includes CRDs)
+      # Step 5: Install ArgoCD using the full install manifest (which includes CRDs)
       - name: Install ArgoCD
         run: |
           kubectl create namespace argocd || echo "Namespace argocd already exists."
           kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml --validate=false
 
-      # Wait for ArgoCD Server deployment to be ready, but do not block indefinitely
+      # Step 6: Wait for ArgoCD Server to be Ready
       - name: Wait for ArgoCD Server to be Ready
         run: |
           echo "Waiting for ArgoCD server deployment to be available (timeout: 300s)..."
@@ -50,20 +54,47 @@ jobs:
             echo "Warning: ArgoCD server did not become available within 300s. Proceeding anyway."
           fi
 
-      # Create the Monitoring namespace for Prometheus, Grafana, and Loki
+      # Step 7: Create a LoadBalancer for ArgoCD externally
+      - name: Create ArgoCD LoadBalancer Service
+        run: |
+          kubectl apply -n argocd -f - <<EOF
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: argocd-server-lb
+            labels:
+              app.kubernetes.io/name: argocd-server
+          spec:
+            type: LoadBalancer
+            ports:
+              - name: http
+                port: 80
+                targetPort: 8080
+              - name: https
+                port: 443
+                targetPort: 8080
+            selector:
+              app.kubernetes.io/name: argocd-server
+            externalTrafficPolicy: Cluster
+EOF
+          kubectl wait --for=condition=Available svc/argocd-server-lb -n argocd --timeout=300s || echo "ArgoCD LB service not available after timeout."
+
+      # Step 8: Create the Monitoring Namespace
       - name: Create Monitoring Namespace
         run: |
           kubectl create namespace monitoring || echo "Namespace monitoring already exists."
 
-      # Deploy Monitoring Applications via ArgoCD (they should have metadata.namespace set to "monitoring")
+      # Step 9: Deploy Monitoring Applications via ArgoCD  
+      # (Ensure that your Application manifests in argocd/apps have metadata.namespace set to "monitoring"
+      #  and targetRevision set to a valid revision, e.g., "main")
       - name: Deploy Monitoring Apps via ArgoCD
         run: |
           echo "Deploying Monitoring Apps via ArgoCD..."
-          kubectl apply -f argocd/apps/prometheus.yaml --validate=false --namespace=monitoring
-          kubectl apply -f argocd/apps/grafana.yaml --validate=false --namespace=monitoring
-          kubectl apply -f argocd/apps/loki.yaml --validate=false --namespace=monitoring
+          kubectl apply -n monitoring -f argocd/apps/prometheus.yaml --validate=false
+          kubectl apply -n monitoring -f argocd/apps/grafana.yaml --validate=false
+          kubectl apply -n monitoring -f argocd/apps/loki.yaml --validate=false
 
-      # Wait for the monitoring deployments to roll out; do not block indefinitely
+      # Step 10: Wait for Monitoring Deployments Rollout
       - name: Wait for Monitoring Deployments Rollout
         run: |
           echo "Waiting for Grafana deployment rollout (timeout: 300s)..."
@@ -73,11 +104,12 @@ jobs:
           echo "Waiting for Loki deployment rollout (timeout: 300s)..."
           kubectl rollout status deployment/loki -n monitoring --timeout=300s || echo "Loki deployment timeout, proceeding."
 
+      # Step 11: Output ArgoCD Server URL for external access
       - name: Output ArgoCD Server URL
         run: |
-          ARGOCD_IP=$(kubectl get svc argocd-server -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          ARGOCD_IP=$(kubectl get svc argocd-server-lb -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
           if [ -n "$ARGOCD_IP" ]; then
-            echo "ArgoCD is available at: http://${ARGOCD_IP}:80"
+            echo "ArgoCD is available at: http://${ARGOCD_IP}"
           else
             echo "ArgoCD external IP not found."
           fi
