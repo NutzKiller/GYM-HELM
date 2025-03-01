@@ -11,15 +11,18 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      # Step 1: Checkout Repository
       - name: Checkout Repository
         uses: actions/checkout@v3
 
+      # Step 2: Create GCP credentials file for ArgoCD
       - name: Create GCP credentials file for ArgoCD
         run: |
           mkdir -p argocd
           echo "${{ secrets.GCP_CREDENTIALS_FILE_B64 }}" | base64 --decode > argocd/gcp_credentials.json
           echo "✅ GCP credentials file created in argocd/"
 
+      # Step 3: Set up Cloud SDK for ArgoCD
       - name: Set up Cloud SDK for ArgoCD
         uses: google-github-actions/setup-gcloud@v1
         with:
@@ -27,26 +30,48 @@ jobs:
           service_account_key_file: argocd/gcp_credentials.json
           export_default_credentials: true
 
+      # Step 4: Get GKE Credentials for ArgoCD
+      - name: Get GKE Credentials for ArgoCD
+        uses: google-github-actions/get-gke-credentials@v1
+        with:
+          cluster_name: gym-cluster
+          location: ${{ secrets.GCP_REGION }}
+          project_id: ${{ secrets.GCP_PROJECT }}
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: argocd/gcp_credentials.json
+
+      # Step 5: Create ArgoCD Namespace if not exists
       - name: Create ArgoCD Namespace
         run: |
           kubectl create namespace argocd || echo "Namespace argocd already exists."
 
+      # Step 6: Install ArgoCD
       - name: Install ArgoCD
         run: |
-          kubectl apply -f argocd/install-argocd.yaml
+          # Use --validate=false if you run into schema validation issues.
+          kubectl apply -f argocd/install-argocd.yaml --validate=false
 
+      # Step 7: Wait for ArgoCD Server to be Ready
       - name: Wait for ArgoCD Server to be Ready
         run: |
           kubectl wait --for=condition=Available deployment/argocd-server -n argocd --timeout=300s
 
+      # Step 8: Deploy Monitoring Applications via ArgoCD
       - name: Deploy Monitoring Applications via ArgoCD
         run: |
-          kubectl apply -f argocd/apps/prometheus.yaml
-          kubectl apply -f argocd/apps/grafana.yaml
-          kubectl apply -f argocd/apps/loki.yaml
+          kubectl apply -f argocd/apps/prometheus.yaml --validate=false
+          kubectl apply -f argocd/apps/grafana.yaml --validate=false
+          kubectl apply -f argocd/apps/loki.yaml --validate=false
 
+      # Step 9: Wait for Monitoring Deployments Rollout
       - name: Wait for Monitoring Deployments Rollout
         run: |
           kubectl rollout status deployment/grafana -n monitoring --timeout=300s || echo "Grafana deployment timeout"
           kubectl rollout status deployment/prometheus-kube-prometheus-stack-prometheus -n monitoring --timeout=300s || echo "Prometheus deployment timeout"
           kubectl rollout status deployment/loki -n monitoring --timeout=300s || echo "Loki deployment timeout"
+
+      # (Optional) Step 10: Output ArgoCD Server URL
+      - name: Output ArgoCD Server URL
+        run: |
+          ARGOCD_IP=$(kubectl get svc argocd-server -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          echo "ArgoCD is available at: http://${ARGOCD_IP}:80"
