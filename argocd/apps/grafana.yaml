@@ -1,24 +1,16 @@
-apiVersion: argoproj.io/v1alpha1
-kind: Application
+apiVersion: v1
+kind: Service
 metadata:
   name: grafana
-  namespace: argocd
+  namespace: monitoring
+  labels:
+    app: grafana
 spec:
-  project: default
-  source:
-    repoURL: https://grafana.github.io/helm-charts
-    targetRevision: latest
-    chart: grafana
-    helm:
-      parameters:
-      - name: service.type
-        value: LoadBalancer
-      - name: service.port
-        value: "5000"
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: monitoring
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
+  type: LoadBalancer   # <-- Expose via external IP
+  ports:
+    - port: 3000       # Use port 3000 for Grafana
+      targetPort: 3000
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: grafana
