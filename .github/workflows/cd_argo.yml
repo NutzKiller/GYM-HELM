@@ -36,7 +36,7 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: argocd/gcp_credentials.json
 
-      # Install ArgoCD (using the full install manifest which includes CRDs)
+      # Install ArgoCD (this manifest includes CRDs)
       - name: Install ArgoCD
         run: |
           kubectl create namespace argocd || echo "Namespace argocd already exists."
@@ -46,16 +46,39 @@ jobs:
         run: |
           kubectl wait --for=condition=Available deployment/argocd-server -n argocd --timeout=300s
 
-      # Create the Monitoring namespace for Prometheus, Grafana, and Loki
+      # OPTIONAL: If you need external access to ArgoCD, you can apply a LoadBalancer service.
+      - name: Expose ArgoCD via LoadBalancer
+        run: |
+          kubectl apply -n argocd -f - <<EOF
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: argocd-server-lb
+          spec:
+            type: LoadBalancer
+            ports:
+              - name: http
+                port: 80
+                targetPort: 8080
+              - name: https
+                port: 443
+                targetPort: 8080
+            selector:
+              app.kubernetes.io/name: argocd-server
+            externalTrafficPolicy: Cluster
+          EOF
+          kubectl wait --for=condition=Available svc/argocd-server-lb -n argocd --timeout=300s
+
+      # Create the Monitoring namespace for your monitoring apps
       - name: Create Monitoring Namespace
         run: |
           kubectl create namespace monitoring || echo "Namespace monitoring already exists."
 
-      # Deploy Monitoring Applications via ArgoCD (without overriding namespace)
+      # Deploy Monitoring Applications via ArgoCD.
+      # (Ensure that your Application manifests in argocd/apps/ have metadata.namespace set to "monitoring".)
       - name: Deploy Monitoring Apps via ArgoCD
         run: |
           echo "Deploying Monitoring Apps via ArgoCD..."
-          # These Application manifests should have metadata.namespace set to "monitoring"
           kubectl apply -f argocd/apps/prometheus.yaml --validate=false
           kubectl apply -f argocd/apps/grafana.yaml --validate=false
           kubectl apply -f argocd/apps/loki.yaml --validate=false
@@ -68,5 +91,5 @@ jobs:
 
       - name: Output ArgoCD Server URL
         run: |
-          ARGOCD_IP=$(kubectl get svc argocd-server -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-          echo "ArgoCD is available at: http://${ARGOCD_IP}:80"
+          ARGOCD_IP=$(kubectl get svc argocd-server-lb -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          echo "ArgoCD is available at: http://${ARGOCD_IP}"
