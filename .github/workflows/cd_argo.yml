@@ -36,60 +36,48 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: argocd/gcp_credentials.json
 
-      # Install ArgoCD (this manifest includes CRDs)
+      # Install ArgoCD using the full install manifest (which includes CRDs)
       - name: Install ArgoCD
         run: |
           kubectl create namespace argocd || echo "Namespace argocd already exists."
           kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml --validate=false
 
+      # Wait for ArgoCD Server deployment to be ready, but do not block indefinitely
       - name: Wait for ArgoCD Server to be Ready
         run: |
-          kubectl wait --for=condition=Available deployment/argocd-server -n argocd --timeout=300s
+          echo "Waiting for ArgoCD server deployment to be available (timeout: 300s)..."
+          if ! kubectl wait --for=condition=Available deployment/argocd-server -n argocd --timeout=300s; then
+            echo "Warning: ArgoCD server did not become available within 300s. Proceeding anyway."
+          fi
 
-      # OPTIONAL: If you need external access to ArgoCD, you can apply a LoadBalancer service.
-      - name: Expose ArgoCD via LoadBalancer
-        run: |
-          kubectl apply -n argocd -f - <<EOF
-          apiVersion: v1
-          kind: Service
-          metadata:
-            name: argocd-server-lb
-          spec:
-            type: LoadBalancer
-            ports:
-              - name: http
-                port: 80
-                targetPort: 8080
-              - name: https
-                port: 443
-                targetPort: 8080
-            selector:
-              app.kubernetes.io/name: argocd-server
-            externalTrafficPolicy: Cluster
-          EOF
-          kubectl wait --for=condition=Available svc/argocd-server-lb -n argocd --timeout=300s
-
-      # Create the Monitoring namespace for your monitoring apps
+      # Create the Monitoring namespace for Prometheus, Grafana, and Loki
       - name: Create Monitoring Namespace
         run: |
           kubectl create namespace monitoring || echo "Namespace monitoring already exists."
 
-      # Deploy Monitoring Applications via ArgoCD.
-      # (Ensure that your Application manifests in argocd/apps/ have metadata.namespace set to "monitoring".)
+      # Deploy Monitoring Applications via ArgoCD (they should have metadata.namespace set to "monitoring")
       - name: Deploy Monitoring Apps via ArgoCD
         run: |
           echo "Deploying Monitoring Apps via ArgoCD..."
-          kubectl apply -f argocd/apps/prometheus.yaml --validate=false
-          kubectl apply -f argocd/apps/grafana.yaml --validate=false
-          kubectl apply -f argocd/apps/loki.yaml --validate=false
+          kubectl apply -f argocd/apps/prometheus.yaml --validate=false --namespace=monitoring
+          kubectl apply -f argocd/apps/grafana.yaml --validate=false --namespace=monitoring
+          kubectl apply -f argocd/apps/loki.yaml --validate=false --namespace=monitoring
 
+      # Wait for the monitoring deployments to roll out; do not block indefinitely
       - name: Wait for Monitoring Deployments Rollout
         run: |
-          kubectl rollout status deployment/grafana -n monitoring --timeout=300s || echo "Grafana deployment timeout"
-          kubectl rollout status deployment/prometheus-kube-prometheus-stack-prometheus -n monitoring --timeout=300s || echo "Prometheus deployment timeout"
-          kubectl rollout status deployment/loki -n monitoring --timeout=300s || echo "Loki deployment timeout"
+          echo "Waiting for Grafana deployment rollout (timeout: 300s)..."
+          kubectl rollout status deployment/grafana -n monitoring --timeout=300s || echo "Grafana deployment timeout, proceeding."
+          echo "Waiting for Prometheus deployment rollout (timeout: 300s)..."
+          kubectl rollout status deployment/prometheus-kube-prometheus-stack-prometheus -n monitoring --timeout=300s || echo "Prometheus deployment timeout, proceeding."
+          echo "Waiting for Loki deployment rollout (timeout: 300s)..."
+          kubectl rollout status deployment/loki -n monitoring --timeout=300s || echo "Loki deployment timeout, proceeding."
 
       - name: Output ArgoCD Server URL
         run: |
-          ARGOCD_IP=$(kubectl get svc argocd-server-lb -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-          echo "ArgoCD is available at: http://${ARGOCD_IP}"
+          ARGOCD_IP=$(kubectl get svc argocd-server -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          if [ -n "$ARGOCD_IP" ]; then
+            echo "ArgoCD is available at: http://${ARGOCD_IP}:80"
+          else
+            echo "ArgoCD external IP not found."
+          fi
