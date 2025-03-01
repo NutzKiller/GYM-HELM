@@ -1,16 +1,24 @@
-apiVersion: v1
-kind: Service
+apiVersion: argoproj.io/v1alpha1
+kind: Application
 metadata:
   name: prometheus
-  namespace: monitoring
-  labels:
-    app: prometheus
+  namespace: argocd
 spec:
-  type: LoadBalancer   # Expose Prometheus externally
-  ports:
-    - port: 9090
-      targetPort: 9090
-      protocol: TCP
-      name: http
-  selector:
-    app.kubernetes.io/name: prometheus
+  project: default
+  source:
+    repoURL: "https://prometheus-community.github.io/helm-charts"
+    chart: prometheus
+    targetRevision: "15.3.0"  # Use a valid version from the Prometheus repo
+    helm:
+      values: |
+        server:
+          service:
+            type: LoadBalancer
+            port: 9090
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
