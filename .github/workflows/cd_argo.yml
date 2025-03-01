@@ -1,0 +1,52 @@
+name: CD Argo Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: 'Type "yes" to deploy ArgoCD and Monitoring stack'
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Create GCP credentials file for ArgoCD
+        run: |
+          mkdir -p argocd
+          echo "${{ secrets.GCP_CREDENTIALS_FILE_B64 }}" | base64 --decode > argocd/gcp_credentials.json
+          echo "✅ GCP credentials file created in argocd/"
+
+      - name: Set up Cloud SDK for ArgoCD
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: ${{ secrets.GCP_PROJECT }}
+          service_account_key_file: argocd/gcp_credentials.json
+          export_default_credentials: true
+
+      - name: Create ArgoCD Namespace
+        run: |
+          kubectl create namespace argocd || echo "Namespace argocd already exists."
+
+      - name: Install ArgoCD
+        run: |
+          kubectl apply -f argocd/install-argocd.yaml
+
+      - name: Wait for ArgoCD Server to be Ready
+        run: |
+          kubectl wait --for=condition=Available deployment/argocd-server -n argocd --timeout=300s
+
+      - name: Deploy Monitoring Applications via ArgoCD
+        run: |
+          kubectl apply -f argocd/apps/prometheus.yaml
+          kubectl apply -f argocd/apps/grafana.yaml
+          kubectl apply -f argocd/apps/loki.yaml
+
+      - name: Wait for Monitoring Deployments Rollout
+        run: |
+          kubectl rollout status deployment/grafana -n monitoring --timeout=300s || echo "Grafana deployment timeout"
+          kubectl rollout status deployment/prometheus-kube-prometheus-stack-prometheus -n monitoring --timeout=300s || echo "Prometheus deployment timeout"
+          kubectl rollout status deployment/loki -n monitoring --timeout=300s || echo "Loki deployment timeout"
