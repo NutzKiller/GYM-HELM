@@ -3,16 +3,18 @@ kind: Service
 metadata:
   name: argocd-server
   namespace: argocd
-  labels:
-    app.kubernetes.io/name: argocd-server
+  annotations:
+    # Tells GCP to provision an external load balancer.
+    cloud.google.com/load-balancer-type: "External"
 spec:
-  type: LoadBalancer            # Expose externally
+  type: LoadBalancer
+  externalTrafficPolicy: Cluster
   ports:
-    - name: http
-      port: 80
-      targetPort: 8080
     - name: https
       port: 443
+      targetPort: 8080
+    - name: http
+      port: 80
       targetPort: 8080
   selector:
     app.kubernetes.io/name: argocd-server
