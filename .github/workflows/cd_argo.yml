@@ -40,7 +40,7 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: argocd/gcp_credentials.json
 
-      # Step 5: Install ArgoCD using the full install manifest (includes CRDs)
+      # Step 5: Install ArgoCD (includes CRDs)
       - name: Install ArgoCD
         run: |
           kubectl create namespace argocd || echo "Namespace argocd already exists."
@@ -54,13 +54,21 @@ jobs:
             echo "Warning: ArgoCD server did not become available within 300s. Proceeding anyway."
           fi
 
+      # NEW STEP: Apply ArgoCD LoadBalancer Service from local file
+      - name: Apply ArgoCD LoadBalancer Service
+        run: |
+          echo "Applying ArgoCD LoadBalancer service manifest..."
+          kubectl apply -n argocd -f argocd/argocd-server-lb.yaml --validate=false
+          echo "Waiting for the ArgoCD LB service to obtain an external IP..."
+          kubectl wait --for=condition=Available svc/argocd-server-lb -n argocd --timeout=300s || echo "ArgoCD LB service not ready after timeout."
+
       # Step 7: Create the Monitoring Namespace
       - name: Create Monitoring Namespace
         run: |
           kubectl create namespace monitoring || echo "Namespace monitoring already exists."
 
       # Step 8: Deploy Monitoring Apps via ArgoCD  
-      # (Make sure your Application manifests in argocd/apps set metadata.namespace to "monitoring" and targetRevision to "main" or your desired branch)
+      # (Ensure your Application manifests in argocd/apps set metadata.namespace to "monitoring" and targetRevision to your branch, e.g. "main")
       - name: Deploy Monitoring Apps via ArgoCD
         run: |
           echo "Deploying Monitoring Apps via ArgoCD..."
@@ -81,8 +89,6 @@ jobs:
       # Step 10: Output ArgoCD Server URL for external access
       - name: Output ArgoCD Server URL
         run: |
-          # If your load balancer service is named "argocd-server-lb", query that;
-          # otherwise, if it’s still "argocd-server", update the query accordingly.
           ARGOCD_IP=$(kubectl get svc argocd-server-lb -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
           if [ -n "$ARGOCD_IP" ]; then
             echo "ArgoCD is available at: http://${ARGOCD_IP}:80"
