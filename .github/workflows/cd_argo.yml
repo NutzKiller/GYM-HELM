@@ -54,7 +54,7 @@ jobs:
             echo "Warning: ArgoCD server did not become available within 300s. Proceeding anyway."
           fi
 
-      # NEW STEP: Apply ArgoCD LoadBalancer Service from local file
+      # Step 7: Apply ArgoCD LoadBalancer Service from local file
       - name: Apply ArgoCD LoadBalancer Service
         run: |
           echo "Applying ArgoCD LoadBalancer service manifest..."
@@ -62,19 +62,14 @@ jobs:
           echo "Waiting for the ArgoCD LB service to obtain an external IP..."
           kubectl wait --for=condition=Available svc/argocd-server-lb -n argocd --timeout=300s || echo "ArgoCD LB service not ready after timeout."
 
-      # Step 7: Create the Monitoring Namespace
-      - name: Create Monitoring Namespace
-        run: |
-          kubectl create namespace monitoring || echo "Namespace monitoring already exists."
-
       # Step 8: Deploy Monitoring Apps via ArgoCD  
-      # (Ensure your Application manifests in argocd/apps set metadata.namespace to "monitoring" and targetRevision to your branch, e.g. "main")
+      # (Ensure your Application manifests in argocd/apps set metadata.namespace to "argocd" and targetRevision to your branch, e.g. "main")
       - name: Deploy Monitoring Apps via ArgoCD
         run: |
           echo "Deploying Monitoring Apps via ArgoCD..."
-          kubectl apply -n monitoring -f argocd/apps/prometheus.yaml --validate=false
-          kubectl apply -n monitoring -f argocd/apps/grafana.yaml --validate=false
-          kubectl apply -n monitoring -f argocd/apps/loki.yaml --validate=false
+          kubectl apply -n argocd -f argocd/apps/prometheus.yaml --validate=false
+          kubectl apply -n argocd -f argocd/apps/grafana.yaml --validate=false
+          kubectl apply -n argocd -f argocd/apps/loki.yaml --validate=false
 
       # Step 9: Wait for Monitoring Deployments Rollout
       - name: Wait for Monitoring Deployments Rollout
