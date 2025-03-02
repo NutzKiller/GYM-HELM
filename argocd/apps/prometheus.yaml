@@ -7,8 +7,8 @@ spec:
   project: default
   source:
     repoURL: "https://prometheus-community.github.io/helm-charts"
-    chart: prometheus
-    targetRevision: "46.0.0"  # Use a valid version from the Prometheus repo
+    chart: kube-prometheus-stack   # Corrected chart name
+    targetRevision: "46.0.0"         # Ensure this version is valid for kube-prometheus-stack
     helm:
       values: |
         server:
