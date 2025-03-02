@@ -40,7 +40,7 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: argocd/gcp_credentials.json
 
-      # Step 5: Install ArgoCD using the full install manifest (which includes CRDs)
+      # Step 5: Install ArgoCD using the full install manifest (includes CRDs)
       - name: Install ArgoCD
         run: |
           kubectl create namespace argocd || echo "Namespace argocd already exists."
@@ -60,7 +60,7 @@ jobs:
           kubectl create namespace monitoring || echo "Namespace monitoring already exists."
 
       # Step 8: Deploy Monitoring Apps via ArgoCD  
-      # (Make sure your Application manifests in argocd/apps use metadata.namespace "monitoring" and targetRevision "main")
+      # (Make sure your Application manifests in argocd/apps set metadata.namespace to "monitoring" and targetRevision to "main" or your desired branch)
       - name: Deploy Monitoring Apps via ArgoCD
         run: |
           echo "Deploying Monitoring Apps via ArgoCD..."
@@ -81,9 +81,11 @@ jobs:
       # Step 10: Output ArgoCD Server URL for external access
       - name: Output ArgoCD Server URL
         run: |
+          # If your load balancer service is named "argocd-server-lb", query that;
+          # otherwise, if it’s still "argocd-server", update the query accordingly.
           ARGOCD_IP=$(kubectl get svc argocd-server-lb -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
           if [ -n "$ARGOCD_IP" ]; then
-            echo "ArgoCD is available at: http://${ARGOCD_IP}"
+            echo "ArgoCD is available at: http://${ARGOCD_IP}:80"
           else
             echo "ArgoCD external IP not found."
           fi
