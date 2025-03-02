@@ -84,7 +84,7 @@ resource "helm_release" "gym" {
   chart     = "../gym-chart"  # Adjust if needed
 
   # Increase timeout and wait for pods to become Ready
-  timeout = 600  # 10 minutes
+  timeout = 720  # 10 minutes
   wait    = true
 
   # Ensure we only install after the cluster, node pool, and namespace are ready
