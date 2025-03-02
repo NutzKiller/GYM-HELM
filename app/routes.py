@@ -1,6 +1,7 @@
 import os
 from google.cloud import storage
 from werkzeug.utils import secure_filename
+from prometheus_client import Counter, generate_latest
 from flask import render_template, request, redirect, url_for, session, flash, jsonify
 from app import app
 from app.helpers import (load_exercises, load_products, find_user, authenticate_user, 
@@ -476,3 +477,7 @@ def update_exercise():
     update_user_workout(user['username'], user.get('selected_plan'), workout_plan)
     
     return jsonify({'success': True, 'message': 'Day workout updated'})
+
+@app.route('/metrics')
+def metrics():
+    return generate_latest(), 200, {'Content-Type': 'text/plain; charset=utf-8'}

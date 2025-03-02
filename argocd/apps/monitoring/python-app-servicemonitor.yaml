@@ -1,0 +1,18 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: python-app-monitor
+  namespace: monitoring  # Must be in the same namespace as Prometheus
+  labels:
+    release: prometheus  # This label may be required by your Prometheus Operator setup
+spec:
+  selector:
+    matchLabels:
+      app: python-app
+  namespaceSelector:
+    matchNames:
+      - default   # The namespace where your Python app is deployed
+  endpoints:
+    - port: http       # This should match the port name in your Service
+      path: /metrics   # The endpoint that exposes your Prometheus metrics
+      interval: 15s
