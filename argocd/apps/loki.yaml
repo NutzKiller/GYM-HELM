@@ -7,13 +7,11 @@ spec:
   project: default
   source:
     repoURL: "https://grafana.github.io/helm-charts"
-    chart: loki
-    targetRevision: "5.48.0"  # Use a valid version from the Loki repo
+    chart: loki-stack
+    targetRevision: "2.10.1"  # This version works for you
     helm:
-      values: |
-        service:
-          type: LoadBalancer
-          port: 3100
+      valueFiles:
+        - log/loki-values.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
