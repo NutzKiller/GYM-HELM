@@ -62,6 +62,12 @@ jobs:
           echo "Waiting for the ArgoCD LB service to obtain an external IP..."
           kubectl wait --for=condition=Available svc/argocd-server-lb -n argocd --timeout=300s || echo "ArgoCD LB service not ready after timeout."
 
+        # Create Monitoring Namespace
+      - name: Create Monitoring Namespace
+        run: |
+            kubectl create namespace monitoring || echo "Namespace monitoring already exists."
+
+
       # Step 8: Deploy Monitoring Apps via ArgoCD  
       # (Ensure your Application manifests in argocd/apps set metadata.namespace to "argocd" and targetRevision to your branch, e.g. "main")
       - name: Deploy Monitoring Apps via ArgoCD
