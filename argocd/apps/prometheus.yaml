@@ -20,7 +20,7 @@ spec:
               metrics_path: /metrics
               scheme: http
               static_configs:
-                - targets: ['gym.gym-namespace.svc.cluster.local:5000']
+                - targets: ['gym-gym-service.gym-namespace.svc.cluster.local:5000']
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
