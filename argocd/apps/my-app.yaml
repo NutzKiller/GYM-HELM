@@ -8,7 +8,14 @@ spec:
   source:
     repoURL: 'https://github.com/NutzKiller/GYM-HELM.git'
     targetRevision: HEAD        # or specify a branch, tag, etc.
-    path: deploy                # path within your repo where the manifests reside
+    path: gym-chart             # using the Helm chart directory instead of 'deploy'
+    helm:
+      # Uncomment and modify the lines below if you need to override default values
+      # valueFiles:
+      #   - values.yaml
+      # parameters:
+      #   - name: someParam
+      #     value: someValue
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: monitoring       # deploying your app into the monitoring namespace
