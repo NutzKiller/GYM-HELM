@@ -15,12 +15,7 @@ spec:
           service:
             type: LoadBalancer
             port: 9090
-          additionalScrapeConfigs: |
-            - job_name: 'gym_app'
-              metrics_path: /metrics
-              scheme: http
-              static_configs:
-                - targets: ['gym-gym-service.gym-namespace.svc.cluster.local:5000']
+          additionalScrapeConfigsSecret: additional-scrape-configs
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
