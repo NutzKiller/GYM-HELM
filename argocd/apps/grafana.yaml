@@ -29,6 +29,19 @@ spec:
                 access: proxy
                 url: http://loki.monitoring.svc.cluster.local:3100
                 editable: false
+        dashboardProviders:
+          dashboardproviders.yaml:
+            apiVersion: 1
+            providers:
+              - name: 'default'
+                orgId: 1
+                folder: ''
+                type: file
+                disableDeletion: false
+                editable: false
+                options:
+                  path: /var/lib/grafana/dashboards
+                  overwrite: true
         sidecar:
           dashboards:
             enabled: true
