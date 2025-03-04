@@ -2,23 +2,19 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: my-app
-  namespace: argocd  # must be in the argocd namespace so ArgoCD can discover it
+  namespace: argocd
 spec:
   project: default
   source:
     repoURL: 'https://github.com/NutzKiller/GYM-HELM.git'
-    targetRevision: HEAD        # or specify a branch, tag, etc.
-    path: gym-chart             # using the Helm chart directory instead of 'deploy'
+    targetRevision: HEAD
+    path: gym-chart
     helm:
-      # Uncomment and modify the lines below if you need to override default values
-      # valueFiles:
-      #   - values.yaml
-      # parameters:
-      #   - name: someParam
-      #     value: someValue
+      valueFiles:
+        - values.yaml
   destination:
     server: 'https://kubernetes.default.svc'
-    namespace: monitoring       # deploying your app into the monitoring namespace
+    namespace: monitoring
   syncPolicy:
     automated:
       prune: true
