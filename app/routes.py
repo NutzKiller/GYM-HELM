@@ -1,7 +1,8 @@
 import os
 from google.cloud import storage
+import psutil
 from werkzeug.utils import secure_filename
-from prometheus_client import Counter, generate_latest
+from prometheus_client import Gauge, generate_latest, CONTENT_TYPE_LATEST
 from flask import render_template, request, redirect, url_for, session, flash, jsonify
 from app import app
 from app.helpers import (load_exercises, load_products, find_user, authenticate_user, 
@@ -478,6 +479,17 @@ def update_exercise():
     
     return jsonify({'success': True, 'message': 'Day workout updated'})
 
+cpu_gauge = Gauge('python_app_cpu_percent', 'Current CPU usage percent')
+memory_gauge = Gauge('python_app_memory_percent', 'Current memory usage percent')
+
 @app.route('/metrics')
 def metrics():
-    return generate_latest(), 200, {'Content-Type': 'text/plain; charset=utf-8'}
+    # Update metrics using psutil.
+    # Note: cpu_percent() with interval=1 will block for a second to get a measurement.
+    cpu_percent = psutil.cpu_percent(interval=1)
+    memory_percent = psutil.virtual_memory().percent
+    
+    cpu_gauge.set(cpu_percent)
+    memory_gauge.set(memory_percent)
+    
+    return generate_latest(), 200, {'Content-Type': CONTENT_TYPE_LATEST}

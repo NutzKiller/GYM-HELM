@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: flask-dashboard
+  name: cpu-memory-dashboard
   namespace: monitoring  # Matches Grafana's deployment namespace
   labels:
     grafana_dashboard: "1"
 data:
-  flask-dashboard.json: |
+  cpu-memory-dashboard.json: |
     {
       "__elements": {},
       "__requires": [
@@ -27,12 +27,6 @@ data:
           "id": "prometheus",
           "name": "Prometheus",
           "version": "1.0.0"
-        },
-        {
-          "type": "panel",
-          "id": "timeseries",
-          "name": "Time series",
-          "version": ""
         }
       ],
       "annotations": {
@@ -62,12 +56,29 @@ data:
           },
           "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
           "id": 1,
-          "title": "flask total requests",
+          "title": "CPU Usage",
           "type": "gauge",
           "targets": [
             {
-              "expr": "sum(flask_http_request_total{job=\"flask-app\"})",
-              "refId": "C",
+              "expr": "python_app_cpu_percent",
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "prometheus" }
+            }
+          ]
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+          "id": 2,
+          "title": "Memory Usage",
+          "type": "gauge",
+          "targets": [
+            {
+              "expr": "python_app_memory_percent",
+              "refId": "B",
               "datasource": { "type": "prometheus", "uid": "prometheus" }
             }
           ]
@@ -78,7 +89,7 @@ data:
       "tags": [],
       "templating": { "list": [] },
       "time": { "from": "now-30m", "to": "now" },
-      "title": "flask dashboard - AUTOMATED NOW",
-      "uid": "ced1bt9vv1yiof",
-      "version": 6
+      "title": "CPU and Memory Dashboard",
+      "uid": "cpu-mem-dash-001",
+      "version": 1
     }
