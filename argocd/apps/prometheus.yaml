@@ -29,6 +29,7 @@ spec:
           service:
             type: LoadBalancer
             port: 9090
+          createAdditionalScrapeConfigsSecret: true
           additionalScrapeConfigsSecret: additional-scrape-configs
   destination:
     server: https://kubernetes.default.svc
