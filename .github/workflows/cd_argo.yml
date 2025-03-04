@@ -92,11 +92,6 @@ jobs:
           kubectl apply -n monitoring -f argocd/grafana/dashboards/flask-dashboard.yaml --validate=false
           kubectl apply -n monitoring -f argocd/grafana/dashboards/loki-dashboard.yaml --validate=false
 
-      - name: Deploy My App via ArgoCD
-        run: |
-            echo "Deploying my app via ArgoCD into the monitoring namespace..."
-            kubectl apply -n argocd -f argocd/apps/my-app.yaml --validate=false
-        
 
       # Step 9: Wait for Monitoring Deployments Rollout
       - name: Wait for Monitoring Deployments Rollout
