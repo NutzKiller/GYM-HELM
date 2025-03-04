@@ -54,14 +54,22 @@ jobs:
             echo "Warning: ArgoCD server did not become available within 300s. Proceeding anyway."
           fi
 
-      # Step 7: Apply ArgoCD LoadBalancer Service from local file
       - name: Apply ArgoCD LoadBalancer Service
         run: |
-          echo "Applying ArgoCD LoadBalancer service manifest..."
-          kubectl apply -n argocd -f argocd/argocd-server-lb.yaml --validate=false
-          echo "Waiting for the ArgoCD LB service to obtain an external IP..."
-          kubectl wait --for=condition=Available svc/argocd-server-lb -n argocd --timeout=300s || echo "ArgoCD LB service not ready after timeout."
-
+            echo "Applying ArgoCD LoadBalancer service manifest..."
+            kubectl apply -n argocd -f argocd/argocd-server-lb.yaml --validate=false
+            echo "Polling for external IP (max 60s)..."
+            for i in {1..6}; do
+              LB_IP=$(kubectl get svc argocd-server-lb -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+              if [ -n "$LB_IP" ]; then
+                echo "ArgoCD is available at: http://${LB_IP}:80"
+                exit 0
+              fi
+              echo "External IP not available yet, waiting 10 seconds..."
+              sleep 10
+            done
+            echo "ArgoCD LB service did not obtain an external IP after 60s."
+        
         # Create Monitoring Namespace
       - name: Create Monitoring Namespace
         run: |
