@@ -76,6 +76,14 @@ jobs:
           kubectl apply -n argocd -f argocd/apps/prometheus.yaml --validate=false
           kubectl apply -n argocd -f argocd/apps/grafana.yaml --validate=false
           kubectl apply -n argocd -f argocd/apps/loki.yaml --validate=false
+      
+        # Step 8.1: Deploy Grafana Dashboards
+      - name: Deploy Grafana Dashboards
+        run: |
+          echo "Deploying Grafana Dashboards..."
+          kubectl apply -n monitoring -f argocd/grafana/dashboards/flask-dashboard.yaml --validate=false
+          kubectl apply -n monitoring -f argocd/grafana/dashboards/loki-dashboard.yaml --validate=false
+
 
       # Step 9: Wait for Monitoring Deployments Rollout
       - name: Wait for Monitoring Deployments Rollout

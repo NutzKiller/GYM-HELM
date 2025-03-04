@@ -29,6 +29,11 @@ spec:
                 access: proxy
                 url: http://loki.monitoring.svc.cluster.local:3100
                 editable: false
+        sidecar:
+          dashboards:
+            enabled: true
+            label: grafana_dashboard
+            folder: /var/lib/grafana/dashboards
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
