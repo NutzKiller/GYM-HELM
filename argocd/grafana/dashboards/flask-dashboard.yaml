@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: flask-dashboard-omri
+  name: flask-dashboard
   namespace: monitoring  # Updated to match Grafana's deployment namespace
   labels:
     grafana_dashboard: "1"
