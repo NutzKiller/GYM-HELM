@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: 'https://github.com/my-org/my-app.git'
+    repoURL: 'https://github.com/NutzKiller/GYM-HELM.git'
     targetRevision: HEAD        # or specify a branch, tag, etc.
     path: deploy                # path within your repo where the manifests reside
   destination:
