@@ -81,7 +81,7 @@ jobs:
       - name: Deploy Monitoring Apps via ArgoCD
         run: |
           echo "Deploying Monitoring Apps via ArgoCD..."
-          kubectl apply -n argocd -f argocd/apps/prometheus.yaml --validate=false
+          kubectl apply -f argocd/apps/prometheus.yaml --validate=false
           kubectl apply -n argocd -f argocd/apps/grafana.yaml --validate=false
           kubectl apply -n argocd -f argocd/apps/loki.yaml --validate=false
       
