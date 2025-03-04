@@ -147,7 +147,7 @@ jobs:
           TF_VAR_MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
           TF_VAR_image_tag: "v1.0.${{ github.run_number }}"
           GOOGLE_APPLICATION_CREDENTIALS: "gcp_credentials.json"
-        run: terraform apply -auto-approve -input=false
+        run: terraform apply -auto-approve -input=false -lock=false
 
       # Step 10.5: Refresh Kubeconfig after Terraform apply (to capture new cluster info)
       - name: Refresh Kubeconfig After Terraform Apply
