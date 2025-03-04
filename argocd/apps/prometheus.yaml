@@ -5,7 +5,7 @@ metadata:
   name: additional-scrape-configs
   namespace: monitoring
 stringData:
-  additional-scrape-configs.yaml: |
+  additionalScrapeConfigs.yaml: |
     - job_name: 'gym_app'
       metrics_path: /metrics
       scheme: http
@@ -29,8 +29,8 @@ spec:
           service:
             type: LoadBalancer
             port: 9090
-          createAdditionalScrapeConfigsSecret: true
           additionalScrapeConfigsSecret: additional-scrape-configs
+          createAdditionalScrapeConfigsSecret: true
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
