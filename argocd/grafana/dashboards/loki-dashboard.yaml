@@ -4,7 +4,7 @@ metadata:
   name: loki-dashboard
   namespace: monitoring
   labels:
-    grafana_dashboard: "1" # input field removed in json format.
+    grafana_dashboard: "1"
 data:
   loki-dashboard.json: |
     {
@@ -38,11 +38,10 @@ data:
       "annotations": {
         "list": [
           {
-            "$$hashKey": "object:75",
             "builtIn": 1,
             "datasource": {
               "type": "datasource",
-              "uid": "grafana"
+              "uid": "-- Grafana --"
             },
             "enable": true,
             "hide": true,
@@ -59,7 +58,6 @@ data:
       "id": null,
       "links": [
         {
-          "$$hashKey": "object:59",
           "icon": "bolt",
           "includeVars": true,
           "keepTime": true,
@@ -70,7 +68,6 @@ data:
           "url": "/explore?orgId=1&left=[\"now-1h\",\"now\",\"Loki\",{\"expr\":\"{job=\\\"$app\\\"}\"},{\"ui\":[true,true,true,\"none\"]}]"
         },
         {
-          "$$hashKey": "object:61",
           "icon": "external link",
           "tags": [],
           "targetBlank": true,
@@ -83,7 +80,7 @@ data:
         {
           "datasource": {
             "type": "loki",
-            "uid": "loki-omri"
+            "uid": "Loki"
           },
           "fieldConfig": {
             "defaults": {
@@ -167,7 +164,7 @@ data:
             {
               "datasource": {
                 "type": "loki",
-                "uid": "loki-omri"
+                "uid": "Loki"
               },
               "expr": "sum(count_over_time({job=\"$app\"} |= \"$search\" [$__interval]))",
               "legendFormat": "",
@@ -179,7 +176,7 @@ data:
         {
           "datasource": {
             "type": "loki",
-            "uid": "loki-omri"
+            "uid": "Loki"
           },
           "gridPos": {
             "h": 25,
@@ -205,7 +202,7 @@ data:
             {
               "datasource": {
                 "type": "loki",
-                "uid": "loki-omri"
+                "uid": "Loki"
               },
               "expr": "{job=\"$app\"} |= \"$search\" | logfmt",
               "hide": false,
@@ -226,7 +223,7 @@ data:
             "current": {},
             "datasource": {
               "type": "loki",
-              "uid": "loki-omri"
+              "uid": "Loki"
             },
             "definition": "label_values(job)",
             "includeAll": false,
@@ -276,7 +273,7 @@ data:
       },
       "timezone": "",
       "title": "AUTOMATED DASHBOARD CONFIGMAP - Loki",
-      "uid": "loki-apps-dashboard-omri",
+      "uid": "loki-dashboard",
       "version": 1,
       "weekStart": ""
     }

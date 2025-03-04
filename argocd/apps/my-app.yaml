@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: my-app
+  namespace: argocd  # must be in the argocd namespace so ArgoCD can discover it
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/my-org/my-app.git'
+    targetRevision: HEAD        # or specify a branch, tag, etc.
+    path: deploy                # path within your repo where the manifests reside
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: monitoring       # deploying your app into the monitoring namespace
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

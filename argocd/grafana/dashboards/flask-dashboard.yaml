@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: flask-dashboard
-  namespace: monitoring  # Updated to match Grafana's deployment namespace
+  namespace: monitoring  # Matches Grafana's deployment namespace
   labels:
     grafana_dashboard: "1"
 data:
@@ -40,8 +40,8 @@ data:
           {
             "builtIn": 1,
             "datasource": {
-              "type": "grafana",
-              "uid": "-- Grafana --"
+              "type": "datasource",
+              "uid": "grafana"
             },
             "enable": true,
             "hide": true,
