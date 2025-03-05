@@ -1,48 +1,48 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "gym.fullname" . }}-deployment
+  name: {{ include "gym.fullname" . }}-deployment  # Deployment name using fullname helper
   labels:
-    app: {{ include "gym.name" . }}
+    app: {{ include "gym.name" . }}                # Label for the app
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ .Values.replicaCount }}             # Number of replicas
   selector:
     matchLabels:
-      app: {{ include "gym.name" . }}
+      app: {{ include "gym.name" . }}              # Selector to match pods
   template:
     metadata:
       labels:
-        app: {{ include "gym.name" . }}
+        app: {{ include "gym.name" . }}            # Pod labels
       annotations:
-        redeploy-timestamp: '{{ now | date "2006-01-02T15_04_05" }}'
+        redeploy-timestamp: '{{ now | date "2006-01-02T15_04_05" }}'  # Force pod update on redeploy
     spec:
       containers:
-        - name: gym-container
-          image: "{{ .Values.image }}"
-          imagePullPolicy: {{ .Values.imagePullPolicy }}
+        - name: gym-container                     # Container name
+          image: "{{ .Values.image }}"              # Container image
+          imagePullPolicy: {{ .Values.imagePullPolicy }}  # Image pull policy
           ports:
-            - containerPort: {{ .Values.containerPort }}
+            - containerPort: {{ .Values.containerPort }}  # Container port
           env:
             - name: DATABASE_URL
-              value: {{ .Values.databaseUrl | quote }}
+              value: {{ .Values.databaseUrl | quote }}    # Environment variable for DB URL
             - name: SECRET_KEY
-              value: {{ .Values.secretKey | quote }}
+              value: {{ .Values.secretKey | quote }}        # Environment variable for secret key
           resources:
             requests:
-              memory: "{{ .Values.memoryRequest }}"
-              cpu: "{{ .Values.cpuRequest }}"
+              memory: "{{ .Values.memoryRequest }}"         # Memory request
+              cpu: "{{ .Values.cpuRequest }}"               # CPU request
             limits:
-              memory: "{{ .Values.memoryLimit }}"
-              cpu: "{{ .Values.cpuLimit }}"
+              memory: "{{ .Values.memoryLimit }}"           # Memory limit
+              cpu: "{{ .Values.cpuLimit }}"                 # CPU limit
           readinessProbe:
             httpGet:
               path: /health
               port: {{ .Values.containerPort }}
-            initialDelaySeconds: {{ .Values.readinessInitialDelay }}
-            periodSeconds: {{ .Values.readinessPeriod }}
+            initialDelaySeconds: {{ .Values.readinessInitialDelay }}  # Delay before readiness check
+            periodSeconds: {{ .Values.readinessPeriod }}              # Interval for readiness check
           livenessProbe:
             httpGet:
               path: /health
               port: {{ .Values.containerPort }}
-            initialDelaySeconds: {{ .Values.livenessInitialDelay }}
-            periodSeconds: {{ .Values.livenessPeriod }}
+            initialDelaySeconds: {{ .Values.livenessInitialDelay }}   # Delay before liveness check
+            periodSeconds: {{ .Values.livenessPeriod }}               # Interval for liveness check

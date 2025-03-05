@@ -1,15 +1,15 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "gym.fullname" . }}-service
+  name: {{ include "gym.fullname" . }}-service  # Service name using fullname helper
   labels:
-    app: {{ include "gym.name" . }}
+    app: {{ include "gym.name" . }}             # Label for the app
 spec:
-  type: {{ .Values.serviceType }}
+  type: {{ .Values.serviceType }}               # Service type (e.g., ClusterIP, LoadBalancer)
   selector:
-    app: {{ include "gym.name" . }}
+    app: {{ include "gym.name" . }}             # Selector to target pods
   ports:
     - name: http
       protocol: TCP
-      port: {{ .Values.servicePort }}
-      targetPort: {{ .Values.containerPort }}
+      port: {{ .Values.servicePort }}           # Service port
+      targetPort: {{ .Values.containerPort }}     # Target container port

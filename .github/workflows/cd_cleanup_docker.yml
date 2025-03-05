@@ -1,10 +1,10 @@
-name: Cleanup DockerHub Repository
+name: Cleanup DockerHub and Helm Tags
 
 on:
   workflow_dispatch:
     inputs:
       confirm:
-        description: 'Type "yes" to cleanup DockerHub repository'
+        description: 'Type "yes" to cleanup DockerHub and Helm tags'
         required: true
         default: 'no'
 
@@ -19,6 +19,9 @@ jobs:
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
 
+      # --------------------------
+      # 1) DockerHub Cleanup
+      # --------------------------
       - name: Cleanup DockerHub repository
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
@@ -38,7 +41,7 @@ jobs:
           REPO="nutzkiller/gym"
           echo "Fetching tags for repository $REPO..."
 
-          # Fetch all tags (assumes less than 100 tags; adjust pagination if needed)
+          # Fetch up to 100 tags (adjust page_size if needed)
           TAGS=$(curl -s -H "Authorization: JWT $TOKEN" \
             "https://hub.docker.com/v2/repositories/$REPO/tags/?page_size=100" \
             | jq -r '.results | sort_by(.last_updated) | reverse | .[].name')
@@ -64,31 +67,62 @@ jobs:
 
           echo "DockerHub cleanup completed."
 
-      - name: Cleanup Helm Releases
+      # --------------------------
+      # 2) Helm Git Tags Cleanup
+      # --------------------------
+      - name: Cleanup Helm Tags
         env:
           GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
         run: |
           set -e
-          echo "Fetching releases for NutzKiller/helm repository..."
-          # Fetch all releases (adjust per_page if you have more than 100)
-          releases=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/NutzKiller/helm/releases?per_page=100")
-          count=$(echo "$releases" | jq 'length')
-          echo "Found $count releases"
+          echo "Fetching Git tags for NutzKiller/helm repository..."
 
-          # Sort releases by creation date (newest first) and extract their IDs
-          keep_ids=$(echo "$releases" | jq -r 'sort_by(.created_at) | reverse | .[:5] | .[].id')
-          all_ids=$(echo "$releases" | jq -r '.[].id')
-          echo "Releases to keep (IDs):"
-          echo "$keep_ids"
+          # Get up to 100 tags from the Git references API
+          tags=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/NutzKiller/helm/git/refs/tags?per_page=100")
+          count=$(echo "$tags" | jq 'length')
+          echo "Found $count tags"
 
-          # Delete releases not in the latest five
-          for release_id in $all_ids; do
-            if echo "$keep_ids" | grep -qx "$release_id"; then
-              echo "Keeping release ID: $release_id"
+          # Build an array of { ref, sha, date } for each tag
+          tag_info_array=()
+          for row in $(echo "$tags" | jq -r '.[] | @base64'); do
+            _jq() {
+              echo "$row" | base64 --decode | jq -r "$1"
+            }
+            ref=$(_jq '.ref')
+            sha=$(_jq '.object.sha')
+
+            # Fetch commit info to get its date
+            commit_date=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+              "https://api.github.com/repos/NutzKiller/helm/commits/$sha" \
+              | jq -r '.commit.committer.date')
+
+            # Store as a JSON object in an array
+            tag_info_array+=("$(echo "{\"ref\":\"$ref\",\"sha\":\"$sha\",\"date\":\"$commit_date\"}")")
+          done
+
+          # Combine into a single JSON array
+          tag_info_json=$(printf '%s\n' "${tag_info_array[@]}" | jq -s '.')
+
+          # Sort by date descending
+          sorted_tags=$(echo "$tag_info_json" | jq -r 'sort_by(.date) | reverse')
+
+          # Keep only the newest 5
+          keep_refs=$(echo "$sorted_tags" | jq -r '.[0:5].ref')
+          all_refs=$(echo "$sorted_tags" | jq -r '.[].ref')
+
+          echo "Tags to keep (newest 5):"
+          echo "$keep_refs"
+
+          # Delete tags that are not in keep_refs
+          for ref in $all_refs; do
+            if echo "$keep_refs" | grep -qx "$ref"; then
+              echo "Keeping tag: $ref"
             else
-              echo "Deleting release ID: $release_id"
+              echo "Deleting tag: $ref"
+              tag_name=$(echo "$ref" | sed 's#^refs/tags/##')
               curl -s -X DELETE -H "Authorization: token $GITHUB_TOKEN" \
-                "https://api.github.com/repos/NutzKiller/helm/releases/$release_id"
+                "https://api.github.com/repos/NutzKiller/helm/git/refs/tags/$tag_name"
             fi
           done
-          echo "Helm releases cleanup completed."
+
+          echo "Helm tags cleanup completed."
