@@ -73,3 +73,13 @@ jobs:
           git add .
           git commit -m "Update Helm charts for build ${{ github.run_number }}" || echo "No changes to commit"
           git push origin main
+     
+      - name: Run Tests
+        run: |
+            docker compose up -d  # Start containers
+            echo "Waiting for application to start..."
+            until curl --fail --max-time 120 http://localhost:5000; do
+              echo "Waiting for application to start..."
+              sleep 5
+            done
+            echo "Application started successfully!"
