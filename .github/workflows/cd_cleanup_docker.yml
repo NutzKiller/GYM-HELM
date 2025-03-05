@@ -77,22 +77,24 @@ jobs:
           set -e
           echo "Fetching Git tags for NutzKiller/helm repository..."
           
-          # Fetch up to 100 tags via the Git references API
-          tags_json=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/NutzKiller/helm/git/refs/tags?per_page=100")
+          # Get tags via Git references API
+          tags_json=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/NutzKiller/helm/git/refs/tags?per_page=100")
+          
+          echo "Raw tags JSON:"
+          echo "$tags_json"
+          
           count=$(echo "$tags_json" | jq 'length')
           echo "Found $count tags"
           
-          # Read each tag into an array so that each line is one JSON object
-          mapfile -t tag_lines < <(echo "$tags_json" | jq -c '.[]')
-          
-          tag_info_array=()
-          for item in "${tag_lines[@]}"; do
-            # Get the tag reference and object details
+          # Process each tag and output a single JSON object per tag
+          tag_info=$(echo "$tags_json" | jq -c '.[]' | while IFS= read -r item; do
+            echo "Processing tag: $item"
             ref=$(echo "$item" | jq -r '.ref')
             object_url=$(echo "$item" | jq -r '.object.url')
             object_type=$(echo "$item" | jq -r '.object.type')
             
-            # If the tag is annotated, fetch the tag object to get the actual commit SHA
+            # If annotated, follow the tag object to get the commit SHA
             if [ "$object_type" = "tag" ]; then
               annotated_json=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "$object_url")
               commit_sha=$(echo "$annotated_json" | jq -r '.object.sha')
@@ -100,16 +102,19 @@ jobs:
               commit_sha=$(echo "$item" | jq -r '.object.sha')
             fi
             
-            # Retrieve the commit to get its committer date
-            commit_json=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/NutzKiller/helm/commits/$commit_sha")
+            # Get the commit's committer date
+            commit_json=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+              "https://api.github.com/repos/NutzKiller/helm/commits/$commit_sha")
             commit_date=$(echo "$commit_json" | jq -r '.commit.committer.date')
             
-            # Save a compact JSON object with the tag reference, commit SHA, and date
-            tag_info_array+=("$(echo "{\"ref\":\"$ref\",\"sha\":\"$commit_sha\",\"date\":\"$commit_date\"}")")
-          done
+            # Output a JSON object with ref, commit SHA, and commit date
+            printf '{"ref": "%s", "sha": "%s", "date": "%s"}\n' "$ref" "$commit_sha" "$commit_date"
+          done)
           
-          # Combine all tag info objects into a JSON array
-          tag_info_json=$(printf '%s\n' "${tag_info_array[@]}" | jq -s '.')
+          # Combine each line into a JSON array
+          tag_info_json=$(echo "$tag_info" | jq -s '.')
+          echo "Collected tag info:"
+          echo "$tag_info_json"
           
           # Sort tags by commit date (newest first)
           sorted_tags=$(echo "$tag_info_json" | jq 'sort_by(.date) | reverse')
