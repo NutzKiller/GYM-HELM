@@ -171,25 +171,25 @@ jobs:
         run: |
           gcloud compute firewall-rules create allow-gke-5000 --allow=tcp:5000 --target-tags=gke-gym-cluster --source-ranges=0.0.0.0/0 || echo "Firewall rule already exists."
 
-      # Step 13: Retrieve External IP of Helm Release Service
       - name: Retrieve External IP of Helm Release Service
         id: get_ip
         run: |
-          echo "Waiting for LoadBalancer IP..."
-          for i in {1..30}; do
-            EXTERNAL_IP=$(kubectl get svc gym-gym-service -n gym-namespace -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-            if [ -n "$EXTERNAL_IP" ]; then
-              echo "EXTERNAL_IP=$EXTERNAL_IP" >> $GITHUB_ENV
-              echo "External IP: $EXTERNAL_IP"
-              break
+            echo "Waiting for LoadBalancer IP on port 5000..."
+            for i in {1..30}; do
+              EXTERNAL_IP=$(kubectl get svc gym-gym-service -n gym-namespace -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+              if [ -n "$EXTERNAL_IP" ]; then
+                echo "EXTERNAL_IP=$EXTERNAL_IP" >> $GITHUB_ENV
+                echo "External IP: ${EXTERNAL_IP}:5000"
+                break
+              fi
+              echo "Attempt $i: External IP not assigned yet. Retrying in 10 seconds..."
+              sleep 10
+            done
+            if [ -z "$EXTERNAL_IP" ]; then
+              echo "Failed to retrieve External IP."
+              exit 1
             fi
-            echo "Attempt $i: External IP not assigned yet. Retrying in 10 seconds..."
-            sleep 10
-          done
-          if [ -z "$EXTERNAL_IP" ]; then
-            echo "Failed to retrieve External IP."
-            exit 1
-          fi
+    
 
       # Step 14: Output External IP
       - name: Output External IP

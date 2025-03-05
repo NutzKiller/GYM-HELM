@@ -62,4 +62,33 @@ jobs:
             fi
           done
 
-          echo "Cleanup completed."
+          echo "DockerHub cleanup completed."
+
+      - name: Cleanup Helm Releases
+        env:
+          GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+        run: |
+          set -e
+          echo "Fetching releases for NutzKiller/helm repository..."
+          # Fetch all releases (adjust per_page if you have more than 100)
+          releases=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/NutzKiller/helm/releases?per_page=100")
+          count=$(echo "$releases" | jq 'length')
+          echo "Found $count releases"
+
+          # Sort releases by creation date (newest first) and extract their IDs
+          keep_ids=$(echo "$releases" | jq -r 'sort_by(.created_at) | reverse | .[:5] | .[].id')
+          all_ids=$(echo "$releases" | jq -r '.[].id')
+          echo "Releases to keep (IDs):"
+          echo "$keep_ids"
+
+          # Delete releases not in the latest five
+          for release_id in $all_ids; do
+            if echo "$keep_ids" | grep -qx "$release_id"; then
+              echo "Keeping release ID: $release_id"
+            else
+              echo "Deleting release ID: $release_id"
+              curl -s -X DELETE -H "Authorization: token $GITHUB_TOKEN" \
+                "https://api.github.com/repos/NutzKiller/helm/releases/$release_id"
+            fi
+          done
+          echo "Helm releases cleanup completed."

@@ -2,5 +2,5 @@ apiVersion: v2
 name: gym-chart
 description: A Helm chart for deploying the Gym Workout Plan Generator
 type: application
-version: 1.5.56
+version: 1.5.57
 appVersion: "{{ .Chart.Version }}"
