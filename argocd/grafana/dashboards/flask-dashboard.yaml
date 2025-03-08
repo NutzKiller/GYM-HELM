@@ -2,41 +2,17 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: cpu-memory-dashboard
-  namespace: monitoring  # Matches Grafana's deployment namespace
+  namespace: monitoring  # Ensure this matches Grafana’s namespace
   labels:
     grafana_dashboard: "1"
 data:
   cpu-memory-dashboard.json: |
     {
-      "__elements": {},
-      "__requires": [
-        {
-          "type": "panel",
-          "id": "gauge",
-          "name": "Gauge",
-          "version": ""
-        },
-        {
-          "type": "grafana",
-          "id": "grafana",
-          "name": "Grafana",
-          "version": "11.5.1"
-        },
-        {
-          "type": "datasource",
-          "id": "prometheus",
-          "name": "Prometheus",
-          "version": "1.0.0"
-        }
-      ],
       "annotations": {
         "list": [
           {
             "builtIn": 1,
-            "datasource": {
-              "type": "datasource",
-              "uid": "grafana"
-            },
+            "datasource": "-- Grafana --",
             "enable": true,
             "hide": true,
             "iconColor": "rgba(0, 211, 255, 1)",
@@ -54,34 +30,80 @@ data:
             "type": "prometheus",
             "uid": "prometheus"
           },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "orange", "value": 80 },
+                  { "color": "red", "value": 90 }
+                ]
+              },
+              "unit": "percent"
+            },
+            "overrides": []
+          },
           "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
           "id": 1,
-          "title": "CPU Usage",
-          "type": "gauge",
+          "options": {
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true
+          },
           "targets": [
             {
               "expr": "python_app_cpu_percent",
-              "refId": "A",
-              "datasource": { "type": "prometheus", "uid": "prometheus" }
+              "format": "time_series",
+              "legendFormat": "",
+              "refId": "A"
             }
-          ]
+          ],
+          "title": "CPU Usage",
+          "type": "gauge"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
           },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "orange", "value": 80 },
+                  { "color": "red", "value": 90 }
+                ]
+              },
+              "unit": "percent"
+            },
+            "overrides": []
+          },
           "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
           "id": 2,
-          "title": "Memory Usage",
-          "type": "gauge",
+          "options": {
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true
+          },
           "targets": [
             {
               "expr": "python_app_memory_percent",
-              "refId": "B",
-              "datasource": { "type": "prometheus", "uid": "prometheus" }
+              "format": "time_series",
+              "legendFormat": "",
+              "refId": "B"
             }
-          ]
+          ],
+          "title": "Memory Usage",
+          "type": "gauge"
         }
       ],
       "refresh": "5m",
@@ -91,5 +113,5 @@ data:
       "time": { "from": "now-30m", "to": "now" },
       "title": "CPU and Memory Dashboard",
       "uid": "cpu-mem-dash-001",
-      "version": 1
+      "version": 2
     }
