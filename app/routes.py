@@ -3,12 +3,40 @@ from google.cloud import storage
 import psutil
 from werkzeug.utils import secure_filename
 from prometheus_client import Gauge, generate_latest, CONTENT_TYPE_LATEST
-from flask import render_template, request, redirect, url_for, session, flash, jsonify
+from flask import render_template, request, redirect, url_for, session, flash, jsonify, Flask
 from app import app
 from app.helpers import (load_exercises, load_products, find_user, authenticate_user, 
                          register_user, update_user_workout, update_user_profile, 
                          init_cart, add_to_cart, clear_cart, hash_text)
 from app.workout import generate_workout_plan
+import threading
+import time
+
+# Define your gauges.
+cpu_gauge = Gauge('python_app_cpu_percent', 'Current CPU usage percent')
+memory_gauge = Gauge('python_app_memory_percent', 'Current memory usage percent')
+
+def update_metrics():
+    while True:
+        # Use non-blocking measurement.
+        cpu_percent = psutil.cpu_percent(interval=None)
+        memory_percent = psutil.virtual_memory().percent
+
+        cpu_gauge.set(cpu_percent)
+        memory_gauge.set(memory_percent)
+
+        # Update every second.
+        time.sleep(1)
+
+# Start background thread to update metrics.
+threading.Thread(target=update_metrics, daemon=True).start()
+
+@app.route('/metrics')
+def metrics():
+    # Simply return the latest collected metrics.
+    return generate_latest(), 200, {'Content-Type': CONTENT_TYPE_LATEST}
+
+
 
 # --- Google Cloud Storage Settings ---
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
@@ -479,17 +507,3 @@ def update_exercise():
     
     return jsonify({'success': True, 'message': 'Day workout updated'})
 
-cpu_gauge = Gauge('python_app_cpu_percent', 'Current CPU usage percent')
-memory_gauge = Gauge('python_app_memory_percent', 'Current memory usage percent')
-
-@app.route('/metrics')
-def metrics():
-    # Update metrics using psutil.
-    # Note: cpu_percent() with interval=1 will block for a second to get a measurement.
-    cpu_percent = psutil.cpu_percent(interval=1)
-    memory_percent = psutil.virtual_memory().percent
-    
-    cpu_gauge.set(cpu_percent)
-    memory_gauge.set(memory_percent)
-    
-    return generate_latest(), 200, {'Content-Type': CONTENT_TYPE_LATEST}
