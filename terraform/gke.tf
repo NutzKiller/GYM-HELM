@@ -1,5 +1,5 @@
 resource "google_container_cluster" "primary" {
-  name               = "gym-cluster"
+  name               = "gym-cluster-1"
   location           = var.GCP_REGION
   initial_node_count = 1  # Increased for better scheduling
 
