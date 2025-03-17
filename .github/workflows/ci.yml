@@ -29,6 +29,27 @@ jobs:
           docker build --no-cache -t nutzkiller/gym:$VERSION .
           docker tag nutzkiller/gym:$VERSION nutzkiller/gym:latest
 
+
+      - name: Run Tests
+        env:
+            DATABASE_URL: ${{ secrets.DATABASE_URL }}
+            SECRET_KEY: ${{ secrets.SECRET_KEY }}
+        run: |
+            docker compose up -d  # Start containers
+            echo "Waiting for application to start..."
+            RETRIES=0
+            MAX_RETRIES=24  # roughly 2 minutes if sleep 5 seconds each
+            until curl --fail --max-time 120 http://localhost:5000; do
+              echo "Waiting for application to start..."
+              sleep 5
+              RETRIES=$((RETRIES+1))
+              if [ $RETRIES -ge $MAX_RETRIES ]; then
+                echo "Application failed to start in time."
+                exit 1
+              fi
+            done
+            echo "Application started successfully!"
+
       - name: Push Docker Image to Docker Hub
         run: |
           VERSION=v1.0.${{ github.run_number }}
@@ -74,23 +95,3 @@ jobs:
           git commit -m "Update Helm charts for build ${{ github.run_number }}" || echo "No changes to commit"
           git push origin main
      
-      - name: Run Tests
-        env:
-            DATABASE_URL: ${{ secrets.DATABASE_URL }}
-            SECRET_KEY: ${{ secrets.SECRET_KEY }}
-        run: |
-            docker compose up -d  # Start containers
-            echo "Waiting for application to start..."
-            RETRIES=0
-            MAX_RETRIES=24  # roughly 2 minutes if sleep 5 seconds each
-            until curl --fail --max-time 120 http://localhost:5000; do
-              echo "Waiting for application to start..."
-              sleep 5
-              RETRIES=$((RETRIES+1))
-              if [ $RETRIES -ge $MAX_RETRIES ]; then
-                echo "Application failed to start in time."
-                exit 1
-              fi
-            done
-            echo "Application started successfully!"
-  
