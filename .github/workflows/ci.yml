@@ -6,6 +6,10 @@ on:
       - main
   workflow_dispatch:
 
+# Give the built-in GITHUB_TOKEN write permissions to push commits
+permissions:
+  contents: write
+
 jobs:
   build_and_test:
     runs-on: ubuntu-latest
@@ -39,7 +43,7 @@ jobs:
           docker compose up -d  # Start containers
           echo "Waiting for application to start..."
           RETRIES=0
-          MAX_RETRIES=24  # ~2 minutes if sleeping 5 seconds each
+          MAX_RETRIES=24
           until curl --fail --max-time 120 http://localhost:5000; do
             echo "Waiting for application to start..."
             sleep 5
@@ -57,51 +61,50 @@ jobs:
           docker push nutzkiller/gym:$VERSION
           docker push nutzkiller/gym:latest
 
-      # -----------------------------------------
-      # Bump Helm Chart version BEFORE packaging
-      # -----------------------------------------
+      # ------------------------------------------------------
+      # Bump the Helm Chart version BEFORE packaging and pushing
+      # ------------------------------------------------------
       - name: Bump Helm Chart Version
         run: |
           CHART_FILE="gym-chart/Chart.yaml"
           echo "Current Chart.yaml version:"
           grep '^version:' $CHART_FILE || echo "No version line found!"
 
-          # Extract current version (assuming line is "version: X.Y.Z")
+          # Extract current version (assuming "version: X.Y.Z")
           current_version=$(grep '^version:' $CHART_FILE | awk '{print $2}')
           
-          # If current_version is empty or not found, fall back to "0.0.0"
+          # If empty, use a default
           if [ -z "$current_version" ]; then
             current_version="0.0.0"
           fi
 
-          # Bump the patch version (e.g. 1.2.3 -> 1.2.4)
+          # Bump the patch version
           new_version=$(echo "$current_version" | awk -F. '{$NF += 1; print $1 "." $2 "." $3}' OFS='.')
 
-          # Update Chart.yaml in-place with new version
+          # Update in-place
           sed -i "s/^version:.*/version: $new_version/" "$CHART_FILE"
 
           echo "Updated Chart.yaml version to $new_version"
 
-      # -------------------------------------------------------
-      # Commit and push the updated Chart.yaml using MY_GITHUB_TOKEN
-      # -------------------------------------------------------
+      # -----------------------------------------
+      # Commit & push the updated Chart.yaml
+      # -----------------------------------------
       - name: Commit Updated Chart.yaml
         env:
-          MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config --global user.email "yuvalshmuely8@gmail.com"
           git config --global user.name "NutzKiller"
           
-          # Make sure we use our personal access token for pushing
-          git remote set-url origin https://x-access-token:${MY_GITHUB_TOKEN}@github.com/NutzKiller/GYM-HELM.git
-          
+          # Ensure our remote is authenticated with the built-in GITHUB_TOKEN
+          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/NutzKiller/GYM-HELM.git
+
           git add gym-chart/Chart.yaml
-          git commit -m "Bump Helm chart version to $new_version" || echo "No changes to commit"
-          # Push to main or whichever branch you're on
+          git commit -m "Bump Helm chart version" || echo "No changes to commit"
           git push origin HEAD:main
 
       # -------------------------
-      # Now we package the chart
+      # Now package the chart
       # -------------------------
       - name: Install Helm
         run: |
@@ -120,23 +123,26 @@ jobs:
         run: |
           helm repo index helm-repo --url https://NutzKiller.github.io/helm
 
+      # ----------------------------------
+      # Publish Helm Chart to GitHub Pages
+      # ----------------------------------
       - name: Publish Helm Chart to GitHub Pages Repository
         env:
-          MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Configure Git with your identity
+          # Configure Git
           git config --global user.email "yuvalshmuely8@gmail.com"
           git config --global user.name "NutzKiller"
           
-          # Clone the helm repository using MY_GITHUB_TOKEN
-          git clone https://x-access-token:${MY_GITHUB_TOKEN}@github.com/NutzKiller/helm.git helm-temp
+          # Clone the GH Pages repo (NutzKiller/helm) using GITHUB_TOKEN
+          git clone https://x-access-token:${GITHUB_TOKEN}@github.com/NutzKiller/helm.git helm-temp
           
-          # Copy packaged charts and update the index
+          # Copy the packaged charts and update the index
           cp -R helm-repo/* helm-temp/
           cd helm-temp
           helm repo index . --url https://NutzKiller.github.io/helm
           
-          # Commit and push the changes
+          # Commit and push changes
           git add .
           git commit -m "Update Helm charts for build ${{ github.run_number }}" || echo "No changes to commit"
           git push origin main
