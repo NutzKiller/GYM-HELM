@@ -29,7 +29,6 @@ jobs:
           docker build --no-cache -t nutzkiller/gym:$VERSION .
           docker tag nutzkiller/gym:$VERSION nutzkiller/gym:latest
 
-
       - name: Run Tests
         env:
             DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -56,7 +55,44 @@ jobs:
           docker push nutzkiller/gym:$VERSION
           docker push nutzkiller/gym:latest
 
-      # --- New steps to package and publish the Helm chart ---
+      # -----------------------------------------
+      # Bump Helm Chart version BEFORE packaging
+      # -----------------------------------------
+      - name: Bump Helm Chart Version
+        run: |
+          CHART_FILE="gym-chart/Chart.yaml"
+          echo "Current Chart.yaml version:"
+          grep '^version:' $CHART_FILE || echo "No version line found!"
+
+          # Extract current version (assuming line is "version: X.Y.Z")
+          current_version=$(grep '^version:' $CHART_FILE | awk '{print $2}')
+          
+          # If current_version is empty or not found, fall back to "0.0.0"
+          if [ -z "$current_version" ]; then
+            current_version="0.0.0"
+          fi
+
+          # Bump the patch version (e.g. 1.2.3 -> 1.2.4)
+          new_version=$(echo $current_version | awk -F. '{$NF += 1; print $1 "." $2 "." $3}' OFS='.')
+
+          # Update Chart.yaml in-place with new version
+          sed -i "s/^version:.*/version: $new_version/" $CHART_FILE
+
+          echo "Updated Chart.yaml version to $new_version"
+
+      # (Optional) Commit the version bump back to the repo
+      # This ensures your main branch has the updated version.
+      - name: Commit Updated Chart.yaml
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+          git add gym-chart/Chart.yaml
+          git commit -m "Bump Helm chart version to $new_version" || echo "No changes to commit"
+          git push
+
+      # -------------------------
+      # Now we package the chart
+      # -------------------------
       - name: Install Helm
         run: |
           curl -L https://get.helm.sh/helm-v3.9.0-linux-amd64.tar.gz -o helm.tar.gz
@@ -94,4 +130,3 @@ jobs:
           git add .
           git commit -m "Update Helm charts for build ${{ github.run_number }}" || echo "No changes to commit"
           git push origin main
-     
