@@ -13,6 +13,8 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -31,23 +33,23 @@ jobs:
 
       - name: Run Tests
         env:
-            DATABASE_URL: ${{ secrets.DATABASE_URL }}
-            SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
         run: |
-            docker compose up -d  # Start containers
+          docker compose up -d  # Start containers
+          echo "Waiting for application to start..."
+          RETRIES=0
+          MAX_RETRIES=24  # ~2 minutes if sleeping 5 seconds each
+          until curl --fail --max-time 120 http://localhost:5000; do
             echo "Waiting for application to start..."
-            RETRIES=0
-            MAX_RETRIES=24  # roughly 2 minutes if sleep 5 seconds each
-            until curl --fail --max-time 120 http://localhost:5000; do
-              echo "Waiting for application to start..."
-              sleep 5
-              RETRIES=$((RETRIES+1))
-              if [ $RETRIES -ge $MAX_RETRIES ]; then
-                echo "Application failed to start in time."
-                exit 1
-              fi
-            done
-            echo "Application started successfully!"
+            sleep 5
+            RETRIES=$((RETRIES+1))
+            if [ $RETRIES -ge $MAX_RETRIES ]; then
+              echo "Application failed to start in time."
+              exit 1
+            fi
+          done
+          echo "Application started successfully!"
 
       - name: Push Docker Image to Docker Hub
         run: |
@@ -73,22 +75,30 @@ jobs:
           fi
 
           # Bump the patch version (e.g. 1.2.3 -> 1.2.4)
-          new_version=$(echo $current_version | awk -F. '{$NF += 1; print $1 "." $2 "." $3}' OFS='.')
+          new_version=$(echo "$current_version" | awk -F. '{$NF += 1; print $1 "." $2 "." $3}' OFS='.')
 
           # Update Chart.yaml in-place with new version
-          sed -i "s/^version:.*/version: $new_version/" $CHART_FILE
+          sed -i "s/^version:.*/version: $new_version/" "$CHART_FILE"
 
           echo "Updated Chart.yaml version to $new_version"
 
-      # (Optional) Commit the version bump back to the repo
-      # This ensures your main branch has the updated version.
+      # -------------------------------------------------------
+      # Commit and push the updated Chart.yaml using MY_GITHUB_TOKEN
+      # -------------------------------------------------------
       - name: Commit Updated Chart.yaml
+        env:
+          MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
         run: |
-          git config --global user.email "actions@github.com"
-          git config --global user.name "GitHub Actions"
+          git config --global user.email "yuvalshmuely8@gmail.com"
+          git config --global user.name "NutzKiller"
+          
+          # Make sure we use our personal access token for pushing
+          git remote set-url origin https://x-access-token:${MY_GITHUB_TOKEN}@github.com/NutzKiller/GYM-HELM.git
+          
           git add gym-chart/Chart.yaml
           git commit -m "Bump Helm chart version to $new_version" || echo "No changes to commit"
-          git push
+          # Push to main or whichever branch you're on
+          git push origin HEAD:main
 
       # -------------------------
       # Now we package the chart
@@ -119,7 +129,7 @@ jobs:
           git config --global user.name "NutzKiller"
           
           # Clone the helm repository using MY_GITHUB_TOKEN
-          git clone https://x-access-token:${{ secrets.MY_GITHUB_TOKEN }}@github.com/NutzKiller/helm.git helm-temp
+          git clone https://x-access-token:${MY_GITHUB_TOKEN}@github.com/NutzKiller/helm.git helm-temp
           
           # Copy packaged charts and update the index
           cp -R helm-repo/* helm-temp/
