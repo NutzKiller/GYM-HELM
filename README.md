@@ -77,7 +77,7 @@ The application is fully containerized using Docker and employs a comprehensive 
 1. **Code Push & Pipeline Trigger**  
    Every code commit triggers GitHub Actions, initiating the CI/CD pipeline.
 
-![CI/CD Pipeline](assets/diagram.png)
+![CI/CD Pipeline](assets/GYM-PROJECT.drawio.png)
 
 2. **Continuous Integration (CI)**
    - **Docker Build:** The application is built into a Docker image.
