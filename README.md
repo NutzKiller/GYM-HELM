@@ -77,6 +77,8 @@ The application is fully containerized using Docker and employs a comprehensive 
 1. **Code Push & Pipeline Trigger**  
    Every code commit triggers GitHub Actions, initiating the CI/CD pipeline.
 
+![CI/CD Pipeline](assets/diagram.png)
+
 2. **Continuous Integration (CI)**
    - **Docker Build:** The application is built into a Docker image.
    - **Image Push:** The Docker image is pushed to the designated container registry.
